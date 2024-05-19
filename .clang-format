@@ -1,0 +1,8 @@
+AlignTrailingComments: false
+IndentWidth: 4
+SortIncludes: false
+AccessModifierOffset: -4
+AlwaysBreakTemplateDeclarations: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+

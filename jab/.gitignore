@@ -1,10 +1,15 @@
-build/
-bin/
-temp_files/
+# Emacs stuff
+*~
+\#*
+.\#*
 
-.cache/
+# Artifacts + Build Stuff
+/bin
+/build
+/.vscode
 
-profile.json
+# debug
+*.pdb
 
 # Prerequisites
 *.d
