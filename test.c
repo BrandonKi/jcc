@@ -1,17 +1,11 @@
-int main() {
-    int x = 10;
-    int y = x * 2;
+int fn(int x, int y) {
     int z = y - x + 5;
-    return -(+y * +z) / -(+x);
+    return -(y * z) / -(+x);
 }
 
-// int one() {
-//     return 1;
-// }
-
-// int main() {
-//     return one();
-// }
+int main() {
+    return fn(10, 20);
+}
 
 // int main() {
 //     struct s {

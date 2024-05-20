@@ -11,11 +11,13 @@ The custom backend is located in [jab/](jab/) which was previously a separate pr
 WIP, can currently handle stuff like this.
 
 ```c
-int main() {
-    int x = 10;
-    int y = x * 2;
+int fn(int x, int y) {
     int z = y - x + 5;
-    return -(+y * +z) / -(+x);
+    return -(y * z) / -(+x);
+}
+
+int main() {
+    return fn(10, 20);
 }
 ```
 

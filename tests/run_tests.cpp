@@ -310,6 +310,58 @@ int main() {
     return result == 30;
 }
 
+bool function_call_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int three() {
+    return 3;
+}
+
+int main() {
+    return three();
+}
+    )");
+
+    return result == 3;
+}
+
+bool function_call_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int identity(int a) {
+    return a;
+}
+
+int main() {
+    return identity(42);
+}
+    )");
+
+    return result == 42;
+}
+
+bool function_call_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int fn(int x, int y) {
+    int z = y - x + 5;
+    return -(y * z) / -(+x);
+}
+
+int main() {
+    return fn(10, 20);
+}
+    )");
+
+    return result == 30;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -339,6 +391,9 @@ int main(int argc, char *argv[]) {
     test(int_variables_arithmetic_0);
     test(int_variables_arithmetic_1);
     test(int_variables_arithmetic_2);
+    test(function_call_0);
+    test(function_call_1);
+    test(function_call_2);
 
     print_report();
 }

@@ -28,8 +28,7 @@ class Parser {
 
     ExprNode *parse_primary_expr();
 
-    std::vector<ExprNode *> parse_function_args();
-    ExprNode *parse_function_call();
+    std::vector<ExprNode *> parse_function_call_args();
 
     ExprNode *parse_postfix_expr();
     ExprNode *parse_unary_expr();
@@ -48,6 +47,8 @@ class Parser {
     ExprNode *parse_assign_expr();
     ExprNode *parse_comma_expr();
     ExprNode *parse_expr();
+
+    std::vector<DeclNode *> parse_function_decl_args();
 
     DeclNode *parse_decl(TokenKind terminator = TokenKind::_semicolon);
 

@@ -83,24 +83,30 @@ llvm::Function *LLVMIRGen::genFunction(FunctionNode *fn) {
         llvm::BasicBlock::Create(*m_context, "entry", function);
     m_builder->SetInsertPoint(bb);
 
+    // FIXME clean up
     m_named_values.clear();
-    // for (auto &arg : function->args()) {
-    //     m_named_values[std::string(arg.getName())] = &arg;
-    // }
-    genCompoundStmnt(fn->body);
-    // llvm::Value *ret_val = genCompoundStmnt(fn->body);
-    // if (!ret_val) {
-    //     assert(false);
-    // }
+    int i = 0;
+    for (auto &arg : function->args()) {
+        // m_named_values[std::string(arg.getName())] = {fn->proto->args[i], &arg};
+        auto decl = fn->proto->args[i];
+        auto arg_val = &arg;
+        m_builder->CreateAlignedStore(arg_val, genDecl(decl),
+                            llvm::Align(decl->type.align), false);
 
-    // m_builder->CreateRet(ret_val);
+        ++i;
+    }
+
+    genCompoundStmnt(fn->body);
     return function;
 }
 
 llvm::Function *LLVMIRGen::genPrototype(PrototypeNode *proto) {
     JCC_PROFILE()
-    std::vector<llvm::Type *> arg_types(proto->args.size(),
-                                        llvm::Type::getInt32Ty(*m_context));
+    std::vector<llvm::Type *> arg_types;
+    for (auto arg : proto->args) {
+        arg_types.push_back(to_llvm_type(arg->type));
+    }
+
     llvm::FunctionType *ft = llvm::FunctionType::get(
         to_llvm_type(proto->ret_type), arg_types, false);
 
@@ -109,7 +115,7 @@ llvm::Function *LLVMIRGen::genPrototype(PrototypeNode *proto) {
 
     int index = 0;
     for (auto &arg : f->args()) {
-        arg.setName(*proto->args[index]);
+        arg.setName(*proto->args[index]->id);
         ++index;
     }
 
@@ -126,11 +132,13 @@ void LLVMIRGen::genCompoundStmnt(CompoundStmntNode *stmnts) {
     }
 }
 
-void LLVMIRGen::genDecl(DeclNode *decl) {
+llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
     auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
-    m_builder->CreateAlignedStore(genExpr(decl->init), alloca,
-                                  llvm::Align(decl->type.align), false);
+    if(decl->init)
+        m_builder->CreateAlignedStore(genExpr(decl->init), alloca,
+                                    llvm::Align(decl->type.align), false);
     m_named_values[*decl->id] = {decl, alloca};
+    return alloca;
 }
 
 void LLVMIRGen::genStmnt(StmntNode *stmnt) {
@@ -161,8 +169,8 @@ llvm::Value *LLVMIRGen::genExpr(ExprNode *expr) {
         return genUnaryExpr(static_cast<UnaryExprNode *>(expr));
     case ExprKind::BinExpr:
         return genBinExpr(static_cast<BinExprNode *>(expr));
-    /* case ExprKind::CallExpr: */
-    /*     return genCallExpr(static_cast<CallExprNode *>(expr)); */
+    case ExprKind::CallExpr:
+        return genCallExpr(static_cast<CallExprNode *>(expr));
     default:
         assert(false);
     }
@@ -171,26 +179,32 @@ llvm::Value *LLVMIRGen::genExpr(ExprNode *expr) {
     return nullptr;
 }
 
-/* llvm::Value *LLVMIRGen::genCallExpr(CallExprNode *call_expr) { */
-/*     JCC_PROFILE() */
-/*     llvm::Function *callee = m_module->getFunction(*call_expr->id); */
-/**/
-/*     if (!callee) */
-/*         assert(false); */
-/**/
-/*     if (callee->arg_size() != call_expr->args.size()) */
-/*         assert(false); */
-/**/
-/*     std::vector<llvm::Value *> args; */
-/**/
-/*     for (auto *a : call_expr->args) { */
-/*         args.push_back(genExpr(a)); */
-/*         if (!args.back()) */
-/*             assert(false); */
-/*     } */
-/**/
-/*     return m_builder->CreateCall(callee, args, "calltmp"); */
-/* } */
+llvm::Value *LLVMIRGen::genCallExpr(CallExprNode *call_expr) {
+    JCC_PROFILE()
+
+    // FIXME hack
+    if (call_expr->base->kind != ExprKind::IdExpr)
+        assert(false);
+
+    llvm::Function *callee =
+        m_module->getFunction(*static_cast<IdExprNode *>(call_expr->base)->val);
+
+    if (!callee)
+        assert(false);
+
+    if (callee->arg_size() != call_expr->args.size())
+        assert(false);
+
+    std::vector<llvm::Value *> args;
+
+    for (auto *a : call_expr->args) {
+        args.push_back(genExpr(a));
+        if (!args.back())
+            assert(false);
+    }
+
+    return m_builder->CreateCall(callee, args);
+}
 
 llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     JCC_PROFILE()

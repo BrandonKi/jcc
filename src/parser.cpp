@@ -96,34 +96,6 @@ bool Parser::is_start_of_type(Token tkn) {
     }
 }
 
-// TODO why is this separate
-PrototypeNode *Parser::parse_extern() {
-    m_lex.eat(TokenKind::k_extern);
-    return parse_prototype();
-}
-
-PrototypeNode *Parser::parse_prototype() {
-    PrototypeNode *node = new PrototypeNode();
-
-    node->ret_type = parse_type();
-
-    if (node->ret_type.type == CTypeKind::None)
-        return nullptr;
-
-    node->id = m_lex.curr().id.val;
-
-    m_lex.eat_next('(');
-
-    while (m_lex.curr().kind != TokenKind::_close_paren) {
-        // TODO doesn't do anything with types yet
-        node->args.push_back(m_lex.curr().id.val);
-        m_lex.next();
-    }
-
-    m_lex.eat((TokenKind)')');
-    return node;
-}
-
 ExprNode *Parser::parse_id_expr() {
     std::string *val = m_lex.curr().id.val;
     m_lex.next();
@@ -172,11 +144,15 @@ ExprNode *Parser::parse_primary_expr() {
     return expr;
 }
 
-std::vector<ExprNode *> Parser::parse_function_args() {
+std::vector<ExprNode *> Parser::parse_function_call_args() {
     std::vector<ExprNode *> result = {};
 
-    if (m_lex.curr().kind == TokenKind::_close_paren)
+    m_lex.eat('(');
+
+    if (m_lex.curr().kind == TokenKind::_close_paren) {
+        m_lex.next();
         return result;
+    }
 
     result.push_back(parse_assign_expr());
 
@@ -185,11 +161,29 @@ std::vector<ExprNode *> Parser::parse_function_args() {
         result.push_back(parse_assign_expr());
     }
 
+    m_lex.eat(')');
     return result;
 }
 
-ExprNode *Parser::parse_function_call() {
-    return nullptr;
+std::vector<DeclNode *> Parser::parse_function_decl_args() {
+    std::vector<DeclNode *> result = {};
+
+    m_lex.eat('(');
+
+    if (m_lex.curr().kind == TokenKind::_close_paren)
+        return result;
+
+    result.push_back(parse_decl(TokenKind::_comma));
+
+    while (m_lex.curr().kind != TokenKind::_close_paren) {
+        if (m_lex.curr().kind != TokenKind::_comma)
+            assert(false);
+        m_lex.next();
+        result.push_back(parse_decl());
+    }
+
+    m_lex.eat(')');
+    return result;
 }
 
 // postfix-expression:
@@ -216,7 +210,8 @@ ExprNode *Parser::parse_postfix_expr() {
         case TokenKind::_open_bracket:
             assert(false);
         case TokenKind::_open_paren:
-            extra = new CallExprNode(base, parse_function_args());
+            extra = new CallExprNode(base, parse_function_call_args());
+            return extra;
         case TokenKind::_dot:
             assert(false);
         case TokenKind::_arrow:
@@ -590,14 +585,14 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
     m_lex.next();
 
     if (m_lex.curr().kind == terminator)
-        return decl;
+        m_lex.eat(terminator);
 
     if (m_lex.curr().kind == TokenKind::_equal) {
         m_lex.next();
         decl->init = parse_assign_expr();
+        m_lex.eat(terminator);
     }
 
-    m_lex.eat(terminator);
     return decl;
 }
 CaseStmntNode *Parser::parse_case_stmnt() {
@@ -791,6 +786,26 @@ CompoundStmntNode *Parser::parse_compound_stmnt() {
     }
     m_lex.eat('}');
 
+    return node;
+}
+
+PrototypeNode *Parser::parse_prototype() {
+    PrototypeNode *node = new PrototypeNode();
+
+    node->ret_type = parse_type();
+
+    if (node->ret_type.type == CTypeKind::None)
+        return nullptr;
+
+    node->id = m_lex.curr().id.val;
+
+    m_lex.eat_next('(');
+
+    while (m_lex.curr().kind != TokenKind::_close_paren) {
+        node->args.push_back(parse_decl(TokenKind::_comma));
+    }
+
+    m_lex.eat(')');
     return node;
 }
 

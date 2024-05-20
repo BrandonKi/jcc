@@ -36,10 +36,10 @@ public:
 
     void genCompoundStmnt(CompoundStmntNode *);
     void genStmnt(StmntNode *);
-    void genDecl(DeclNode *);
+    llvm::Value *genDecl(DeclNode *);
 
     llvm::Value *genExpr(ExprNode *);
-    /* llvm::Value *genCallExpr(CallExprNode *); */
+    llvm::Value *genCallExpr(CallExprNode *);
     llvm::Value *genBinExpr(BinExprNode *);
     llvm::Value *genUnaryExpr(UnaryExprNode *);
     llvm::Value *genIdExpr(IdExprNode *);

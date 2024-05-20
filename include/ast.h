@@ -52,45 +52,7 @@ public:
 
 struct AstNode {};
 
-struct Attributes {
-    bool _typedef : 1;
-    bool _extern : 1;
-    bool _static : 1;
-    bool __Thread_local : 1;
-    bool _auto : 1;
-    bool _register : 1;
-};
-
-// TODO this doesn't do anything
-enum Qualifier : char {
-    q_const,
-    q_restrict,
-    q_volatile,
-    q_Atomic,
-};
-
-struct PrototypeNode {
-    Attributes attribs;
-    CType ret_type;
-    std::string *id;
-    std::vector<std::string *> args;
-
-    PrototypeNode()
-        : attribs{}, ret_type{CTypeKind::None}, id{nullptr}, args{} {}
-
-    PrototypeNode(Attributes attribs, CType ret_type, std::string *id,
-                  std::vector<std::string *> args)
-        : attribs{attribs}, ret_type{ret_type}, id{id}, args{args} {}
-};
-
 enum ExprKind {
-    /* NumExpr, */
-    /* IdExpr, */
-    /* UnaryExpr, */
-    /* BinExpr, */
-    /* CallExpr, */
-    // -------------------------------------------------------------------------
-
     NumLitExpr,
     StrLitExpr,
     IdExpr,
@@ -101,17 +63,6 @@ enum ExprKind {
     CastExpr,
     BinExpr,
     CondExpr,
-    /* MultiplicativeExpr, */
-    /* ShiftExpr, */
-    /* RelationalExpr, */
-    /* EqualityExpr, */
-    /* BitAndExpr, */
-    /* XorExpr, */
-    /* BitOrExpr, */
-    /* AndExpr, */
-    /* OrExpr, */
-    /* AssignExpr, */
-    /* CommaExpr, */
 };
 
 struct ExprNode {
@@ -266,6 +217,23 @@ struct CondExprNode final : public ExprNode {
           true_branch{true_branch}, false_branch{false_branch} {}
 };
 
+struct Attributes {
+    bool _typedef : 1;
+    bool _extern : 1;
+    bool _static : 1;
+    bool __Thread_local : 1;
+    bool _auto : 1;
+    bool _register : 1;
+};
+
+// TODO this doesn't do anything
+enum Qualifier : char {
+    q_const,
+    q_restrict,
+    q_volatile,
+    q_Atomic,
+};
+
 struct DeclNode {
     Attributes attribs;
     Qualifier qual;
@@ -378,6 +346,20 @@ struct CompoundStmntNode final : public StmntNode {
 
     CompoundStmntNode()
         : StmntNode{StmntKind::CompoundStmnt}, decl_list{}, stmnt_list{} {}
+};
+
+struct PrototypeNode {
+    Attributes attribs;
+    CType ret_type;
+    std::string *id;
+    std::vector<DeclNode *> args; // TODO intern
+
+    PrototypeNode()
+        : attribs{}, ret_type{CTypeKind::None}, id{nullptr}, args{} {}
+
+    PrototypeNode(Attributes attribs, CType ret_type, std::string *id,
+                  std::vector<DeclNode *> args)
+        : attribs{attribs}, ret_type{ret_type}, id{id}, args{args} {}
 };
 
 struct FunctionNode {
