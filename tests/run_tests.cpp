@@ -396,6 +396,175 @@ int main() {
     return result == 1001;
 }
 
+bool assign_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int identity(int x) {
+    int y = x + 20;
+    x = y + 10;
+    return x;
+}
+
+int main() {
+    return identity(3);
+}
+    )");
+
+    return result == 33;
+}
+
+bool assign_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 90;
+    x *= 2;
+    return x;
+}
+    )");
+
+    return result == 180;
+}
+
+bool assign_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 90;
+    x /= 2;
+    return x;
+}
+    )");
+
+    return result == 45;
+}
+
+bool assign_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 90;
+    x %= 4;
+    return x;
+}
+    )");
+
+    return result == 2;
+}
+
+bool assign_4() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 90;
+    x += 11;
+    return x;
+}
+    )");
+
+    return result == 101;
+}
+
+bool assign_5() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 90;
+    x -= 50;
+    return x;
+}
+    )");
+
+    return result == 40;
+}
+
+bool assign_6() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 2;
+    x <<= 3;
+    return x;
+}
+    )");
+
+    return result == 16;
+}
+
+bool assign_7() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 16;
+    x >>= 3;
+    return x;
+}
+    )");
+
+    return result == 2;
+}
+
+bool assign_8() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 18;
+    x &= 11;
+    return x;
+}
+    )");
+
+    return result == 2;
+}
+
+bool assign_9() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 18;
+    x ^= 11;
+    return x;
+}
+    )");
+
+    return result == 25;
+}
+
+bool assign_10() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int x = 18;
+    x |= 11;
+    return x;
+}
+    )");
+
+    return result == 27;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -430,6 +599,17 @@ int main(int argc, char *argv[]) {
     test(function_call_2);
     test(pointers_0);
     test(pointers_1);
+    test(assign_0);
+    test(assign_1);
+    test(assign_2);
+    test(assign_3);
+    test(assign_4);
+    test(assign_5);
+    test(assign_6);
+    test(assign_7);
+    test(assign_8);
+    test(assign_9);
+    test(assign_10);
 
     print_report();
 }

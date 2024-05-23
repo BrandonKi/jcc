@@ -545,12 +545,61 @@ ExprNode *Parser::parse_conditional_expr() {
 // assignment-operator: one of
 //      = *= /= %= += -= <<= >>= &= ^= |=
 ExprNode *Parser::parse_assign_expr() {
-    ExprNode *cond_expr = parse_conditional_expr();
-    if (cond_expr)
-        return cond_expr;
+    ExprNode *lhs = parse_conditional_expr();
+    ExprNode *rhs = nullptr;
 
-    // TODO implement
-    return nullptr;
+    BinOp op = BinOp::_none;
+    switch (m_lex.curr().kind) {
+    case _equal:
+        m_lex.next();
+        rhs = parse_expr();
+        break;
+    case _star_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_mul, lhs, parse_expr());
+        break;
+    case _slash_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_div, lhs, parse_expr());
+        break;
+    case _percent_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_mod, lhs, parse_expr());
+        break;
+    case _add_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_add, lhs, parse_expr());
+        break;
+    case _sub_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_sub, lhs, parse_expr());
+        break;
+    case _shift_left_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_bitshift_left, lhs, parse_expr());
+        break;
+    case _shift_right_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_bitshift_right, lhs, parse_expr());
+        break;
+    case _and_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_bit_and, lhs, parse_expr());
+        break;
+    case _xor_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_xor, lhs, parse_expr());
+        break;
+    case _or_equal:
+        m_lex.next();
+        rhs = new BinExprNode(BinOp::_bit_or, lhs, parse_expr());
+        break;
+    default:
+        if (lhs)
+            return lhs;
+    }
+
+    return new BinExprNode(BinOp::_assign, lhs, rhs);
 }
 
 // expression:
@@ -595,7 +644,8 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
 
     decl->type = parse_type();
 
-    if (m_lex.curr().kind != TokenKind::_id)
+    if (decl->type->type == CTypeKind::None ||
+        m_lex.curr().kind != TokenKind::_id)
         return nullptr;
 
     decl->id = m_lex.curr().id.val;
@@ -676,8 +726,7 @@ LabelStmntNode *Parser::parse_label_stmnt() {
 }
 
 ExprStmntNode *Parser::parse_expr_stmnt() {
-    assert(false);
-    return nullptr;
+    return new ExprStmntNode(parse_expr());
 }
 
 // statement:
@@ -768,10 +817,11 @@ StmntNode *Parser::parse_stmnt() {
         stmnt = parse_return_stmnt();
         break;
     default:
-        // TODO handle the other cases
-        // label statement and expression statement cases
-        parse_label_stmnt();
-        parse_expr_stmnt();
+        if (m_lex.peek().kind == TokenKind::_colon) {
+            stmnt = parse_label_stmnt();
+        } else {
+            stmnt = parse_expr_stmnt();
+        }
     }
     m_lex.eat(';');
     return stmnt;

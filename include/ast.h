@@ -183,17 +183,6 @@ enum class BinOp : char {
     _log_or,
 
     _assign,
-    // TODO desugaring these instead would be very easy
-    _mul_assign,
-    _div_assign,
-    _mod_assign,
-    _add_assign,
-    _sub_assign,
-    _bitshift_left_assign,
-    _bitshift_right_assign,
-    _bit_and_assign,
-    _xor_assign,
-    _bit_or_assign,
 
     _comma,
 };

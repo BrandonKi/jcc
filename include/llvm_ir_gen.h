@@ -44,6 +44,7 @@ public:
     llvm::Value *genExpr(ExprNode *);
     llvm::Value *genCallExpr(CallExprNode *);
     llvm::Value *genBinExpr(BinExprNode *);
+    llvm::Value *genAssign(BinExprNode *);
     llvm::Value *genUnaryExpr(UnaryExprNode *);
     llvm::Value *genAddressOf(ExprNode *);
     llvm::Value *genIdExpr(IdExprNode *);

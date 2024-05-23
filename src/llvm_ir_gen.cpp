@@ -148,13 +148,18 @@ void LLVMIRGen::genStmnt(StmntNode *stmnt) {
     case LabelStmnt:
     case CompoundStmnt:
     case ExprStmnt:
+        // TODO result not used
+        // make a genExpr that doesn't bother loading it?
+        // can be reused for comma expr as well
+        genExpr(static_cast<ExprStmntNode *>(stmnt)->expr);
+        break;
         /* case SelectionStmnt: */
         /* case IterStmnt: */
         assert(false);
     case ReturnStmnt:
         m_builder->CreateRet(
             genExpr(static_cast<ReturnStmntNode *>(stmnt)->expr));
-        break;
+        break;        
     default:
         assert(false);
     }
@@ -210,8 +215,26 @@ llvm::Value *LLVMIRGen::genCallExpr(CallExprNode *call_expr) {
 
 llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     JCC_PROFILE()
-    llvm::Value *lhs = genExpr(bin_expr->lhs);
-    llvm::Value *rhs = genExpr(bin_expr->rhs);
+
+    llvm::Value *lhs = nullptr;
+    llvm::Value *rhs = nullptr;
+
+    switch (bin_expr->op) {
+    case BinOp::_log_and:
+        // TODO need to short circuit
+        break;
+    case BinOp::_log_or:
+        // TODO need to short circuit
+        break;
+    case BinOp::_assign:
+        return genAssign(bin_expr);
+    default:
+        break;
+        // just continue on
+    }
+
+    lhs = genExpr(bin_expr->lhs);
+    rhs = genExpr(bin_expr->rhs);
     if (!lhs || !rhs)
         assert(false);
 
@@ -261,16 +284,39 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     case BinOp::_bit_or:
         return m_builder->CreateOr(lhs, rhs);
     case BinOp::_log_and:
-    // TODO need to short circuit
     case BinOp::_log_or:
-    // TODO need to short circuit
     case BinOp::_assign:
-    // TODO, this is actually pretty easy
     default:
         assert(false);
     }
 
     assert(false);
+    return nullptr;
+}
+
+// TODO possibly replace this with genLValue(), or something similar
+// it's a semi-common pattern, duplicated in genAddressOf
+llvm::Value *LLVMIRGen::genAssign(BinExprNode *bin_expr) {
+    JCC_PROFILE()
+
+    llvm::Value *rhs = genExpr(bin_expr->rhs);
+
+    switch (bin_expr->lhs->kind) {
+    case IdExpr: {
+        auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
+        auto &[decl, addr] = m_named_values[*lhs->val];
+        m_builder->CreateAlignedStore(
+            rhs, addr,
+            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        return addr;
+    }
+    case UnaryExpr: {
+        auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
+    }
+    default:
+        assert(false);
+    }
+
     return nullptr;
 }
 
@@ -314,6 +360,8 @@ llvm::Value *LLVMIRGen::genUnaryExpr(UnaryExprNode *unary_expr) {
 }
 
 // FIXME does not handle all valid cases
+// TODO possibly replace this with genLValue(), or something similar
+// it's a semi-common pattern, duplicated in genAssign
 llvm::Value *LLVMIRGen::genAddressOf(ExprNode *base_expr) {
     switch (base_expr->kind) {
     case IdExpr: {

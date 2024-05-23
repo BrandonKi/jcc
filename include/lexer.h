@@ -125,6 +125,17 @@ enum TokenKind : char {
     _dec = -59,
     _arrow = -60,
 
+    _star_equal = -61,
+    _slash_equal = -62,
+    _percent_equal = -63,
+    _add_equal = -64,
+    _sub_equal = -65,
+    _shift_left_equal = -66,
+    _shift_right_equal = -67,
+    _and_equal = -68,
+    _xor_equal = -69,
+    _or_equal = -70,
+
     _sentinel_start = -128,
 };
 

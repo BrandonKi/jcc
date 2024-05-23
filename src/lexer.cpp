@@ -63,7 +63,7 @@ Token Lexer::next() {
 }
 
 // I'm being lazy for right now
-// this is a very simple version
+// this is a very simple and inefficient lexer
 // TODO:
 // * switch
 // * intern
@@ -135,8 +135,13 @@ Token Lexer::internal_next() {
             return Token(TokenKind::_less_than_equal);
         }
         if (m_text[i] == '<' && m_text[i + 1] == '<') {
-            i += 2;
-            return Token(TokenKind::_shift_left);
+            if (i + 2 < m_text.size() && m_text[i + 2] == '=') {
+                i += 3;
+                return Token(TokenKind::_shift_left_equal);
+            } else {
+                i += 2;
+                return Token(TokenKind::_shift_left);
+            }
         }
 
         if (m_text[i] == '>' && m_text[i + 1] == '=') {
@@ -144,8 +149,13 @@ Token Lexer::internal_next() {
             return Token(TokenKind::_greater_than_equal);
         }
         if (m_text[i] == '>' && m_text[i + 1] == '>') {
-            i += 2;
-            return Token(TokenKind::_shift_right);
+            if (i + 2 < m_text.size() && m_text[i + 2] == '=') {
+                i += 3;
+                return Token(TokenKind::_shift_right_equal);
+            } else {
+                i += 2;
+                return Token(TokenKind::_shift_right);
+            }
         }
 
         if (m_text[i] == '=' && m_text[i + 1] == '=') {
@@ -155,6 +165,39 @@ Token Lexer::internal_next() {
         if (m_text[i] == '!' && m_text[i + 1] == '=') {
             i += 2;
             return Token(TokenKind::_not_equal);
+        }
+
+        if (m_text[i] == '*' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_star_equal);
+        }
+        if (m_text[i] == '/' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_slash_equal);
+        }
+        if (m_text[i] == '%' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_percent_equal);
+        }
+        if (m_text[i] == '+' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_add_equal);
+        }
+        if (m_text[i] == '-' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_sub_equal);
+        }
+        if (m_text[i] == '&' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_and_equal);
+        }
+        if (m_text[i] == '^' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_xor_equal);
+        }
+        if (m_text[i] == '|' && m_text[i + 1] == '=') {
+            i += 2;
+            return Token(TokenKind::_or_equal);
         }
     }
 

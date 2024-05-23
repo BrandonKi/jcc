@@ -1,11 +1,8 @@
-int identity(int x) {
-    int *y = &x;
-    int z = *y;
-    return *&z;
-}
 
 int main() {
-    return identity(99);
+    int x = 90;
+    x *= 2;
+    return x;
 }
 
 // int main() {
