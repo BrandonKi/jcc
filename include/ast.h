@@ -37,17 +37,25 @@ enum CTypeKind : int {
 class CType {
 public:
     CTypeKind type;
+    CType *ptr;
     int align;
     bool is_signed;
 
-    CType() : type{CTypeKind::None}, align{1}, is_signed{true} {}
-    CType(CTypeKind type) : type{type}, align{1}, is_signed{true} {}
+    CType() : type{CTypeKind::None}, ptr{nullptr}, align{1}, is_signed{true} {}
+    CType(CTypeKind type)
+        : type{type}, ptr{nullptr}, align{1}, is_signed{true} {}
+    CType(CTypeKind type, CType *ptr)
+        : type{type}, ptr{ptr},
+          align{CType::getBuiltinType(CTypeKind::Pointer)->align},
+          is_signed{true} {}
     CType(CTypeKind type, int align)
-        : type{type}, align{align}, is_signed{true} {}
+        : type{type}, ptr{nullptr}, align{align}, is_signed{true} {}
     CType(CTypeKind type, int align, bool is_signed)
-        : type{type}, align{align}, is_signed{is_signed} {}
+        : type{type}, ptr{nullptr}, align{align}, is_signed{is_signed} {}
+    CType(CTypeKind type, CType *ptr, int align, bool is_signed)
+        : type{type}, ptr{ptr}, align{align}, is_signed{is_signed} {}
 
-    static CType getBuiltinType(CTypeKind type, bool is_signed = true);
+    static CType *getBuiltinType(CTypeKind type, bool is_signed = true);
 };
 
 struct AstNode {};
@@ -67,11 +75,9 @@ enum ExprKind {
 
 struct ExprNode {
     ExprKind kind;
+    CType *type = CType::getBuiltinType(CTypeKind::None);
 };
 
-// TODO write constructors for all expr nodes
-// well pretty much for every node that inherits something
-// -------------------------------------------------------------------------
 struct NumLitExprNode final : public ExprNode {
     int val;
 
@@ -120,18 +126,18 @@ enum class UnaryOp : char {
 
 struct UnaryExprNode final : public ExprNode {
     ExprNode *expr;
-    CType cast_to;
+    CType *cast_to;
     UnaryOp op;
 
     UnaryExprNode()
         : ExprNode{ExprKind::UnaryExpr}, expr{nullptr}, op{0},
-          cast_to{CTypeKind::None} {}
+          cast_to{CType::getBuiltinType(CTypeKind::None)} {}
 
     UnaryExprNode(UnaryOp op, ExprNode *expr)
         : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op},
-          cast_to{CTypeKind::None} {}
+          cast_to{CType::getBuiltinType(CTypeKind::None)} {}
 
-    UnaryExprNode(UnaryOp op, CType cast_to, ExprNode *expr)
+    UnaryExprNode(UnaryOp op, CType *cast_to, ExprNode *expr)
         : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op}, cast_to{cast_to} {}
 };
 
@@ -144,8 +150,6 @@ struct CallExprNode final : public ExprNode {
     CallExprNode(ExprNode *base, std::vector<ExprNode *> args)
         : ExprNode{ExprKind::CallExpr}, base{base}, args{args} {}
 };
-
-// -------------------------------------------------------------------------
 
 enum class BinOp : char {
     _none,
@@ -237,13 +241,13 @@ enum Qualifier : char {
 struct DeclNode {
     Attributes attribs;
     Qualifier qual;
-    CType type;
+    CType *type;
     std::string *id;
     ExprNode *init;
 
     DeclNode()
-        : attribs{}, qual{}, type{CType{CTypeKind::None}}, id{nullptr},
-          init{nullptr} {}
+        : attribs{}, qual{}, type{CType::getBuiltinType(CTypeKind::None)},
+          id{nullptr}, init{nullptr} {}
 };
 
 enum StmntKind {
@@ -350,14 +354,15 @@ struct CompoundStmntNode final : public StmntNode {
 
 struct PrototypeNode {
     Attributes attribs;
-    CType ret_type;
+    CType *ret_type;
     std::string *id;
     std::vector<DeclNode *> args; // TODO intern
 
     PrototypeNode()
-        : attribs{}, ret_type{CTypeKind::None}, id{nullptr}, args{} {}
+        : attribs{}, ret_type{CType::getBuiltinType(CTypeKind::None)},
+          id{nullptr}, args{} {}
 
-    PrototypeNode(Attributes attribs, CType ret_type, std::string *id,
+    PrototypeNode(Attributes attribs, CType *ret_type, std::string *id,
                   std::vector<DeclNode *> args)
         : attribs{attribs}, ret_type{ret_type}, id{id}, args{args} {}
 };

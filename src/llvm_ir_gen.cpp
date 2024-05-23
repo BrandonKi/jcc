@@ -22,8 +22,8 @@ LLVMIRGen::LLVMIRGen() {
 }
 
 // TODO
-llvm::Type *LLVMIRGen::to_llvm_type(CType type) {
-    switch (type.type) {
+llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
+    switch (type->type) {
     case Char:
         return llvm::Type::getInt8Ty(*m_context);
     case Short:
@@ -41,6 +41,7 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType type) {
     case Void:
         return llvm::Type::getVoidTy(*m_context);
     case Pointer:
+        return to_llvm_type(type->ptr)->getPointerTo();
     case Struct:
     case Union:
     case Array:
@@ -87,11 +88,12 @@ llvm::Function *LLVMIRGen::genFunction(FunctionNode *fn) {
     m_named_values.clear();
     int i = 0;
     for (auto &arg : function->args()) {
-        // m_named_values[std::string(arg.getName())] = {fn->proto->args[i], &arg};
+        // m_named_values[std::string(arg.getName())] = {fn->proto->args[i],
+        // &arg};
         auto decl = fn->proto->args[i];
         auto arg_val = &arg;
         m_builder->CreateAlignedStore(arg_val, genDecl(decl),
-                            llvm::Align(decl->type.align), false);
+                                      llvm::Align(decl->type->align), false);
 
         ++i;
     }
@@ -134,9 +136,9 @@ void LLVMIRGen::genCompoundStmnt(CompoundStmntNode *stmnts) {
 
 llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
     auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
-    if(decl->init)
+    if (decl->init)
         m_builder->CreateAlignedStore(genExpr(decl->init), alloca,
-                                    llvm::Align(decl->type.align), false);
+                                      llvm::Align(decl->type->align), false);
     m_named_values[*decl->id] = {decl, alloca};
     return alloca;
 }
@@ -259,10 +261,11 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     case BinOp::_bit_or:
         return m_builder->CreateOr(lhs, rhs);
     case BinOp::_log_and:
-
+    // TODO need to short circuit
     case BinOp::_log_or:
-
+    // TODO need to short circuit
     case BinOp::_assign:
+    // TODO, this is actually pretty easy
     default:
         assert(false);
     }
@@ -271,25 +274,33 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     return nullptr;
 }
 
-// TODO
+// TODO finish
 llvm::Value *LLVMIRGen::genUnaryExpr(UnaryExprNode *unary_expr) {
     JCC_PROFILE()
 
-    llvm::Value *expr = genExpr(unary_expr->expr);
-    if (!expr)
-        assert(false);
+    llvm::Value *expr;
 
     switch (unary_expr->op) {
     case UnaryOp::_prefix_inc:
     case UnaryOp::_prefix_dec:
     case UnaryOp::_sizeof:
     case UnaryOp::__Alignof:
-    case UnaryOp::_address:
-    case UnaryOp::_deref:
         assert(false);
+    case UnaryOp::_address: {
+        return genAddressOf(unary_expr->expr);
+    }
+    case UnaryOp::_deref: {
+        expr = genExpr(unary_expr->expr);
+        llvm::Value *val = m_builder->CreateAlignedLoad(
+            expr->getType(), expr,
+            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        return val;
+    }
     case UnaryOp::_add:
+        expr = genExpr(unary_expr->expr);
         return expr;
     case UnaryOp::_sub:
+        expr = genExpr(unary_expr->expr);
         expr = m_builder->CreateNSWSub(
             llvm::ConstantInt::get(*m_context, llvm::APInt(32, 0, true)), expr);
         return expr;
@@ -302,13 +313,32 @@ llvm::Value *LLVMIRGen::genUnaryExpr(UnaryExprNode *unary_expr) {
     return nullptr;
 }
 
+// FIXME does not handle all valid cases
+llvm::Value *LLVMIRGen::genAddressOf(ExprNode *base_expr) {
+    switch (base_expr->kind) {
+    case IdExpr: {
+        auto expr = static_cast<IdExprNode *>(base_expr);
+        auto &[decl, addr] = m_named_values[*expr->val];
+        return addr;
+    }
+    case UnaryExpr: {
+        auto expr = static_cast<UnaryExprNode *>(base_expr);
+        return genExpr(expr->expr);
+    }
+    default:
+        assert(false);
+    }
+
+    return nullptr;
+}
+
 llvm::Value *LLVMIRGen::genIdExpr(IdExprNode *id_expr) {
     JCC_PROFILE()
     auto [decl, val] = m_named_values[*id_expr->val];
     if (!val)
         assert(false);
     val = m_builder->CreateAlignedLoad(to_llvm_type(decl->type), val,
-                                       llvm::Align(decl->type.align), false);
+                                       llvm::Align(decl->type->align), false);
     return val;
 }
 

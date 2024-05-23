@@ -362,6 +362,40 @@ int main() {
     return result == 30;
 }
 
+bool pointers_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i = 88;
+    int *p = &i;
+    return *p;
+}
+    )");
+
+    return result == 88;
+}
+
+bool pointers_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int identity(int x) {
+    int *y = &x;
+    int z = *y;
+    return *&z;
+}
+
+int main() {
+    return identity(1001);
+}
+    )");
+
+    return result == 1001;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -394,6 +428,8 @@ int main(int argc, char *argv[]) {
     test(function_call_0);
     test(function_call_1);
     test(function_call_2);
+    test(pointers_0);
+    test(pointers_1);
 
     print_report();
 }

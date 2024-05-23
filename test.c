@@ -1,10 +1,11 @@
-int fn(int x, int y) {
-    int z = y - x + 5;
-    return -(y * z) / -(+x);
+int identity(int x) {
+    int *y = &x;
+    int z = *y;
+    return *&z;
 }
 
 int main() {
-    return fn(10, 20);
+    return identity(99);
 }
 
 // int main() {

@@ -35,6 +35,7 @@ add_library(jcc_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/parser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/llvm_ir_gen.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sema.cpp
 )
 
 # get_target_property(jcc_lib_SOURCES jcc_lib SOURCES)

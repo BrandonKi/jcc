@@ -10,8 +10,8 @@
 
 using namespace jcc;
 
-CType CType::getBuiltinType(CTypeKind type, bool is_signed) {
-    return Platform::builtinTypes[(int)type][(int)is_signed];
+CType *CType::getBuiltinType(CTypeKind type, bool is_signed) {
+    return &Platform::builtinTypes[(int)type][(int)is_signed];
 }
 
 Parser::Parser() : m_lex{}, m_tags{} {}
@@ -19,47 +19,64 @@ Parser::Parser() : m_lex{}, m_tags{} {}
 Parser::Parser(Lexer lex) : m_lex{lex}, m_tags{} {}
 
 // TODO incomplete
-CType Parser::parse_type() {
-    CType type = {};
+CType *Parser::parse_type() {
+    CType *type = new CType;
 
+    bool sign_prefix = false;
     // FIXME, allows signed/unsigned aggregate types...
     Token t1 = m_lex.curr();
     if (t1.kind == TokenKind::k_signed || t1.kind == TokenKind::k_unsigned) {
         t1 = m_lex.next();
-        type.is_signed = (t1.kind == TokenKind::k_signed);
+        type->is_signed = (t1.kind == TokenKind::k_signed);
+        sign_prefix = true;
     }
     switch (t1.kind) {
     case TokenKind::k_void:
-        type = CType::getBuiltinType(CTypeKind::Void, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Void, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k__Bool:
-        type = CType::getBuiltinType(CTypeKind::Bool, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Bool, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_char:
-        type = CType::getBuiltinType(CTypeKind::Char, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Char, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_short:
-        type = CType::getBuiltinType(CTypeKind::Short, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Short, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_int:
-        type = CType::getBuiltinType(CTypeKind::Int, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Int, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_long:
-        type = CType::getBuiltinType(CTypeKind::Long, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Long, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_float:
-        type = CType::getBuiltinType(CTypeKind::Float, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Float, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_double:
-        type = CType::getBuiltinType(CTypeKind::Double, type.is_signed);
+        type = CType::getBuiltinType(CTypeKind::Double, type->is_signed);
+        m_lex.next();
         break;
     case TokenKind::k_struct:
-
+        assert(false);
     default:
-        return CType{CTypeKind::None};
+        if (sign_prefix)
+            type = CType::getBuiltinType(CTypeKind::Int, type->is_signed);
+        else
+            return CType::getBuiltinType(CTypeKind::None);
     }
 
-    m_lex.next();
+    while (m_lex.curr().kind == TokenKind::_star) {
+        type = new CType(CTypeKind::Pointer, type);
+        m_lex.next();
+    }
+
     return type;
 }
 
@@ -294,7 +311,7 @@ ExprNode *Parser::parse_cast_expr() {
     if (m_lex.curr().kind == TokenKind::_open_paren &&
         is_start_of_type(m_lex.peek())) {
         m_lex.next();
-        CType ty = parse_type();
+        CType *ty = parse_type();
         m_lex.eat(TokenKind::_close_paren);
         ExprNode *cast_expr = parse_cast_expr();
         return new UnaryExprNode(UnaryOp::_cast, ty, cast_expr);
@@ -794,7 +811,7 @@ PrototypeNode *Parser::parse_prototype() {
 
     node->ret_type = parse_type();
 
-    if (node->ret_type.type == CTypeKind::None)
+    if (node->ret_type->type == CTypeKind::None)
         return nullptr;
 
     node->id = m_lex.curr().id.val;

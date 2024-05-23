@@ -27,7 +27,10 @@ public:
 
     LLVMIRGen();
 
-    llvm::Type *to_llvm_type(CType);
+    llvm::Type *to_llvm_type(CType *);
+
+    // TODO reorder all of this
+    // it's in reverse compared to parser
 
     void genFile(FileNode *);
 
@@ -42,6 +45,7 @@ public:
     llvm::Value *genCallExpr(CallExprNode *);
     llvm::Value *genBinExpr(BinExprNode *);
     llvm::Value *genUnaryExpr(UnaryExprNode *);
+    llvm::Value *genAddressOf(ExprNode *);
     llvm::Value *genIdExpr(IdExprNode *);
     llvm::Value *genNumLitExpr(NumLitExprNode *);
 };

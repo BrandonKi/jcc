@@ -13,6 +13,7 @@
 
 #include "platform.h"
 #include "link/windows_pe.h"
+#include "sema.h"
 #include "parser.h"
 
 #include <fstream>
@@ -28,6 +29,9 @@ int Compiler::compile_string(std::string text) {
 
     m_parser = Parser(Lexer(text));
     FileNode *file = m_parser.parse_file();
+
+    Sema sema;
+    sema.run_on(file);
 
     LLVMIRGen ir_gen;
     ir_gen.genFile(file);
