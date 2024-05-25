@@ -114,6 +114,21 @@ Token Lexer::internal_next() {
         return result;
     }
 
+    // TODO escape sequences
+    if (m_text[i] == '"') {
+        ++i;
+        while (m_text[i] != '"') {
+            id += m_text[i];
+            ++i;
+        }
+        ++i;
+
+        auto token = Token(TokenKind::_str_lit);
+        token.str.val = new std::string(id); // TODO intern
+        result = token;
+        return result;
+    }
+
     // TODO/FIXME ppc can handle this
     if (m_text[i] == '/' && m_text[i + 1] == '/') {
         while (m_text[i] != EOF && m_text[i] != '\n' && m_text[i] != '\r')

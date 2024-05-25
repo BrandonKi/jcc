@@ -19,7 +19,7 @@ class Parser {
     // TODO intern
     std::unordered_map<std::string, CType> m_tags;
 
-    CType *parse_type();
+    CType *parse_type(Attributes *attr = nullptr);
     bool is_start_of_type(Token);
 
     ExprNode *parse_id_expr();

@@ -1,8 +1,11 @@
+extern int printf(char *);
+extern void puts(char *);
 
 int main() {
-    int x = 90;
-    x *= 2;
-    return x;
+    char *a = "Hello World!";
+    int result = printf(a);
+    puts("");
+    return result;
 }
 
 // int main() {

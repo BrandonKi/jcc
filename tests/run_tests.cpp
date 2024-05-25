@@ -565,6 +565,44 @@ int main() {
     return result == 27;
 }
 
+// TODO capture and compare stdout
+bool hello_world_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+extern void puts(char *);
+
+int main() {
+    char *a = "Hello World!";
+    puts(a);
+    return 0;
+}
+
+    )");
+
+    return result == 0;
+}
+bool hello_world_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+extern int printf(char *);
+extern void puts(char *);
+
+int main() {
+    char *a = "Hello World!";
+    int result = printf(a);
+    puts("");
+    return result;
+}
+
+    )");
+
+    return result == 12;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -610,6 +648,8 @@ int main(int argc, char *argv[]) {
     test(assign_8);
     test(assign_9);
     test(assign_10);
+    test(hello_world_0);
+    test(hello_world_1);
 
     print_report();
 }

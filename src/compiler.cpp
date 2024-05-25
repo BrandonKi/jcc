@@ -93,12 +93,12 @@ int Compiler::compile_string(std::string text) {
             m_options.print_link_command);
     }
 
+    // FIXME lazy
+    // should use os-specific version and redirect stdout
+    // learn.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
     if (m_options.run_exe) {
-        // FIXME lazy
-        // llvm::outs() << "Running exe:\n\n";
         int res = system(
             "C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.exe");
-        // llvm::outs() << "Exit Code: " << res << "\n";
         return res;
     }
 

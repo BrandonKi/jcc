@@ -1,4 +1,5 @@
 # jcc
+
 C Compiler.
 
 :)
@@ -8,6 +9,7 @@ Can use either the custom backend or llvm.
 The custom backend is located in [jab/](jab/) which was previously a separate project([just-another-backend](https://github.com/BrandonKi/just-another-backend)).
 
 ## Sample
+
 WIP, can currently handle stuff like this.
 
 ```c
@@ -17,14 +19,27 @@ int fn(int x, int y) {
 }
 
 int main() {
-    return fn(10, 20);
+    return fn(10, 20); // returns 30
+}
+```
+
+```c
+extern int printf(char *);
+extern void puts(char *);
+
+int main() {
+    char *a = "Hello World!";
+    int result = printf(a);
+    puts("");
+    return result; // returns 12
 }
 ```
 
 ## Spec/Reference
-https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
 
-https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+<https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf>
+
+<https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html>
 
 ## Build
 

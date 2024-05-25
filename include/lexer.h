@@ -57,7 +57,7 @@ enum TokenKind : char {
     NONE = 0,
     _eof = -1,
 
-    _keyword_end = -2,
+    // _keyword_end = -2,
     k_char = -2,
     k_double = -3,
     k_float = -4,
@@ -107,7 +107,7 @@ enum TokenKind : char {
     k__Noreturn = -43,
     k__Static_assert = -44,
     k__Thread_local = -45,
-    _keyword_start = -46,
+    // _keyword_start = -46,
 
     _id = -47,
     _num_lit = -48,

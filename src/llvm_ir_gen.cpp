@@ -3,6 +3,7 @@
 // #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
@@ -23,6 +24,7 @@ LLVMIRGen::LLVMIRGen() {
 
 // TODO
 llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
+    JCC_PROFILE()
     switch (type->type) {
     case Char:
         return llvm::Type::getInt8Ty(*m_context);
@@ -59,12 +61,12 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
 
 void LLVMIRGen::genFile(FileNode *file) {
     JCC_PROFILE()
-    for (auto *p : file->prototypes) {
-        genPrototype(p);
-    }
 
     for (auto *f : file->functions) {
-        genFunction(f);
+        if (f->body == nullptr)
+            genPrototype(f->proto);
+        else
+            genFunction(f);
     }
 }
 
@@ -88,8 +90,6 @@ llvm::Function *LLVMIRGen::genFunction(FunctionNode *fn) {
     m_named_values.clear();
     int i = 0;
     for (auto &arg : function->args()) {
-        // m_named_values[std::string(arg.getName())] = {fn->proto->args[i],
-        // &arg};
         auto decl = fn->proto->args[i];
         auto arg_val = &arg;
         m_builder->CreateAlignedStore(arg_val, genDecl(decl),
@@ -115,16 +115,19 @@ llvm::Function *LLVMIRGen::genPrototype(PrototypeNode *proto) {
     llvm::Function *f = llvm::Function::Create(
         ft, llvm::Function::ExternalLinkage, *proto->id, m_module.get());
 
-    int index = 0;
-    for (auto &arg : f->args()) {
-        arg.setName(*proto->args[index]->id);
-        ++index;
+    if (!proto->attr._extern) {
+        int index = 0;
+        for (auto &arg : f->args()) {
+            arg.setName(*proto->args[index]->id);
+            ++index;
+        }
     }
 
     return f;
 }
 
 void LLVMIRGen::genCompoundStmnt(CompoundStmntNode *stmnts) {
+    JCC_PROFILE()
     for (auto *decl : stmnts->decl_list) {
         genDecl(decl);
     }
@@ -135,6 +138,7 @@ void LLVMIRGen::genCompoundStmnt(CompoundStmntNode *stmnts) {
 }
 
 llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
+    JCC_PROFILE()
     auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
     if (decl->init)
         m_builder->CreateAlignedStore(genExpr(decl->init), alloca,
@@ -144,6 +148,7 @@ llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
 }
 
 void LLVMIRGen::genStmnt(StmntNode *stmnt) {
+    JCC_PROFILE()
     switch (stmnt->kind) {
     case LabelStmnt:
     case CompoundStmnt:
@@ -159,7 +164,7 @@ void LLVMIRGen::genStmnt(StmntNode *stmnt) {
     case ReturnStmnt:
         m_builder->CreateRet(
             genExpr(static_cast<ReturnStmntNode *>(stmnt)->expr));
-        break;        
+        break;
     default:
         assert(false);
     }
@@ -170,6 +175,8 @@ llvm::Value *LLVMIRGen::genExpr(ExprNode *expr) {
     switch (expr->kind) {
     case ExprKind::NumLitExpr:
         return genNumLitExpr(static_cast<NumLitExprNode *>(expr));
+    case ExprKind::StrLitExpr:
+        return genStrLitExpr(static_cast<StrLitExprNode *>(expr));
     case ExprKind::IdExpr:
         return genIdExpr(static_cast<IdExprNode *>(expr));
     case ExprKind::UnaryExpr:
@@ -363,6 +370,7 @@ llvm::Value *LLVMIRGen::genUnaryExpr(UnaryExprNode *unary_expr) {
 // TODO possibly replace this with genLValue(), or something similar
 // it's a semi-common pattern, duplicated in genAssign
 llvm::Value *LLVMIRGen::genAddressOf(ExprNode *base_expr) {
+    JCC_PROFILE()
     switch (base_expr->kind) {
     case IdExpr: {
         auto expr = static_cast<IdExprNode *>(base_expr);
@@ -394,4 +402,10 @@ llvm::Value *LLVMIRGen::genNumLitExpr(NumLitExprNode *num_expr) {
     JCC_PROFILE()
     return llvm::ConstantInt::get(*m_context,
                                   llvm::APInt(32, num_expr->val, true));
+}
+
+llvm::Value *LLVMIRGen::genStrLitExpr(StrLitExprNode *str_expr) {
+    JCC_PROFILE()
+    llvm::Value *v = m_builder->CreateGlobalString(*str_expr->val);
+    return v;
 }

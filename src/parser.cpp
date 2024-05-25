@@ -19,7 +19,9 @@ Parser::Parser() : m_lex{}, m_tags{} {}
 Parser::Parser(Lexer lex) : m_lex{lex}, m_tags{} {}
 
 // TODO incomplete
-CType *Parser::parse_type() {
+// this will be a big annoying loop, because C syntax....
+// at the moment this is just a bunch of hacks
+CType *Parser::parse_type(Attributes *attr) {
     CType *type = new CType;
 
     bool sign_prefix = false;
@@ -30,6 +32,13 @@ CType *Parser::parse_type() {
         type->is_signed = (t1.kind == TokenKind::k_signed);
         sign_prefix = true;
     }
+
+    if (t1.kind == TokenKind::k_extern) {
+        assert(attr);
+        attr->_extern = true;
+        t1 = m_lex.next();
+    }
+
     switch (t1.kind) {
     case TokenKind::k_void:
         type = CType::getBuiltinType(CTypeKind::Void, type->is_signed);
@@ -642,11 +651,13 @@ ExprNode *Parser::parse_expr() {
 DeclNode *Parser::parse_decl(TokenKind terminator) {
     DeclNode *decl = new DeclNode();
 
-    decl->type = parse_type();
+    decl->type = parse_type(&decl->attr);
 
-    if (decl->type->type == CTypeKind::None ||
-        m_lex.curr().kind != TokenKind::_id)
+    if (decl->type->type == CTypeKind::None)
         return nullptr;
+
+    if (m_lex.curr().kind != TokenKind::_id)
+        return decl;
 
     decl->id = m_lex.curr().id.val;
     m_lex.next();
@@ -859,7 +870,7 @@ CompoundStmntNode *Parser::parse_compound_stmnt() {
 PrototypeNode *Parser::parse_prototype() {
     PrototypeNode *node = new PrototypeNode();
 
-    node->ret_type = parse_type();
+    node->ret_type = parse_type(&node->attr);
 
     if (node->ret_type->type == CTypeKind::None)
         return nullptr;
@@ -881,6 +892,11 @@ FunctionNode *Parser::parse_function() {
     auto proto = parse_prototype();
     if (!proto)
         return nullptr;
+
+    if (m_lex.curr().kind == TokenKind::_semicolon) {
+        m_lex.next();
+        return new FunctionNode(proto);
+    }
 
     auto cs = parse_compound_stmnt();
     if (!cs)

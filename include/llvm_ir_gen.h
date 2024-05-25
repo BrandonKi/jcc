@@ -49,6 +49,7 @@ public:
     llvm::Value *genAddressOf(ExprNode *);
     llvm::Value *genIdExpr(IdExprNode *);
     llvm::Value *genNumLitExpr(NumLitExprNode *);
+    llvm::Value *genStrLitExpr(StrLitExprNode *);
 };
 
 } // namespace jcc

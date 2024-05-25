@@ -197,6 +197,7 @@ struct BinExprNode final : public ExprNode {
         : ExprNode{ExprKind::BinExpr}, lhs{lhs}, rhs{rhs}, op{op} {}
 };
 
+// TODO just generate IfStmntNode in the parser instead
 struct CondExprNode final : public ExprNode {
     ExprNode *cond_expr, *true_branch, *false_branch;
 
@@ -210,6 +211,8 @@ struct CondExprNode final : public ExprNode {
           true_branch{true_branch}, false_branch{false_branch} {}
 };
 
+// FIXME not all of these can be active at one time
+// there are some rules
 struct Attributes {
     bool _typedef : 1;
     bool _extern : 1;
@@ -219,7 +222,7 @@ struct Attributes {
     bool _register : 1;
 };
 
-// TODO this doesn't do anything
+// TODO unused
 enum Qualifier : char {
     q_const,
     q_restrict,
@@ -228,14 +231,14 @@ enum Qualifier : char {
 };
 
 struct DeclNode {
-    Attributes attribs;
+    Attributes attr;
     Qualifier qual;
     CType *type;
     std::string *id;
     ExprNode *init;
 
     DeclNode()
-        : attribs{}, qual{}, type{CType::getBuiltinType(CTypeKind::None)},
+        : attr{}, qual{}, type{CType::getBuiltinType(CTypeKind::None)},
           id{nullptr}, init{nullptr} {}
 };
 
@@ -260,6 +263,8 @@ struct StmntNode {
     StmntKind kind;
 };
 
+// TODO it's weird having these two separate from switch
+// I think?
 struct CaseStmntNode final : public StmntNode {
 
     CaseStmntNode() : StmntNode{StmntKind::CaseStmnt} {}
@@ -271,8 +276,14 @@ struct DefaultStmntNode final : public StmntNode {
 };
 
 struct IfStmntNode final : public StmntNode {
+    ExprNode *cond;
+    StmntNode *true_branch, *false_branch;
+    // StmntNode *then_branch;
 
     IfStmntNode() : StmntNode{StmntKind::IfStmnt} {}
+    IfStmntNode(ExprNode *cond, StmntNode *true_branch, StmntNode *false_branch)
+        : StmntNode{StmntKind::IfStmnt}, cond{cond}, true_branch{true_branch},
+          false_branch{false_branch} {}
 };
 
 struct SwitchStmntNode final : public StmntNode {
@@ -342,34 +353,33 @@ struct CompoundStmntNode final : public StmntNode {
 };
 
 struct PrototypeNode {
-    Attributes attribs;
+    Attributes attr;
     CType *ret_type;
     std::string *id;
     std::vector<DeclNode *> args; // TODO intern
 
     PrototypeNode()
-        : attribs{}, ret_type{CType::getBuiltinType(CTypeKind::None)},
-          id{nullptr}, args{} {}
+        : attr{}, ret_type{CType::getBuiltinType(CTypeKind::None)}, id{nullptr},
+          args{} {}
 
-    PrototypeNode(Attributes attribs, CType *ret_type, std::string *id,
+    PrototypeNode(Attributes attr, CType *ret_type, std::string *id,
                   std::vector<DeclNode *> args)
-        : attribs{attribs}, ret_type{ret_type}, id{id}, args{args} {}
+        : attr{attr}, ret_type{ret_type}, id{id}, args{args} {}
 };
 
 struct FunctionNode {
     PrototypeNode *proto = nullptr;
     CompoundStmntNode *body = nullptr;
+    // bool is_inline : 1;
+    // bool is_noreturn : 1;
+
+    FunctionNode(PrototypeNode *proto) : proto{proto}, body{nullptr} {}
 
     FunctionNode(PrototypeNode *proto, CompoundStmntNode *body)
         : proto{proto}, body{body} {}
 };
 
 struct FileNode {
-    bool is_inline : 1;
-    bool is_noreturn : 1;
-
-    // TODO merge these into one
-    std::vector<PrototypeNode *> prototypes = {};
     std::vector<FunctionNode *> functions = {};
 };
 
