@@ -20,6 +20,7 @@ LLVMIRGen::LLVMIRGen() {
     m_module = std::make_unique<llvm::Module>("jcc", *m_context);
 
     m_builder = std::make_unique<llvm::IRBuilder<>>(*m_context);
+    m_named_values = {};
 }
 
 // TODO
@@ -149,25 +150,93 @@ llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
 
 void LLVMIRGen::genStmnt(StmntNode *stmnt) {
     JCC_PROFILE()
+
+    llvm::BasicBlock *insert_block = m_builder->GetInsertBlock();
+    if (!insert_block) {
+        llvm::BasicBlock *bb =
+            llvm::BasicBlock::Create(*m_context, "", insert_block->getParent());
+        m_builder->SetInsertPoint(bb);
+    } else if (insert_block->getTerminator()) {
+        return; // someone wrote code after a return or something
+    }
+
     switch (stmnt->kind) {
     case LabelStmnt:
+    case CaseStmnt:
+    case DefaultStmnt:
+        assert(false);
+    case IfStmnt: {
+        genIfStmnt(static_cast<IfStmntNode *>(stmnt));
+        break;
+    }
+    case SwitchStmnt:
+    case WhileStmnt:
+    case DoStmnt:
+    case ForStmnt:
+    case GotoStmnt:
+    case ContinueStmnt:
+    case BreakStmnt:
+        assert(false);
+    case ReturnStmnt:
+        m_builder->CreateRet(
+            genExpr(static_cast<ReturnStmntNode *>(stmnt)->expr));
+        break;
     case CompoundStmnt:
+        genCompoundStmnt(static_cast<CompoundStmntNode *>(stmnt));
+        break;
     case ExprStmnt:
         // TODO result not used
         // make a genExpr that doesn't bother loading it?
         // can be reused for comma expr as well
         genExpr(static_cast<ExprStmntNode *>(stmnt)->expr);
         break;
-        /* case SelectionStmnt: */
-        /* case IterStmnt: */
-        assert(false);
-    case ReturnStmnt:
-        m_builder->CreateRet(
-            genExpr(static_cast<ReturnStmntNode *>(stmnt)->expr));
-        break;
     default:
         assert(false);
     }
+}
+
+// FIXME rewrite, possibly use similar logic to switch
+void LLVMIRGen::genIfStmnt(IfStmntNode *if_stmnt) {
+    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
+
+    llvm::Value *cond_val = genExpr(if_stmnt->cond);
+
+    llvm::BasicBlock *true_block =
+        llvm::BasicBlock::Create(*m_context, "true", function);
+
+    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "cont");
+
+    llvm::BasicBlock *false_block = cont_block;
+    if (if_stmnt->false_branch)
+        false_block = llvm::BasicBlock::Create(*m_context, "false");
+
+    m_builder->CreateCondBr(cond_val, true_block, false_block);
+
+    m_builder->SetInsertPoint(true_block);
+    genStmnt(if_stmnt->true_branch);
+    if (!true_block->getTerminator()) {
+        m_builder->CreateBr(cont_block);
+    }
+
+    if (if_stmnt->false_branch) {
+        function->insert(function->end(), false_block);
+
+        if (!m_builder->GetInsertBlock()->getTerminator())
+            m_builder->CreateBr(cont_block);
+
+        m_builder->SetInsertPoint(false_block);
+        genStmnt(if_stmnt->false_branch);
+        if (!false_block->getTerminator()) {
+            m_builder->CreateBr(cont_block);
+        }
+    }
+
+    function->insert(function->end(), cont_block);
+
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(cont_block);
+
+    m_builder->SetInsertPoint(cont_block);
 }
 
 llvm::Value *LLVMIRGen::genExpr(ExprNode *expr) {
@@ -260,29 +329,31 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
         return m_builder->CreateShl(lhs, rhs);
     case BinOp::_bitshift_right:
         return m_builder->CreateAShr(lhs, rhs);
+        // TODO sema, so that this as well as many other things can work
+        // correctly, tldr casts need to be inserted
     case BinOp::_less_than:
         lhs = m_builder->CreateICmpSLT(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_greater_than:
         lhs = m_builder->CreateICmpSGT(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_less_than_equal:
         lhs = m_builder->CreateICmpSLE(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_greater_than_equal:
         lhs = m_builder->CreateICmpSGE(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_equal:
         lhs = m_builder->CreateICmpEQ(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_not_equal:
         lhs = m_builder->CreateICmpNE(lhs, rhs);
-        lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
+        // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_bit_and:
         return m_builder->CreateAnd(lhs, rhs);

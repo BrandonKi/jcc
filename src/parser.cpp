@@ -684,8 +684,18 @@ DefaultStmntNode *Parser::parse_default_stmnt() {
 }
 
 IfStmntNode *Parser::parse_if_stmnt() {
-    assert(false);
-    return nullptr;
+    m_lex.eat(TokenKind::k_if);
+
+    ExprNode *cond = parse_expr();
+    StmntNode *true_branch = parse_stmnt();
+    StmntNode *false_branch = nullptr;
+
+    if (m_lex.curr().kind == TokenKind::k_else) {
+        m_lex.eat(TokenKind::k_else);
+        false_branch = parse_stmnt();
+    }
+
+    return new IfStmntNode(cond, true_branch, false_branch);
 }
 
 SwitchStmntNode *Parser::parse_switch_stmnt() {
@@ -788,32 +798,30 @@ StmntNode *Parser::parse_stmnt() {
     switch (m_lex.curr().kind) {
     // labeled-statement
     case k_case:
-        stmnt = parse_case_stmnt();
+        return parse_case_stmnt();
         break;
     case k_default:
-        stmnt = parse_default_stmnt();
+        return parse_default_stmnt();
         break;
     // compound-statement
     case TokenKind::_open_curly:
-        stmnt = parse_compound_stmnt();
-        break;
+        return parse_compound_stmnt();
     // selection-statement
     case k_if:
-        stmnt = parse_if_stmnt();
+        return parse_if_stmnt();
         break;
     case k_switch:
-        stmnt = parse_switch_stmnt();
+        return parse_switch_stmnt();
         break;
     // iteration-statement
     case k_while:
-        stmnt = parse_while_stmnt();
+        return parse_while_stmnt();
         break;
     case k_do:
         stmnt = parse_do_stmnt();
         break;
     case k_for:
-        stmnt = parse_for_stmnt();
-        break;
+        return parse_for_stmnt();
     // jump-statement
     case k_goto:
         stmnt = parse_goto_stmnt();
@@ -829,7 +837,7 @@ StmntNode *Parser::parse_stmnt() {
         break;
     default:
         if (m_lex.peek().kind == TokenKind::_colon) {
-            stmnt = parse_label_stmnt();
+            return parse_label_stmnt();
         } else {
             stmnt = parse_expr_stmnt();
         }

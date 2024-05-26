@@ -40,6 +40,11 @@ int Compiler::compile_string(std::string text) {
         ir_gen.m_module->print(llvm::outs(), nullptr);
     }
 
+    if (llvm::verifyModule(*ir_gen.m_module, &llvm::errs())) {
+        llvm::errs() << "Error: module verification failed\n";
+        return 1;
+    }
+
     auto TargetTriple = llvm::sys::getDefaultTargetTriple();
 
     llvm::InitializeAllTargetInfos();

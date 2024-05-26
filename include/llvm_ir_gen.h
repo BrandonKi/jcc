@@ -39,6 +39,7 @@ public:
 
     void genCompoundStmnt(CompoundStmntNode *);
     void genStmnt(StmntNode *);
+    void genIfStmnt(IfStmntNode *);
     llvm::Value *genDecl(DeclNode *);
 
     llvm::Value *genExpr(ExprNode *);

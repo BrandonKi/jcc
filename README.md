@@ -10,7 +10,8 @@ The custom backend is located in [jab/](jab/) which was previously a separate pr
 
 ## Sample
 
-WIP, can currently handle stuff like this.
+WIP, can currently handle stuff like the examples below and more.
+Take a look in the tests directory for a fuller picture of how much is supported.
 
 ```c
 int fn(int x, int y) {
@@ -37,9 +38,11 @@ int main() {
 
 ## Spec/Reference
 
-<https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf>
+[C Spec](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)
 
-<https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html>
+[C preprocessor](https://www.spinellis.gr/blog/20060626/cpp.algo.pdf)
+
+[Intel x86_64 Instruction set](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
 
 ## Build
 

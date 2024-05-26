@@ -1,11 +1,14 @@
-extern int printf(char *);
-extern void puts(char *);
-
 int main() {
-    char *a = "Hello World!";
-    int result = printf(a);
-    puts("");
-    return result;
+    int a = 50;
+
+    if(a < 50)
+        a = 49;
+    else if(a > 50)
+        a = 51;
+    else
+        a = 50;
+
+    return a;
 }
 
 // int main() {

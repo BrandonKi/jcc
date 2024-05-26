@@ -583,6 +583,7 @@ int main() {
 
     return result == 0;
 }
+
 bool hello_world_1() {
     jcc::Compiler c(co);
 
@@ -601,6 +602,170 @@ int main() {
     )");
 
     return result == 12;
+}
+
+bool branch_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 60;
+
+    if(a < 50)
+        a = 49;
+
+    if(a > 50)
+        a = 51;
+
+    return a;
+}
+
+    )");
+
+    return result == 51;
+}
+
+bool branch_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 40;
+
+    if(a < 50)
+        a = 49;
+
+    if(a > 50)
+        a = 51;
+
+    return a;
+}
+
+    )");
+
+    return result == 49;
+}
+
+bool branch_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 60;
+
+    if(a < 50) {
+        a = 49;
+    } else {
+        a = 51;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 51;
+}
+
+bool branch_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 40;
+
+    if(a < 50) {
+        a = 49;
+    } else {
+        a = 51;
+    }
+
+    return 49;
+}
+
+    )");
+
+    return result == 49;
+}
+
+bool branch_4() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 50;
+
+    if(a < 50) {
+        a = 49;
+    } else if(a > 50) {
+        a = 51;
+    } else {
+        a = 50;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 50;
+}
+
+bool branch_5() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 30;
+
+    if(a < 50) {
+        if(a > 25) {
+            a = 26;
+        } else {
+            a = 24;
+        }
+    } else {
+        a = 1000;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 26;
+}
+
+bool branch_6() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 20;
+
+    if(a < 50) {
+        if(a > 25) {
+            a = 26;
+        } else {
+            a = 24;
+        }
+    } else {
+        a = 1000;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 24;
 }
 
 int main(int argc, char *argv[]) {
@@ -650,6 +815,13 @@ int main(int argc, char *argv[]) {
     test(assign_10);
     test(hello_world_0);
     test(hello_world_1);
+    test(branch_0);
+    test(branch_1);
+    test(branch_2);
+    test(branch_3);
+    test(branch_4);
+    test(branch_5);
+    test(branch_6);
 
     print_report();
 }
