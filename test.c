@@ -1,12 +1,12 @@
 int main() {
-    int a = 50;
+    int a = 0;
 
-    if(a < 50)
-        a = 49;
-    else if(a > 50)
-        a = 51;
-    else
-        a = 50;
+    for(int i = 0; i < 10; i += 1) {
+        if(i % 2 == 0)
+            a += i;
+        else
+            a -= 1;
+    }
 
     return a;
 }

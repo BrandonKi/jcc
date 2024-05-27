@@ -346,8 +346,17 @@ struct DoStmntNode final : public StmntNode {
 };
 
 struct ForStmntNode final : public StmntNode {
+    DeclNode *init;
+    ExprNode *cond, *inc;
+    StmntNode *body;
 
-    ForStmntNode() : StmntNode{StmntKind::ForStmnt} {}
+    ForStmntNode()
+        : StmntNode{StmntKind::ForStmnt}, init{nullptr}, cond{nullptr},
+          inc{nullptr}, body{nullptr} {}
+
+    ForStmntNode(DeclNode *init, ExprNode *cond, ExprNode *inc, StmntNode *body)
+        : StmntNode{StmntKind::ForStmnt}, init{init}, cond{cond}, inc{inc},
+          body{body} {}
 
     ARENA_CREATE(ForStmntNode);
 };

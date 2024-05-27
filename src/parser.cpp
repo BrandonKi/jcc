@@ -785,8 +785,19 @@ DoStmntNode *Parser::parse_do_stmnt() {
 ForStmntNode *Parser::parse_for_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
-    return nullptr;
+    m_lex.eat(TokenKind::k_for);
+
+    m_lex.eat('(');
+    DeclNode *init = parse_decl();
+
+    ExprNode *cond = parse_expr();
+    m_lex.eat(';');
+
+    ExprNode *inc = parse_expr();
+    m_lex.eat(')');
+
+    StmntNode *body = parse_compound_stmnt();
+    return ForStmntNode::create(init, cond, inc, body);
 }
 
 GotoStmntNode *Parser::parse_goto_stmnt() {

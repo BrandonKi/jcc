@@ -42,6 +42,7 @@ public:
     llvm::Value *gen_decl(DeclNode *);
 
     void gen_if_stmnt(IfStmntNode *);
+    void gen_for_stmnt(ForStmntNode *);
     void gen_compound_stmnt(CompoundStmntNode *);
     void gen_stmnt(StmntNode *);
 

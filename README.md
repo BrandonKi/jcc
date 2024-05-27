@@ -10,7 +10,7 @@ The custom backend is located in [jab/](jab/) which was previously a separate pr
 
 ## Sample
 
-WIP, can currently handle stuff like the examples below and more.
+WIP, can currently handle stuff like the examples below and more(if/else, for, etc.).
 Take a look in the tests directory for a fuller picture of how much is supported.
 
 ```c

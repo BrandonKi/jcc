@@ -768,6 +768,69 @@ int main() {
     return result == 24;
 }
 
+bool for_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+
+    for(int i = 0; i < 10; i += 1) {
+        a += i;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 45;
+}
+
+bool for_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+
+    for(int i = 0; i < 0; i -= 1) {
+        a += 9;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 0;
+}
+
+bool for_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+
+    for(int i = 0; i < 10; i += 1) {
+        if(i % 2 == 0)
+            a += i;
+        else
+            a -= 1;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 15;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -822,6 +885,9 @@ int main(int argc, char *argv[]) {
     test(branch_4);
     test(branch_5);
     test(branch_6);
+    test(for_0);
+    test(for_1);
+    test(for_2);
 
     print_report();
 }

@@ -366,6 +366,44 @@ void LLVMIRGen::gen_if_stmnt(IfStmntNode *if_stmnt) {
     m_builder->SetInsertPoint(cont_block);
 }
 
+void LLVMIRGen::gen_for_stmnt(ForStmntNode *for_stmnt) {
+    JCC_PROFILE();
+
+    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock *cond_block =
+        llvm::BasicBlock::Create(*m_context, "cond", function);
+    llvm::BasicBlock *body_block =
+        llvm::BasicBlock::Create(*m_context, "body", function);
+    llvm::BasicBlock *inc_block = llvm::BasicBlock::Create(*m_context, "inc");
+    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "cont");
+
+    gen_decl(for_stmnt->init);
+    m_builder->CreateBr(cond_block);
+
+    m_builder->SetInsertPoint(cond_block);
+    llvm::Value *cond = gen_expr(for_stmnt->cond);
+    m_builder->CreateCondBr(cond, body_block, cont_block);
+
+    m_builder->SetInsertPoint(body_block);
+    gen_stmnt(for_stmnt->body);
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(inc_block);
+
+    function->insert(function->end(), inc_block);
+
+    m_builder->SetInsertPoint(inc_block);
+    gen_expr(for_stmnt->inc);
+    m_builder->CreateBr(cond_block);
+
+    function->insert(function->end(), cont_block);
+
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(cont_block);
+
+    m_builder->SetInsertPoint(cont_block);
+}
+
 void LLVMIRGen::gen_compound_stmnt(CompoundStmntNode *stmnts) {
     JCC_PROFILE();
 
@@ -395,14 +433,16 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
     case CaseStmnt:
     case DefaultStmnt:
         assert(false);
-    case IfStmnt: {
+    case IfStmnt:
         gen_if_stmnt(static_cast<IfStmntNode *>(stmnt));
         break;
-    }
     case SwitchStmnt:
     case WhileStmnt:
     case DoStmnt:
+        assert(false);
     case ForStmnt:
+        gen_for_stmnt(static_cast<ForStmntNode *>(stmnt));
+        break;
     case GotoStmnt:
     case ContinueStmnt:
     case BreakStmnt:
