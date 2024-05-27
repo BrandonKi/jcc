@@ -6,6 +6,18 @@
 
 namespace jcc {
 
+#define ARENA_CREATE_CUSTOM(name, alloc_fn)                                    \
+    template <typename... T>                                                   \
+    static name *create(T... ts) {                                             \
+        return alloc_fn(ts...);                                                \
+    }
+
+#define ARENA_CREATE(name) ARENA_CREATE_CUSTOM(name, new (name))
+
+// TODO, arenas
+// #define ARENA_CREATE(name) ARENA_CREATE_CUSTOM(name,
+// name##_arena.emplace_back)
+
 enum CTypeKind : int {
     None,
 
@@ -56,6 +68,8 @@ public:
         : type{type}, ptr{ptr}, align{align}, is_signed{is_signed} {}
 
     static CType *getBuiltinType(CTypeKind type, bool is_signed = true);
+
+    ARENA_CREATE(CType);
 };
 
 struct AstNode {};
@@ -76,6 +90,8 @@ enum ExprKind {
 struct ExprNode {
     ExprKind kind;
     CType *type = CType::getBuiltinType(CTypeKind::None);
+
+    ARENA_CREATE(ExprNode);
 };
 
 struct NumLitExprNode final : public ExprNode {
@@ -84,6 +100,8 @@ struct NumLitExprNode final : public ExprNode {
     NumLitExprNode() : ExprNode{ExprKind::NumLitExpr}, val{0} {}
 
     NumLitExprNode(int val) : ExprNode{ExprKind::NumLitExpr}, val{val} {}
+
+    ARENA_CREATE(NumLitExprNode);
 };
 
 struct StrLitExprNode final : public ExprNode {
@@ -93,6 +111,8 @@ struct StrLitExprNode final : public ExprNode {
 
     StrLitExprNode(std::string *val)
         : ExprNode{ExprKind::StrLitExpr}, val{val} {}
+
+    ARENA_CREATE(StrLitExprNode);
 };
 
 struct IdExprNode final : public ExprNode {
@@ -101,6 +121,8 @@ struct IdExprNode final : public ExprNode {
     IdExprNode() : ExprNode{ExprKind::IdExpr}, val{nullptr} {}
 
     IdExprNode(std::string *val) : ExprNode{ExprKind::IdExpr}, val{val} {}
+
+    ARENA_CREATE(IdExprNode);
 };
 
 enum class UnaryOp : char {
@@ -139,6 +161,8 @@ struct UnaryExprNode final : public ExprNode {
 
     UnaryExprNode(UnaryOp op, CType *cast_to, ExprNode *expr)
         : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op}, cast_to{cast_to} {}
+
+    ARENA_CREATE(UnaryExprNode);
 };
 
 struct CallExprNode final : public ExprNode {
@@ -149,6 +173,8 @@ struct CallExprNode final : public ExprNode {
 
     CallExprNode(ExprNode *base, std::vector<ExprNode *> args)
         : ExprNode{ExprKind::CallExpr}, base{base}, args{args} {}
+
+    ARENA_CREATE(CallExprNode);
 };
 
 enum class BinOp : char {
@@ -195,6 +221,8 @@ struct BinExprNode final : public ExprNode {
 
     BinExprNode(BinOp op, ExprNode *lhs, ExprNode *rhs)
         : ExprNode{ExprKind::BinExpr}, lhs{lhs}, rhs{rhs}, op{op} {}
+
+    ARENA_CREATE(BinExprNode);
 };
 
 // TODO just generate IfStmntNode in the parser instead
@@ -209,6 +237,8 @@ struct CondExprNode final : public ExprNode {
                  ExprNode *false_branch)
         : ExprNode{ExprKind::CondExpr}, cond_expr{cond_expr},
           true_branch{true_branch}, false_branch{false_branch} {}
+
+    ARENA_CREATE(CondExprNode);
 };
 
 // FIXME not all of these can be active at one time
@@ -240,6 +270,8 @@ struct DeclNode {
     DeclNode()
         : attr{}, qual{}, type{CType::getBuiltinType(CTypeKind::None)},
           id{nullptr}, init{nullptr} {}
+
+    ARENA_CREATE(DeclNode);
 };
 
 enum StmntKind {
@@ -268,11 +300,15 @@ struct StmntNode {
 struct CaseStmntNode final : public StmntNode {
 
     CaseStmntNode() : StmntNode{StmntKind::CaseStmnt} {}
+
+    ARENA_CREATE(CaseStmntNode);
 };
 
 struct DefaultStmntNode final : public StmntNode {
 
     DefaultStmntNode() : StmntNode{StmntKind::DefaultStmnt} {}
+
+    ARENA_CREATE(DefaultStmntNode);
 };
 
 struct IfStmntNode final : public StmntNode {
@@ -284,41 +320,57 @@ struct IfStmntNode final : public StmntNode {
     IfStmntNode(ExprNode *cond, StmntNode *true_branch, StmntNode *false_branch)
         : StmntNode{StmntKind::IfStmnt}, cond{cond}, true_branch{true_branch},
           false_branch{false_branch} {}
+
+    ARENA_CREATE(IfStmntNode);
 };
 
 struct SwitchStmntNode final : public StmntNode {
 
     SwitchStmntNode() : StmntNode{StmntKind::SwitchStmnt} {}
+
+    ARENA_CREATE(SwitchStmntNode);
 };
 
 struct WhileStmntNode final : public StmntNode {
 
     WhileStmntNode() : StmntNode{StmntKind::WhileStmnt} {}
+
+    ARENA_CREATE(WhileStmntNode);
 };
 
 struct DoStmntNode final : public StmntNode {
 
     DoStmntNode() : StmntNode{StmntKind::DoStmnt} {}
+
+    ARENA_CREATE(DoStmntNode);
 };
 
 struct ForStmntNode final : public StmntNode {
 
     ForStmntNode() : StmntNode{StmntKind::ForStmnt} {}
+
+    ARENA_CREATE(ForStmntNode);
 };
 
 struct GotoStmntNode final : public StmntNode {
 
     GotoStmntNode() : StmntNode{StmntKind::GotoStmnt} {}
+
+    ARENA_CREATE(GotoStmntNode);
 };
 
 struct ContinueStmntNode final : public StmntNode {
 
     ContinueStmntNode() : StmntNode{StmntKind::ContinueStmnt} {}
+
+    ARENA_CREATE(ContinueStmntNode);
 };
 
 struct BreakStmntNode final : public StmntNode {
 
     BreakStmntNode() : StmntNode{StmntKind::BreakStmnt} {}
+
+    ARENA_CREATE(BreakStmntNode);
 };
 
 struct ReturnStmntNode final : public StmntNode {
@@ -328,11 +380,15 @@ struct ReturnStmntNode final : public StmntNode {
 
     ReturnStmntNode(ExprNode *expr)
         : StmntNode{StmntKind::ReturnStmnt}, expr{expr} {}
+
+    ARENA_CREATE(ReturnStmntNode);
 };
 
 struct LabelStmntNode final : public StmntNode {
 
     LabelStmntNode() : StmntNode{StmntKind::LabelStmnt} {}
+
+    ARENA_CREATE(LabelStmntNode);
 };
 
 struct ExprStmntNode final : public StmntNode {
@@ -342,6 +398,8 @@ struct ExprStmntNode final : public StmntNode {
 
     ExprStmntNode(ExprNode *expr)
         : StmntNode{StmntKind::ExprStmnt}, expr{expr} {}
+
+    ARENA_CREATE(ExprStmntNode);
 };
 
 struct CompoundStmntNode final : public StmntNode {
@@ -350,6 +408,8 @@ struct CompoundStmntNode final : public StmntNode {
 
     CompoundStmntNode()
         : StmntNode{StmntKind::CompoundStmnt}, decl_list{}, stmnt_list{} {}
+
+    ARENA_CREATE(CompoundStmntNode);
 };
 
 struct PrototypeNode {
@@ -365,6 +425,8 @@ struct PrototypeNode {
     PrototypeNode(Attributes attr, CType *ret_type, std::string *id,
                   std::vector<DeclNode *> args)
         : attr{attr}, ret_type{ret_type}, id{id}, args{args} {}
+
+    ARENA_CREATE(PrototypeNode);
 };
 
 struct FunctionNode {
@@ -377,10 +439,14 @@ struct FunctionNode {
 
     FunctionNode(PrototypeNode *proto, CompoundStmntNode *body)
         : proto{proto}, body{body} {}
+
+    ARENA_CREATE(FunctionNode);
 };
 
 struct FileNode {
     std::vector<FunctionNode *> functions = {};
+
+    ARENA_CREATE(FileNode);
 };
 
 } // namespace jcc

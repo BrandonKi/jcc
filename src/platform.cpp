@@ -9,6 +9,8 @@ using namespace jcc;
 std::array<std::array<CType, 2>, 11> Platform::builtinTypes;
 
 int Platform::init() {
+    JCC_PROFILE();
+
     OS os = get_host_os();
     Arch arch = get_host_arch();
 

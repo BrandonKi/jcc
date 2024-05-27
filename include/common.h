@@ -10,7 +10,7 @@
 #ifdef JCC_PROFILE_BUILD
 #include "small_profiler.h"
 #define JCC_PROFILE() PROFILE();
-#define JCC_PROFILE_SCOPE(x) PROFILE_SCOPE(x);
+#define JCC_PROFILE_SCOPE(x) PROFILE_SCOPE(x)
 #else
 #define JCC_PROFILE()
 #define JCC_PROFILE_SCOPE(x)

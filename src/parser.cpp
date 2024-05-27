@@ -11,6 +11,8 @@
 using namespace jcc;
 
 CType *CType::getBuiltinType(CTypeKind type, bool is_signed) {
+    JCC_PROFILE();
+
     return &Platform::builtinTypes[(int)type][(int)is_signed];
 }
 
@@ -22,6 +24,8 @@ Parser::Parser(Lexer lex) : m_lex{lex}, m_tags{} {}
 // this will be a big annoying loop, because C syntax....
 // at the moment this is just a bunch of hacks
 CType *Parser::parse_type(Attributes *attr) {
+    JCC_PROFILE();
+
     CType *type = new CType;
 
     bool sign_prefix = false;
@@ -91,6 +95,8 @@ CType *Parser::parse_type(Attributes *attr) {
 
 // TODO use clang trick
 bool Parser::is_start_of_type(Token tkn) {
+    JCC_PROFILE();
+
     switch (tkn.kind) {
     case _id:
         return m_tags.contains(*tkn.id.val);
@@ -123,21 +129,27 @@ bool Parser::is_start_of_type(Token tkn) {
 }
 
 ExprNode *Parser::parse_id_expr() {
+    JCC_PROFILE();
+
     std::string *val = m_lex.curr().id.val;
     m_lex.next();
-    return new IdExprNode(val);
+    return IdExprNode::create(val);
 }
 
 ExprNode *Parser::parse_num_lit_expr() {
+    JCC_PROFILE();
+
     int val = m_lex.curr().number.val;
     m_lex.next();
-    return new NumLitExprNode(val);
+    return NumLitExprNode::create(val);
 }
 
 ExprNode *Parser::parse_str_lit_expr() {
+    JCC_PROFILE();
+
     std::string *val = m_lex.curr().str.val;
     m_lex.next();
-    return new StrLitExprNode(val);
+    return StrLitExprNode::create(val);
 }
 
 // primary-expression:
@@ -147,6 +159,8 @@ ExprNode *Parser::parse_str_lit_expr() {
 //      ( expression )
 //      generic-selection
 ExprNode *Parser::parse_primary_expr() {
+    JCC_PROFILE();
+
     ExprNode *expr = nullptr;
 
     switch (m_lex.curr().kind) {
@@ -171,6 +185,8 @@ ExprNode *Parser::parse_primary_expr() {
 }
 
 std::vector<ExprNode *> Parser::parse_function_call_args() {
+    JCC_PROFILE();
+
     std::vector<ExprNode *> result = {};
 
     m_lex.eat('(');
@@ -192,6 +208,8 @@ std::vector<ExprNode *> Parser::parse_function_call_args() {
 }
 
 std::vector<DeclNode *> Parser::parse_function_decl_args() {
+    JCC_PROFILE();
+
     std::vector<DeclNode *> result = {};
 
     m_lex.eat('(');
@@ -226,6 +244,8 @@ std::vector<DeclNode *> Parser::parse_function_decl_args() {
 //      assignment-expression
 //      argument-expression-list , assignment-expression
 ExprNode *Parser::parse_postfix_expr() {
+    JCC_PROFILE();
+
     ExprNode *base = parse_primary_expr();
     ExprNode *extra = nullptr;
 
@@ -236,16 +256,16 @@ ExprNode *Parser::parse_postfix_expr() {
         case TokenKind::_open_bracket:
             assert(false);
         case TokenKind::_open_paren:
-            extra = new CallExprNode(base, parse_function_call_args());
+            extra = CallExprNode::create(base, parse_function_call_args());
             return extra;
         case TokenKind::_dot:
             assert(false);
         case TokenKind::_arrow:
             assert(false);
         case TokenKind::_inc:
-            return new UnaryExprNode(UnaryOp::_prefix_inc, base);
+            return UnaryExprNode::create(UnaryOp::_prefix_inc, base);
         case TokenKind::_dec:
-            return new UnaryExprNode(UnaryOp::_prefix_dec, base);
+            return UnaryExprNode::create(UnaryOp::_prefix_dec, base);
         default:
             return base;
         }
@@ -267,6 +287,8 @@ ExprNode *Parser::parse_postfix_expr() {
 // unary-operator: one of
 //      & * + - ~ !
 ExprNode *Parser::parse_unary_expr() {
+    JCC_PROFILE();
+
     ExprNode *expr = nullptr;
 
     TokenKind op = m_lex.curr().kind;
@@ -276,35 +298,35 @@ ExprNode *Parser::parse_unary_expr() {
     case TokenKind::_inc:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_prefix_inc, expr);
+        return UnaryExprNode::create(UnaryOp::_prefix_inc, expr);
     case TokenKind::_dec:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_prefix_dec, expr);
+        return UnaryExprNode::create(UnaryOp::_prefix_dec, expr);
     case TokenKind::_and:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_address, expr);
+        return UnaryExprNode::create(UnaryOp::_address, expr);
     case TokenKind::_star:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_deref, expr);
+        return UnaryExprNode::create(UnaryOp::_deref, expr);
     case TokenKind::_add:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_add, expr);
+        return UnaryExprNode::create(UnaryOp::_add, expr);
     case TokenKind::_sub:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_sub, expr);
+        return UnaryExprNode::create(UnaryOp::_sub, expr);
     case TokenKind::_tilde:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_bit_not, expr);
+        return UnaryExprNode::create(UnaryOp::_bit_not, expr);
     case TokenKind::_bang:
         m_lex.next();
         expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_log_not, expr);
+        return UnaryExprNode::create(UnaryOp::_log_not, expr);
     default:
         return parse_postfix_expr();
     }
@@ -317,13 +339,15 @@ ExprNode *Parser::parse_unary_expr() {
 //      unary-expression
 //      ( type-name ) cast-expression
 ExprNode *Parser::parse_cast_expr() {
+    JCC_PROFILE();
+
     if (m_lex.curr().kind == TokenKind::_open_paren &&
         is_start_of_type(m_lex.peek())) {
         m_lex.next();
         CType *ty = parse_type();
         m_lex.eat(TokenKind::_close_paren);
         ExprNode *cast_expr = parse_cast_expr();
-        return new UnaryExprNode(UnaryOp::_cast, ty, cast_expr);
+        return UnaryExprNode::create(UnaryOp::_cast, ty, cast_expr);
     }
 
     return parse_unary_expr();
@@ -335,6 +359,8 @@ ExprNode *Parser::parse_cast_expr() {
 //      multiplicative-expression / cast-expression
 //      multiplicative-expression % cast-expression
 ExprNode *Parser::parse_multiplicative_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_cast_expr();
 
     TokenKind op = m_lex.curr().kind;
@@ -345,11 +371,11 @@ ExprNode *Parser::parse_multiplicative_expr() {
 
         // TODO TokenKind -> BinOP conversion function
         if (op == TokenKind::_star)
-            lhs = new BinExprNode(BinOp::_mul, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_mul, lhs, rhs);
         else if (op == TokenKind::_slash)
-            lhs = new BinExprNode(BinOp::_div, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_div, lhs, rhs);
         else if (op == TokenKind::_percent)
-            lhs = new BinExprNode(BinOp::_mod, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_mod, lhs, rhs);
 
         op = m_lex.curr().kind;
     }
@@ -361,6 +387,8 @@ ExprNode *Parser::parse_multiplicative_expr() {
 //      additive-expression + multiplicative-expression
 //      additive-expression - multiplicative-expression
 ExprNode *Parser::parse_additive_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_multiplicative_expr();
 
     TokenKind op = m_lex.curr().kind;
@@ -370,9 +398,9 @@ ExprNode *Parser::parse_additive_expr() {
 
         // TODO TokenKind -> BinOP conversion function
         if (op == TokenKind::_add)
-            lhs = new BinExprNode(BinOp::_add, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_add, lhs, rhs);
         else if (op == TokenKind::_sub)
-            lhs = new BinExprNode(BinOp::_sub, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_sub, lhs, rhs);
 
         op = m_lex.curr().kind;
     }
@@ -384,6 +412,8 @@ ExprNode *Parser::parse_additive_expr() {
 //      shift-expression << additive-expression
 //      shift-expression >> additive-expression
 ExprNode *Parser::parse_shift_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_additive_expr();
 
     TokenKind op = m_lex.curr().kind;
@@ -393,9 +423,9 @@ ExprNode *Parser::parse_shift_expr() {
 
         // TODO TokenKind -> BinOP conversion function
         if (op == TokenKind::_shift_left)
-            lhs = new BinExprNode(BinOp::_bitshift_left, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_bitshift_left, lhs, rhs);
         else if (op == TokenKind::_shift_right)
-            lhs = new BinExprNode(BinOp::_bitshift_right, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_bitshift_right, lhs, rhs);
 
         op = m_lex.curr().kind;
     }
@@ -409,6 +439,8 @@ ExprNode *Parser::parse_shift_expr() {
 //      relational-expression <= shift-expression
 //      relational-expression >= shift-expression
 ExprNode *Parser::parse_relational_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_shift_expr();
 
     TokenKind op = m_lex.curr().kind;
@@ -420,13 +452,13 @@ ExprNode *Parser::parse_relational_expr() {
 
         // TODO TokenKind -> BinOP conversion function
         if (op == TokenKind::_less_than)
-            lhs = new BinExprNode(BinOp::_less_than, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_less_than, lhs, rhs);
         else if (op == TokenKind::_greater_than)
-            lhs = new BinExprNode(BinOp::_greater_than, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_greater_than, lhs, rhs);
         else if (op == TokenKind::_less_than_equal)
-            lhs = new BinExprNode(BinOp::_less_than_equal, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_less_than_equal, lhs, rhs);
         else if (op == TokenKind::_greater_than_equal)
-            lhs = new BinExprNode(BinOp::_greater_than_equal, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_greater_than_equal, lhs, rhs);
 
         op = m_lex.curr().kind;
     }
@@ -438,6 +470,8 @@ ExprNode *Parser::parse_relational_expr() {
 //      equality-expression == relational-expression
 //      equality-expression != relational-expression
 ExprNode *Parser::parse_equality_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_relational_expr();
 
     TokenKind op = m_lex.curr().kind;
@@ -447,9 +481,9 @@ ExprNode *Parser::parse_equality_expr() {
 
         // TODO TokenKind -> BinOP conversion function
         if (op == TokenKind::_equal_equal)
-            lhs = new BinExprNode(BinOp::_equal, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_equal, lhs, rhs);
         else if (op == TokenKind::_not_equal)
-            lhs = new BinExprNode(BinOp::_not_equal, lhs, rhs);
+            lhs = BinExprNode::create(BinOp::_not_equal, lhs, rhs);
 
         op = m_lex.curr().kind;
     }
@@ -460,13 +494,15 @@ ExprNode *Parser::parse_equality_expr() {
 //      equality-expression
 //      AND-expression & equality-expression
 ExprNode *Parser::parse_bit_and_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_equality_expr();
 
     while (m_lex.curr().kind == TokenKind::_and) {
         m_lex.next();
         ExprNode *rhs = parse_equality_expr();
 
-        lhs = new BinExprNode(BinOp::_bit_and, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_bit_and, lhs, rhs);
     }
     return lhs;
 }
@@ -475,13 +511,15 @@ ExprNode *Parser::parse_bit_and_expr() {
 //      AND-expression
 //      exclusive-OR-expression ^ AND-expression
 ExprNode *Parser::parse_xor_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_bit_and_expr();
 
     while (m_lex.curr().kind == TokenKind::_xor) {
         m_lex.next();
         ExprNode *rhs = parse_bit_and_expr();
 
-        lhs = new BinExprNode(BinOp::_xor, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_xor, lhs, rhs);
     }
     return lhs;
 }
@@ -490,13 +528,15 @@ ExprNode *Parser::parse_xor_expr() {
 //      exclusive-OR-expression
 //      inclusive-OR-expression | exclusive-OR-expression
 ExprNode *Parser::parse_bit_or_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_xor_expr();
 
     while (m_lex.curr().kind == TokenKind::_or) {
         m_lex.next();
         ExprNode *rhs = parse_xor_expr();
 
-        lhs = new BinExprNode(BinOp::_bit_or, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_bit_or, lhs, rhs);
     }
     return lhs;
 }
@@ -505,13 +545,15 @@ ExprNode *Parser::parse_bit_or_expr() {
 //      inclusive-OR-expression
 //      logical-AND-expression && inclusive-OR-expression
 ExprNode *Parser::parse_and_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_bit_or_expr();
 
     while (m_lex.curr().kind == TokenKind::_log_and) {
         m_lex.next();
         ExprNode *rhs = parse_bit_or_expr();
 
-        lhs = new BinExprNode(BinOp::_log_and, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_log_and, lhs, rhs);
     }
     return lhs;
 }
@@ -520,13 +562,15 @@ ExprNode *Parser::parse_and_expr() {
 //      logical-AND-expression
 //      logical-OR-expression || logical-AND-expression
 ExprNode *Parser::parse_or_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_and_expr();
 
     while (m_lex.curr().kind == TokenKind::_log_or) {
         m_lex.next();
         ExprNode *rhs = parse_and_expr();
 
-        lhs = new BinExprNode(BinOp::_log_or, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_log_or, lhs, rhs);
     }
     return lhs;
 }
@@ -535,6 +579,8 @@ ExprNode *Parser::parse_or_expr() {
 //      logical-OR-expression
 //      logical-OR-expression ? expression : conditional-expression
 ExprNode *Parser::parse_conditional_expr() {
+    JCC_PROFILE();
+
     ExprNode *expr = parse_or_expr();
 
     while (m_lex.peek().kind == TokenKind::_question_mark) {
@@ -542,7 +588,7 @@ ExprNode *Parser::parse_conditional_expr() {
         ExprNode *true_branch = parse_expr();
         m_lex.eat(':');
         ExprNode *false_branch = parse_conditional_expr();
-        expr = new CondExprNode(expr, true_branch, false_branch);
+        expr = CondExprNode::create(expr, true_branch, false_branch);
     }
 
     return expr;
@@ -554,6 +600,8 @@ ExprNode *Parser::parse_conditional_expr() {
 // assignment-operator: one of
 //      = *= /= %= += -= <<= >>= &= ^= |=
 ExprNode *Parser::parse_assign_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_conditional_expr();
     ExprNode *rhs = nullptr;
 
@@ -565,68 +613,72 @@ ExprNode *Parser::parse_assign_expr() {
         break;
     case _star_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_mul, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_mul, lhs, parse_expr());
         break;
     case _slash_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_div, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_div, lhs, parse_expr());
         break;
     case _percent_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_mod, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_mod, lhs, parse_expr());
         break;
     case _add_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_add, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_add, lhs, parse_expr());
         break;
     case _sub_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_sub, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_sub, lhs, parse_expr());
         break;
     case _shift_left_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_bitshift_left, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_bitshift_left, lhs, parse_expr());
         break;
     case _shift_right_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_bitshift_right, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_bitshift_right, lhs, parse_expr());
         break;
     case _and_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_bit_and, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_bit_and, lhs, parse_expr());
         break;
     case _xor_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_xor, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_xor, lhs, parse_expr());
         break;
     case _or_equal:
         m_lex.next();
-        rhs = new BinExprNode(BinOp::_bit_or, lhs, parse_expr());
+        rhs = BinExprNode::create(BinOp::_bit_or, lhs, parse_expr());
         break;
     default:
         if (lhs)
             return lhs;
     }
 
-    return new BinExprNode(BinOp::_assign, lhs, rhs);
+    return BinExprNode::create(BinOp::_assign, lhs, rhs);
 }
 
 // expression:
 //      assignment-expression
 //      expression , assignment-expression
 ExprNode *Parser::parse_comma_expr() {
+    JCC_PROFILE();
+
     ExprNode *lhs = parse_assign_expr();
 
     while (m_lex.curr().kind == TokenKind::_comma) {
         m_lex.next();
         ExprNode *rhs = parse_comma_expr();
 
-        lhs = new BinExprNode(BinOp::_comma, lhs, rhs);
+        lhs = BinExprNode::create(BinOp::_comma, lhs, rhs);
     }
     return lhs;
 }
 
 ExprNode *Parser::parse_expr() {
+    JCC_PROFILE();
+
     return parse_comma_expr();
 }
 
@@ -649,7 +701,9 @@ ExprNode *Parser::parse_expr() {
 //      declarator
 //      declarator = initializer
 DeclNode *Parser::parse_decl(TokenKind terminator) {
-    DeclNode *decl = new DeclNode();
+    JCC_PROFILE();
+
+    DeclNode *decl = DeclNode::create();
 
     decl->type = parse_type(&decl->attr);
 
@@ -674,19 +728,28 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
     return decl;
 }
 CaseStmntNode *Parser::parse_case_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 DefaultStmntNode *Parser::parse_default_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 IfStmntNode *Parser::parse_if_stmnt() {
+    JCC_PROFILE();
+
     m_lex.eat(TokenKind::k_if);
 
+    m_lex.eat('(');
     ExprNode *cond = parse_expr();
+    m_lex.eat(')');
+
     StmntNode *true_branch = parse_stmnt();
     StmntNode *false_branch = nullptr;
 
@@ -695,46 +758,62 @@ IfStmntNode *Parser::parse_if_stmnt() {
         false_branch = parse_stmnt();
     }
 
-    return new IfStmntNode(cond, true_branch, false_branch);
+    return IfStmntNode::create(cond, true_branch, false_branch);
 }
 
 SwitchStmntNode *Parser::parse_switch_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 WhileStmntNode *Parser::parse_while_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 DoStmntNode *Parser::parse_do_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 ForStmntNode *Parser::parse_for_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 GotoStmntNode *Parser::parse_goto_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 ContinueStmntNode *Parser::parse_continue_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 BreakStmntNode *Parser::parse_break_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 ReturnStmntNode *Parser::parse_return_stmnt() {
-    ReturnStmntNode *stmnt = new ReturnStmntNode();
+    JCC_PROFILE();
+
+    ReturnStmntNode *stmnt = ReturnStmntNode::create();
     m_lex.next();
     stmnt->expr = parse_expr();
 
@@ -742,12 +821,16 @@ ReturnStmntNode *Parser::parse_return_stmnt() {
 }
 
 LabelStmntNode *Parser::parse_label_stmnt() {
+    JCC_PROFILE();
+
     assert(false);
     return nullptr;
 }
 
 ExprStmntNode *Parser::parse_expr_stmnt() {
-    return new ExprStmntNode(parse_expr());
+    JCC_PROFILE();
+
+    return ExprStmntNode::create(parse_expr());
 }
 
 // statement:
@@ -793,6 +876,8 @@ ExprStmntNode *Parser::parse_expr_stmnt() {
 //      return expression opt ;
 //
 StmntNode *Parser::parse_stmnt() {
+    JCC_PROFILE();
+
     StmntNode *stmnt = nullptr;
 
     switch (m_lex.curr().kind) {
@@ -855,7 +940,9 @@ StmntNode *Parser::parse_stmnt() {
 //          declaration
 //          statement
 CompoundStmntNode *Parser::parse_compound_stmnt() {
-    CompoundStmntNode *node = new CompoundStmntNode();
+    JCC_PROFILE();
+
+    CompoundStmntNode *node = CompoundStmntNode::create();
 
     m_lex.eat('{');
     while (m_lex.curr().kind != TokenKind::_close_curly) {
@@ -876,7 +963,9 @@ CompoundStmntNode *Parser::parse_compound_stmnt() {
 }
 
 PrototypeNode *Parser::parse_prototype() {
-    PrototypeNode *node = new PrototypeNode();
+    JCC_PROFILE();
+
+    PrototypeNode *node = PrototypeNode::create();
 
     node->ret_type = parse_type(&node->attr);
 
@@ -896,6 +985,7 @@ PrototypeNode *Parser::parse_prototype() {
 }
 
 FunctionNode *Parser::parse_function() {
+    JCC_PROFILE();
 
     auto proto = parse_prototype();
     if (!proto)
@@ -903,18 +993,20 @@ FunctionNode *Parser::parse_function() {
 
     if (m_lex.curr().kind == TokenKind::_semicolon) {
         m_lex.next();
-        return new FunctionNode(proto);
+        return FunctionNode::create(proto);
     }
 
     auto cs = parse_compound_stmnt();
     if (!cs)
         return nullptr;
 
-    return new FunctionNode(proto, cs);
+    return FunctionNode::create(proto, cs);
 }
 
 FileNode *Parser::parse_file() {
-    FileNode *file = new FileNode;
+    JCC_PROFILE();
+
+    FileNode *file = FileNode::create();
 
     m_lex.next();
     while (m_lex.curr().kind != TokenKind::_eof) {

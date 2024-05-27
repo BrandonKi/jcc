@@ -29,28 +29,26 @@ public:
 
     llvm::Type *to_llvm_type(CType *);
 
-    // TODO reorder all of this
-    // it's in reverse compared to parser
+    llvm::Value *gen_str_lit_expr(StrLitExprNode *);
+    llvm::Value *gen_num_lit_expr(NumLitExprNode *);
+    llvm::Value *gen_id_expr(IdExprNode *);
+    llvm::Value *gen_address_of(ExprNode *);
+    llvm::Value *gen_unary_expr(UnaryExprNode *);
+    llvm::Value *gen_assign(BinExprNode *);
+    llvm::Value *gen_bin_expr(BinExprNode *);
+    llvm::Value *gen_call_expr(CallExprNode *);
+    llvm::Value *gen_expr(ExprNode *);
 
-    void genFile(FileNode *);
+    llvm::Value *gen_decl(DeclNode *);
 
-    llvm::Function *genFunction(FunctionNode *);
-    llvm::Function *genPrototype(PrototypeNode *);
+    void gen_if_stmnt(IfStmntNode *);
+    void gen_compound_stmnt(CompoundStmntNode *);
+    void gen_stmnt(StmntNode *);
 
-    void genCompoundStmnt(CompoundStmntNode *);
-    void genStmnt(StmntNode *);
-    void genIfStmnt(IfStmntNode *);
-    llvm::Value *genDecl(DeclNode *);
+    llvm::Function *gen_prototype(PrototypeNode *);
+    llvm::Function *gen_function(FunctionNode *);
 
-    llvm::Value *genExpr(ExprNode *);
-    llvm::Value *genCallExpr(CallExprNode *);
-    llvm::Value *genBinExpr(BinExprNode *);
-    llvm::Value *genAssign(BinExprNode *);
-    llvm::Value *genUnaryExpr(UnaryExprNode *);
-    llvm::Value *genAddressOf(ExprNode *);
-    llvm::Value *genIdExpr(IdExprNode *);
-    llvm::Value *genNumLitExpr(NumLitExprNode *);
-    llvm::Value *genStrLitExpr(StrLitExprNode *);
+    void gen_file(FileNode *);
 };
 
 } // namespace jcc

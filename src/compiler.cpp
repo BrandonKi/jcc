@@ -25,6 +25,8 @@ Compiler::Compiler() : m_parser{}, m_options{} {}
 Compiler::Compiler(CompileOptions options) : m_parser{}, m_options{options} {}
 
 int Compiler::compile_string(std::string text) {
+    JCC_PROFILE();
+
     Platform::init();
 
     m_parser = Parser(Lexer(text));
@@ -34,7 +36,7 @@ int Compiler::compile_string(std::string text) {
     sema.run_on(file);
 
     LLVMIRGen ir_gen;
-    ir_gen.genFile(file);
+    ir_gen.gen_file(file);
 
     if (m_options.print_ir) {
         ir_gen.m_module->print(llvm::outs(), nullptr);
@@ -111,11 +113,15 @@ int Compiler::compile_string(std::string text) {
 }
 
 int Compiler::compile(std::string filepath) {
+    JCC_PROFILE();
+
     return this->compile_string(read_file(filepath));
 }
 
 // FIXME lazy, inefficient
 [[nodiscard]] std::string Compiler::read_file(const std::string &filepath) {
+    JCC_PROFILE();
+
     std::ifstream file;
     file.open(filepath);
     if (!file)

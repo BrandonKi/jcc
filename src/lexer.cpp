@@ -10,41 +10,48 @@ Lexer::Lexer(std::string text)
 }
 
 void Lexer::eat(char c) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     eat((TokenKind)c);
 }
 
 void Lexer::eat(TokenKind t) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     assert(this->curr().kind == t);
     this->next();
 }
 
 void Lexer::try_eat(char c) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     try_eat((TokenKind)c);
 }
 
 void Lexer::try_eat(TokenKind t) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     if (this->curr().kind == t)
         this->next();
 }
 
 void Lexer::eat_next(char c) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     this->next();
     assert((char)this->curr().kind == c);
     this->next();
 }
 
 void Lexer::eat_next(TokenKind t) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     eat_next((char)t);
 }
 
 Token Lexer::peek() {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     if (m_cache.kind != TokenKind::NONE)
         return m_cache;
     m_cache = this->internal_next();
@@ -52,7 +59,8 @@ Token Lexer::peek() {
 }
 
 Token Lexer::next() {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     if (m_cache.kind != TokenKind::NONE) {
         m_current = m_cache;
         m_cache = Token{TokenKind::NONE};
@@ -70,7 +78,8 @@ Token Lexer::next() {
 // * smarter keyword lookup, perfect hash/classic jump by length
 // * use a string view instead of string
 Token Lexer::internal_next() {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     Token result;
     std::string id = "";
 
@@ -221,16 +230,19 @@ Token Lexer::internal_next() {
 }
 
 bool Lexer::on(TokenKind kind) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     return m_current.kind == kind;
 }
 
 bool Lexer::on(char c) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     return (char)m_current.kind == c;
 }
 
 Token Lexer::curr() {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     return m_current;
 }

@@ -18,17 +18,6 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 
 add_subdirectory(jab)
 
-# message("TESTING\nTESTING\nTESTING\n")
-#
-# get_target_property(jab_lib_SOURCES jab_lib SOURCES)
-# if(jab_lib_SOURCES)
-#     foreach(source ${jab_lib_SOURCES})
-#         message(STATUS "jab_lib source file: ${source}")
-#     endforeach()
-# else()
-#     message(STATUS "No source files found for jab_lib")
-# endif()
-
 add_library(jcc_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lexer.cpp
@@ -38,15 +27,6 @@ add_library(jcc_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sema.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ppc.cpp
 )
-
-# get_target_property(jcc_lib_SOURCES jcc_lib SOURCES)
-# if(jcc_lib_SOURCES)
-#     foreach(source ${jcc_lib_SOURCES})
-#         message(STATUS "jcc_lib source file: ${source}")
-#     endforeach()
-# else()
-#     message(STATUS "No source files found for jcc_lib")
-# endif()
 
 target_include_directories(jcc_lib
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -70,22 +50,9 @@ target_include_directories(jcc
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jab/include
 )
 
-# target_link_libraries(jcc ${jab_lib})
-
 llvm_map_components_to_libnames(llvm_libs support core irreader native)
 # llvm_map_components_to_libnames(llvm_libs all)
 target_link_libraries(jcc ${llvm_libs})
-
-
-# target_link_libraries(jcc ${LLVM_LIBRARIES})
-
-# execute_process(
-#     COMMAND ${LLVM_TOOLS_BINARY_DIR}/llvm-config --libs all
-#     OUTPUT_VARIABLE LLVM_LINKER_FLAGS
-#     OUTPUT_STRIP_TRAILING_WHITESPACE
-# )
-
-# target_link_libraries(jcc ${LLVM_LINKER_FLAGS})
 
 set(test_driver_src
 	$<TARGET_OBJECTS:jab_lib>
@@ -94,7 +61,6 @@ set(test_driver_src
 )
 
 add_executable(jcc_tests ${test_driver_src})
-
 
 target_include_directories(jcc_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -126,4 +92,3 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(jcc PRIVATE /W3 /wd4624)
     target_compile_options(jcc_tests PRIVATE /W3 /wd4624)
 endif()
-

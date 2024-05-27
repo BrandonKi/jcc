@@ -3,6 +3,8 @@
 #include "compiler.h"
 
 int main() {
+    JCC_PROFILE();
+
     init_cprint();
 
     jcc::Compiler c(jcc::CompileOptions{

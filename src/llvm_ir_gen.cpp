@@ -15,7 +15,8 @@
 using namespace jcc;
 
 LLVMIRGen::LLVMIRGen() {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     m_context = std::make_unique<llvm::LLVMContext>();
     m_module = std::make_unique<llvm::Module>("jcc", *m_context);
 
@@ -25,7 +26,8 @@ LLVMIRGen::LLVMIRGen() {
 
 // TODO
 llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
-    JCC_PROFILE()
+    JCC_PROFILE();
+
     switch (type->type) {
     case Char:
         return llvm::Type::getInt8Ty(*m_context);
@@ -60,237 +62,121 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
     return llvm::Type::getVoidTy(*m_context);
 }
 
-void LLVMIRGen::genFile(FileNode *file) {
-    JCC_PROFILE()
+llvm::Value *LLVMIRGen::gen_str_lit_expr(StrLitExprNode *str_expr) {
+    JCC_PROFILE();
 
-    for (auto *f : file->functions) {
-        if (f->body == nullptr)
-            genPrototype(f->proto);
-        else
-            genFunction(f);
-    }
+    llvm::Value *v = m_builder->CreateGlobalString(*str_expr->val);
+    return v;
 }
 
-llvm::Function *LLVMIRGen::genFunction(FunctionNode *fn) {
-    JCC_PROFILE()
-    llvm::Function *function = m_module->getFunction(*fn->proto->id);
+llvm::Value *LLVMIRGen::gen_num_lit_expr(NumLitExprNode *num_expr) {
+    JCC_PROFILE();
 
-    if (function)
+    return llvm::ConstantInt::get(*m_context,
+                                  llvm::APInt(32, num_expr->val, true));
+}
+
+llvm::Value *LLVMIRGen::gen_id_expr(IdExprNode *id_expr) {
+    JCC_PROFILE();
+
+    auto [decl, val] = m_named_values[*id_expr->val];
+    if (!val)
         assert(false);
-
-    function = genPrototype(fn->proto);
-
-    if (!function)
-        assert(false);
-
-    llvm::BasicBlock *bb =
-        llvm::BasicBlock::Create(*m_context, "entry", function);
-    m_builder->SetInsertPoint(bb);
-
-    // FIXME clean up
-    m_named_values.clear();
-    int i = 0;
-    for (auto &arg : function->args()) {
-        auto decl = fn->proto->args[i];
-        auto arg_val = &arg;
-        m_builder->CreateAlignedStore(arg_val, genDecl(decl),
-                                      llvm::Align(decl->type->align), false);
-
-        ++i;
-    }
-
-    genCompoundStmnt(fn->body);
-    return function;
+    val = m_builder->CreateAlignedLoad(to_llvm_type(decl->type), val,
+                                       llvm::Align(decl->type->align), false);
+    return val;
 }
 
-llvm::Function *LLVMIRGen::genPrototype(PrototypeNode *proto) {
-    JCC_PROFILE()
-    std::vector<llvm::Type *> arg_types;
-    for (auto arg : proto->args) {
-        arg_types.push_back(to_llvm_type(arg->type));
+// FIXME does not handle all valid cases
+// TODO possibly replace this with genLValue(), or something similar
+// it's a semi-common pattern, duplicated in genAssign
+llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
+    JCC_PROFILE();
+
+    switch (base_expr->kind) {
+    case IdExpr: {
+        auto expr = static_cast<IdExprNode *>(base_expr);
+        auto &[decl, addr] = m_named_values[*expr->val];
+        return addr;
     }
-
-    llvm::FunctionType *ft = llvm::FunctionType::get(
-        to_llvm_type(proto->ret_type), arg_types, false);
-
-    llvm::Function *f = llvm::Function::Create(
-        ft, llvm::Function::ExternalLinkage, *proto->id, m_module.get());
-
-    if (!proto->attr._extern) {
-        int index = 0;
-        for (auto &arg : f->args()) {
-            arg.setName(*proto->args[index]->id);
-            ++index;
-        }
+    case UnaryExpr: {
+        auto expr = static_cast<UnaryExprNode *>(base_expr);
+        return gen_expr(expr->expr);
     }
-
-    return f;
-}
-
-void LLVMIRGen::genCompoundStmnt(CompoundStmntNode *stmnts) {
-    JCC_PROFILE()
-    for (auto *decl : stmnts->decl_list) {
-        genDecl(decl);
-    }
-
-    for (auto *stmnt : stmnts->stmnt_list) {
-        genStmnt(stmnt);
-    }
-}
-
-llvm::Value *LLVMIRGen::genDecl(DeclNode *decl) {
-    JCC_PROFILE()
-    auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
-    if (decl->init)
-        m_builder->CreateAlignedStore(genExpr(decl->init), alloca,
-                                      llvm::Align(decl->type->align), false);
-    m_named_values[*decl->id] = {decl, alloca};
-    return alloca;
-}
-
-void LLVMIRGen::genStmnt(StmntNode *stmnt) {
-    JCC_PROFILE()
-
-    llvm::BasicBlock *insert_block = m_builder->GetInsertBlock();
-    if (!insert_block) {
-        llvm::BasicBlock *bb =
-            llvm::BasicBlock::Create(*m_context, "", insert_block->getParent());
-        m_builder->SetInsertPoint(bb);
-    } else if (insert_block->getTerminator()) {
-        return; // someone wrote code after a return or something
-    }
-
-    switch (stmnt->kind) {
-    case LabelStmnt:
-    case CaseStmnt:
-    case DefaultStmnt:
-        assert(false);
-    case IfStmnt: {
-        genIfStmnt(static_cast<IfStmntNode *>(stmnt));
-        break;
-    }
-    case SwitchStmnt:
-    case WhileStmnt:
-    case DoStmnt:
-    case ForStmnt:
-    case GotoStmnt:
-    case ContinueStmnt:
-    case BreakStmnt:
-        assert(false);
-    case ReturnStmnt:
-        m_builder->CreateRet(
-            genExpr(static_cast<ReturnStmntNode *>(stmnt)->expr));
-        break;
-    case CompoundStmnt:
-        genCompoundStmnt(static_cast<CompoundStmntNode *>(stmnt));
-        break;
-    case ExprStmnt:
-        // TODO result not used
-        // make a genExpr that doesn't bother loading it?
-        // can be reused for comma expr as well
-        genExpr(static_cast<ExprStmntNode *>(stmnt)->expr);
-        break;
-    default:
-        assert(false);
-    }
-}
-
-// FIXME rewrite, possibly use similar logic to switch
-void LLVMIRGen::genIfStmnt(IfStmntNode *if_stmnt) {
-    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
-
-    llvm::Value *cond_val = genExpr(if_stmnt->cond);
-
-    llvm::BasicBlock *true_block =
-        llvm::BasicBlock::Create(*m_context, "true", function);
-
-    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "cont");
-
-    llvm::BasicBlock *false_block = cont_block;
-    if (if_stmnt->false_branch)
-        false_block = llvm::BasicBlock::Create(*m_context, "false");
-
-    m_builder->CreateCondBr(cond_val, true_block, false_block);
-
-    m_builder->SetInsertPoint(true_block);
-    genStmnt(if_stmnt->true_branch);
-    if (!true_block->getTerminator()) {
-        m_builder->CreateBr(cont_block);
-    }
-
-    if (if_stmnt->false_branch) {
-        function->insert(function->end(), false_block);
-
-        if (!m_builder->GetInsertBlock()->getTerminator())
-            m_builder->CreateBr(cont_block);
-
-        m_builder->SetInsertPoint(false_block);
-        genStmnt(if_stmnt->false_branch);
-        if (!false_block->getTerminator()) {
-            m_builder->CreateBr(cont_block);
-        }
-    }
-
-    function->insert(function->end(), cont_block);
-
-    if (!m_builder->GetInsertBlock()->getTerminator())
-        m_builder->CreateBr(cont_block);
-
-    m_builder->SetInsertPoint(cont_block);
-}
-
-llvm::Value *LLVMIRGen::genExpr(ExprNode *expr) {
-    JCC_PROFILE()
-    switch (expr->kind) {
-    case ExprKind::NumLitExpr:
-        return genNumLitExpr(static_cast<NumLitExprNode *>(expr));
-    case ExprKind::StrLitExpr:
-        return genStrLitExpr(static_cast<StrLitExprNode *>(expr));
-    case ExprKind::IdExpr:
-        return genIdExpr(static_cast<IdExprNode *>(expr));
-    case ExprKind::UnaryExpr:
-        return genUnaryExpr(static_cast<UnaryExprNode *>(expr));
-    case ExprKind::BinExpr:
-        return genBinExpr(static_cast<BinExprNode *>(expr));
-    case ExprKind::CallExpr:
-        return genCallExpr(static_cast<CallExprNode *>(expr));
     default:
         assert(false);
     }
 
-    assert(false);
     return nullptr;
 }
 
-llvm::Value *LLVMIRGen::genCallExpr(CallExprNode *call_expr) {
-    JCC_PROFILE()
+// TODO finish
+llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
+    JCC_PROFILE();
 
-    // FIXME hack
-    if (call_expr->base->kind != ExprKind::IdExpr)
+    llvm::Value *expr;
+
+    switch (unary_expr->op) {
+    case UnaryOp::_prefix_inc:
+    case UnaryOp::_prefix_dec:
+    case UnaryOp::_sizeof:
+    case UnaryOp::__Alignof:
         assert(false);
-
-    llvm::Function *callee =
-        m_module->getFunction(*static_cast<IdExprNode *>(call_expr->base)->val);
-
-    if (!callee)
-        assert(false);
-
-    if (callee->arg_size() != call_expr->args.size())
-        assert(false);
-
-    std::vector<llvm::Value *> args;
-
-    for (auto *a : call_expr->args) {
-        args.push_back(genExpr(a));
-        if (!args.back())
-            assert(false);
+    case UnaryOp::_address: {
+        return gen_address_of(unary_expr->expr);
     }
-
-    return m_builder->CreateCall(callee, args);
+    case UnaryOp::_deref: {
+        expr = gen_expr(unary_expr->expr);
+        llvm::Value *val = m_builder->CreateAlignedLoad(
+            expr->getType(), expr,
+            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        return val;
+    }
+    case UnaryOp::_add:
+        expr = gen_expr(unary_expr->expr);
+        return expr;
+    case UnaryOp::_sub:
+        expr = gen_expr(unary_expr->expr);
+        expr = m_builder->CreateNSWSub(
+            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 0, true)), expr);
+        return expr;
+    case UnaryOp::_bit_not:
+    case UnaryOp::_log_not:
+    case UnaryOp::_cast:
+    default:
+        assert(false);
+    }
+    return nullptr;
 }
 
-llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
-    JCC_PROFILE()
+// TODO possibly replace this with genLValue(), or something similar
+// it's a semi-common pattern, duplicated in genAddressOf
+llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
+    JCC_PROFILE();
+
+    llvm::Value *rhs = gen_expr(bin_expr->rhs);
+
+    switch (bin_expr->lhs->kind) {
+    case IdExpr: {
+        auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
+        auto &[decl, addr] = m_named_values[*lhs->val];
+        m_builder->CreateAlignedStore(
+            rhs, addr,
+            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        return addr;
+    }
+    case UnaryExpr: {
+        auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
+    }
+    default:
+        assert(false);
+    }
+
+    return nullptr;
+}
+
+llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
+    JCC_PROFILE();
 
     llvm::Value *lhs = nullptr;
     llvm::Value *rhs = nullptr;
@@ -303,14 +189,14 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
         // TODO need to short circuit
         break;
     case BinOp::_assign:
-        return genAssign(bin_expr);
+        return gen_assign(bin_expr);
     default:
         break;
         // just continue on
     }
 
-    lhs = genExpr(bin_expr->lhs);
-    rhs = genExpr(bin_expr->rhs);
+    lhs = gen_expr(bin_expr->lhs);
+    rhs = gen_expr(bin_expr->rhs);
     if (!lhs || !rhs)
         assert(false);
 
@@ -372,111 +258,238 @@ llvm::Value *LLVMIRGen::genBinExpr(BinExprNode *bin_expr) {
     return nullptr;
 }
 
-// TODO possibly replace this with genLValue(), or something similar
-// it's a semi-common pattern, duplicated in genAddressOf
-llvm::Value *LLVMIRGen::genAssign(BinExprNode *bin_expr) {
-    JCC_PROFILE()
+llvm::Value *LLVMIRGen::gen_call_expr(CallExprNode *call_expr) {
+    JCC_PROFILE();
 
-    llvm::Value *rhs = genExpr(bin_expr->rhs);
+    // FIXME hack
+    if (call_expr->base->kind != ExprKind::IdExpr)
+        assert(false);
 
-    switch (bin_expr->lhs->kind) {
-    case IdExpr: {
-        auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
-        auto &[decl, addr] = m_named_values[*lhs->val];
-        m_builder->CreateAlignedStore(
-            rhs, addr,
-            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
-        return addr;
+    llvm::Function *callee =
+        m_module->getFunction(*static_cast<IdExprNode *>(call_expr->base)->val);
+
+    if (!callee)
+        assert(false);
+
+    if (callee->arg_size() != call_expr->args.size())
+        assert(false);
+
+    std::vector<llvm::Value *> args;
+
+    for (auto *a : call_expr->args) {
+        args.push_back(gen_expr(a));
+        if (!args.back())
+            assert(false);
     }
-    case UnaryExpr: {
-        auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
-    }
+
+    return m_builder->CreateCall(callee, args);
+}
+
+llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
+    JCC_PROFILE();
+
+    switch (expr->kind) {
+    case ExprKind::NumLitExpr:
+        return gen_num_lit_expr(static_cast<NumLitExprNode *>(expr));
+    case ExprKind::StrLitExpr:
+        return gen_str_lit_expr(static_cast<StrLitExprNode *>(expr));
+    case ExprKind::IdExpr:
+        return gen_id_expr(static_cast<IdExprNode *>(expr));
+    case ExprKind::UnaryExpr:
+        return gen_unary_expr(static_cast<UnaryExprNode *>(expr));
+    case ExprKind::BinExpr:
+        return gen_bin_expr(static_cast<BinExprNode *>(expr));
+    case ExprKind::CallExpr:
+        return gen_call_expr(static_cast<CallExprNode *>(expr));
     default:
         assert(false);
     }
 
+    assert(false);
     return nullptr;
 }
 
-// TODO finish
-llvm::Value *LLVMIRGen::genUnaryExpr(UnaryExprNode *unary_expr) {
-    JCC_PROFILE()
+llvm::Value *LLVMIRGen::gen_decl(DeclNode *decl) {
+    JCC_PROFILE();
 
-    llvm::Value *expr;
+    auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
+    if (decl->init)
+        m_builder->CreateAlignedStore(gen_expr(decl->init), alloca,
+                                      llvm::Align(decl->type->align), false);
+    m_named_values[*decl->id] = {decl, alloca};
+    return alloca;
+}
 
-    switch (unary_expr->op) {
-    case UnaryOp::_prefix_inc:
-    case UnaryOp::_prefix_dec:
-    case UnaryOp::_sizeof:
-    case UnaryOp::__Alignof:
+// FIXME rewrite, possibly use similar logic to switch
+void LLVMIRGen::gen_if_stmnt(IfStmntNode *if_stmnt) {
+    JCC_PROFILE();
+
+    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
+
+    llvm::Value *cond_val = gen_expr(if_stmnt->cond);
+
+    llvm::BasicBlock *true_block =
+        llvm::BasicBlock::Create(*m_context, "true", function);
+
+    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "cont");
+
+    llvm::BasicBlock *false_block = cont_block;
+    if (if_stmnt->false_branch)
+        false_block = llvm::BasicBlock::Create(*m_context, "false");
+
+    m_builder->CreateCondBr(cond_val, true_block, false_block);
+
+    m_builder->SetInsertPoint(true_block);
+    gen_stmnt(if_stmnt->true_branch);
+    if (!true_block->getTerminator()) {
+        m_builder->CreateBr(cont_block);
+    }
+
+    if (if_stmnt->false_branch) {
+        function->insert(function->end(), false_block);
+
+        if (!m_builder->GetInsertBlock()->getTerminator())
+            m_builder->CreateBr(cont_block);
+
+        m_builder->SetInsertPoint(false_block);
+        gen_stmnt(if_stmnt->false_branch);
+        if (!false_block->getTerminator()) {
+            m_builder->CreateBr(cont_block);
+        }
+    }
+
+    function->insert(function->end(), cont_block);
+
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(cont_block);
+
+    m_builder->SetInsertPoint(cont_block);
+}
+
+void LLVMIRGen::gen_compound_stmnt(CompoundStmntNode *stmnts) {
+    JCC_PROFILE();
+
+    for (auto *decl : stmnts->decl_list) {
+        gen_decl(decl);
+    }
+
+    for (auto *stmnt : stmnts->stmnt_list) {
+        gen_stmnt(stmnt);
+    }
+}
+
+void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
+    JCC_PROFILE();
+
+    llvm::BasicBlock *insert_block = m_builder->GetInsertBlock();
+    if (!insert_block) {
+        llvm::BasicBlock *bb =
+            llvm::BasicBlock::Create(*m_context, "", insert_block->getParent());
+        m_builder->SetInsertPoint(bb);
+    } else if (insert_block->getTerminator()) {
+        return; // someone wrote code after a return or something
+    }
+
+    switch (stmnt->kind) {
+    case LabelStmnt:
+    case CaseStmnt:
+    case DefaultStmnt:
         assert(false);
-    case UnaryOp::_address: {
-        return genAddressOf(unary_expr->expr);
+    case IfStmnt: {
+        gen_if_stmnt(static_cast<IfStmntNode *>(stmnt));
+        break;
     }
-    case UnaryOp::_deref: {
-        expr = genExpr(unary_expr->expr);
-        llvm::Value *val = m_builder->CreateAlignedLoad(
-            expr->getType(), expr,
-            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
-        return val;
-    }
-    case UnaryOp::_add:
-        expr = genExpr(unary_expr->expr);
-        return expr;
-    case UnaryOp::_sub:
-        expr = genExpr(unary_expr->expr);
-        expr = m_builder->CreateNSWSub(
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 0, true)), expr);
-        return expr;
-    case UnaryOp::_bit_not:
-    case UnaryOp::_log_not:
-    case UnaryOp::_cast:
+    case SwitchStmnt:
+    case WhileStmnt:
+    case DoStmnt:
+    case ForStmnt:
+    case GotoStmnt:
+    case ContinueStmnt:
+    case BreakStmnt:
+        assert(false);
+    case ReturnStmnt:
+        m_builder->CreateRet(
+            gen_expr(static_cast<ReturnStmntNode *>(stmnt)->expr));
+        break;
+    case CompoundStmnt:
+        gen_compound_stmnt(static_cast<CompoundStmntNode *>(stmnt));
+        break;
+    case ExprStmnt:
+        // TODO result not used
+        // make a genExpr that doesn't bother loading it?
+        // can be reused for comma expr as well
+        gen_expr(static_cast<ExprStmntNode *>(stmnt)->expr);
+        break;
     default:
         assert(false);
     }
-    return nullptr;
 }
 
-// FIXME does not handle all valid cases
-// TODO possibly replace this with genLValue(), or something similar
-// it's a semi-common pattern, duplicated in genAssign
-llvm::Value *LLVMIRGen::genAddressOf(ExprNode *base_expr) {
-    JCC_PROFILE()
-    switch (base_expr->kind) {
-    case IdExpr: {
-        auto expr = static_cast<IdExprNode *>(base_expr);
-        auto &[decl, addr] = m_named_values[*expr->val];
-        return addr;
+llvm::Function *LLVMIRGen::gen_prototype(PrototypeNode *proto) {
+    JCC_PROFILE();
+
+    std::vector<llvm::Type *> arg_types;
+    for (auto arg : proto->args) {
+        arg_types.push_back(to_llvm_type(arg->type));
     }
-    case UnaryExpr: {
-        auto expr = static_cast<UnaryExprNode *>(base_expr);
-        return genExpr(expr->expr);
+
+    llvm::FunctionType *ft = llvm::FunctionType::get(
+        to_llvm_type(proto->ret_type), arg_types, false);
+
+    llvm::Function *f = llvm::Function::Create(
+        ft, llvm::Function::ExternalLinkage, *proto->id, m_module.get());
+
+    if (!proto->attr._extern) {
+        int index = 0;
+        for (auto &arg : f->args()) {
+            arg.setName(*proto->args[index]->id);
+            ++index;
+        }
     }
-    default:
+
+    return f;
+}
+
+llvm::Function *LLVMIRGen::gen_function(FunctionNode *fn) {
+    JCC_PROFILE();
+
+    llvm::Function *function = m_module->getFunction(*fn->proto->id);
+
+    if (function)
         assert(false);
+
+    function = gen_prototype(fn->proto);
+
+    if (!function)
+        assert(false);
+
+    llvm::BasicBlock *bb =
+        llvm::BasicBlock::Create(*m_context, "entry", function);
+    m_builder->SetInsertPoint(bb);
+
+    // FIXME clean up
+    m_named_values.clear();
+    int i = 0;
+    for (auto &arg : function->args()) {
+        auto decl = fn->proto->args[i];
+        auto arg_val = &arg;
+        m_builder->CreateAlignedStore(arg_val, gen_decl(decl),
+                                      llvm::Align(decl->type->align), false);
+
+        ++i;
     }
 
-    return nullptr;
+    gen_compound_stmnt(fn->body);
+    return function;
 }
 
-llvm::Value *LLVMIRGen::genIdExpr(IdExprNode *id_expr) {
-    JCC_PROFILE()
-    auto [decl, val] = m_named_values[*id_expr->val];
-    if (!val)
-        assert(false);
-    val = m_builder->CreateAlignedLoad(to_llvm_type(decl->type), val,
-                                       llvm::Align(decl->type->align), false);
-    return val;
-}
+void LLVMIRGen::gen_file(FileNode *file) {
+    JCC_PROFILE();
 
-llvm::Value *LLVMIRGen::genNumLitExpr(NumLitExprNode *num_expr) {
-    JCC_PROFILE()
-    return llvm::ConstantInt::get(*m_context,
-                                  llvm::APInt(32, num_expr->val, true));
-}
-
-llvm::Value *LLVMIRGen::genStrLitExpr(StrLitExprNode *str_expr) {
-    JCC_PROFILE()
-    llvm::Value *v = m_builder->CreateGlobalString(*str_expr->val);
-    return v;
+    for (auto *f : file->functions) {
+        if (f->body == nullptr)
+            gen_prototype(f->proto);
+        else
+            gen_function(f);
+    }
 }
