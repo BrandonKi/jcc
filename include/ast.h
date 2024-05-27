@@ -332,15 +332,27 @@ struct SwitchStmntNode final : public StmntNode {
 };
 
 struct WhileStmntNode final : public StmntNode {
+    ExprNode *cond;
+    StmntNode *body;
 
-    WhileStmntNode() : StmntNode{StmntKind::WhileStmnt} {}
+    WhileStmntNode()
+        : StmntNode{StmntKind::WhileStmnt}, cond{nullptr}, body{nullptr} {}
+
+    WhileStmntNode(ExprNode *cond, StmntNode *body)
+        : StmntNode{StmntKind::WhileStmnt}, cond{cond}, body{body} {}
 
     ARENA_CREATE(WhileStmntNode);
 };
 
 struct DoStmntNode final : public StmntNode {
+    StmntNode *body;
+    ExprNode *cond;
 
-    DoStmntNode() : StmntNode{StmntKind::DoStmnt} {}
+    DoStmntNode()
+        : StmntNode{StmntKind::DoStmnt}, body{nullptr}, cond{nullptr} {}
+
+    DoStmntNode(StmntNode *body, ExprNode *cond)
+        : StmntNode{StmntKind::DoStmnt}, body{body}, cond{cond} {}
 
     ARENA_CREATE(DoStmntNode);
 };

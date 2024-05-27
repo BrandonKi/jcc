@@ -1,12 +1,9 @@
 int main() {
-    int a = 0;
+    int a = 10;
 
-    for(int i = 0; i < 10; i += 1) {
-        if(i % 2 == 0)
-            a += i;
-        else
-            a -= 1;
-    }
+    do {
+        a += 1;
+    } while(a < 10);
 
     return a;
 }

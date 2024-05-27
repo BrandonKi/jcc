@@ -366,6 +366,68 @@ void LLVMIRGen::gen_if_stmnt(IfStmntNode *if_stmnt) {
     m_builder->SetInsertPoint(cont_block);
 }
 
+void LLVMIRGen::gen_while_stmnt(WhileStmntNode *while_stmnt) {
+    JCC_PROFILE();
+
+    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock *cond_block =
+        llvm::BasicBlock::Create(*m_context, "", function);
+
+    llvm::BasicBlock *body_block =
+        llvm::BasicBlock::Create(*m_context, "", function);
+
+    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "");
+
+    m_builder->CreateBr(cond_block);
+
+    m_builder->SetInsertPoint(cond_block);
+    llvm::Value *cond = gen_expr(while_stmnt->cond);
+    m_builder->CreateCondBr(cond, body_block, cont_block);
+
+    m_builder->SetInsertPoint(body_block);
+    gen_stmnt(while_stmnt->body);
+    m_builder->CreateBr(cond_block);
+
+    function->insert(function->end(), cont_block);
+
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(cont_block);
+
+    m_builder->SetInsertPoint(cont_block);
+}
+
+void LLVMIRGen::gen_do_stmnt(DoStmntNode *do_stmnt) {
+    JCC_PROFILE();
+
+    llvm::Function *function = m_builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock *body_block =
+        llvm::BasicBlock::Create(*m_context, "", function);
+
+    llvm::BasicBlock *cond_block =
+        llvm::BasicBlock::Create(*m_context, "", function);
+
+    llvm::BasicBlock *cont_block = llvm::BasicBlock::Create(*m_context, "");
+
+    m_builder->CreateBr(body_block);
+
+    m_builder->SetInsertPoint(body_block);
+    gen_stmnt(do_stmnt->body);
+    m_builder->CreateBr(cond_block);
+
+    m_builder->SetInsertPoint(cond_block);
+    llvm::Value *cond = gen_expr(do_stmnt->cond);
+    m_builder->CreateCondBr(cond, body_block, cont_block);
+
+    function->insert(function->end(), cont_block);
+
+    if (!m_builder->GetInsertBlock()->getTerminator())
+        m_builder->CreateBr(cont_block);
+
+    m_builder->SetInsertPoint(cont_block);
+}
+
 void LLVMIRGen::gen_for_stmnt(ForStmntNode *for_stmnt) {
     JCC_PROFILE();
 
@@ -437,9 +499,13 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
         gen_if_stmnt(static_cast<IfStmntNode *>(stmnt));
         break;
     case SwitchStmnt:
-    case WhileStmnt:
-    case DoStmnt:
         assert(false);
+    case WhileStmnt:
+        gen_while_stmnt(static_cast<WhileStmntNode *>(stmnt));
+        break;
+    case DoStmnt:
+        gen_do_stmnt(static_cast<DoStmntNode *>(stmnt));
+        break;
     case ForStmnt:
         gen_for_stmnt(static_cast<ForStmntNode *>(stmnt));
         break;

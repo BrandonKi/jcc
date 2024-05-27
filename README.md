@@ -10,31 +10,8 @@ The custom backend is located in [jab/](jab/) which was previously a separate pr
 
 ## Sample
 
-WIP, can currently handle stuff like the examples below and more(if/else, for, etc.).
-Take a look in the tests directory for a fuller picture of how much is supported.
-
-```c
-int fn(int x, int y) {
-    int z = y - x + 5;
-    return -(y * z) / -(+x);
-}
-
-int main() {
-    return fn(10, 20); // returns 30
-}
-```
-
-```c
-extern int printf(char *);
-extern void puts(char *);
-
-int main() {
-    char *a = "Hello World!";
-    int result = printf(a);
-    puts("");
-    return result; // returns 12
-}
-```
+WIP, can currently handle a decent amount of stuff (functions, pointers, if/else, for, do/while, etc.).
+Take a look in the tests directory or commit history for a fuller picture of how much is supported.
 
 ## Spec/Reference
 

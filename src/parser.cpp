@@ -771,15 +771,30 @@ SwitchStmntNode *Parser::parse_switch_stmnt() {
 WhileStmntNode *Parser::parse_while_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
-    return nullptr;
+    m_lex.eat(TokenKind::k_while);
+
+    m_lex.eat('(');
+    ExprNode *cond = parse_expr();
+    m_lex.eat(')');
+
+    StmntNode *body = parse_stmnt();
+
+    return WhileStmntNode::create(cond, body);
 }
 
 DoStmntNode *Parser::parse_do_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
-    return nullptr;
+    m_lex.eat(TokenKind::k_do);
+
+    StmntNode *body = parse_stmnt();
+
+    m_lex.eat(TokenKind::k_while);
+    m_lex.eat('(');
+    ExprNode *cond = parse_expr();
+    m_lex.eat(')');
+
+    return DoStmntNode::create(body, cond);
 }
 
 ForStmntNode *Parser::parse_for_stmnt() {

@@ -831,6 +831,86 @@ int main() {
     return result == 15;
 }
 
+bool while_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+
+    while(a < 10) {
+        a += 1;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool while_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 10;
+
+    while(a < 10) {
+        a += 1;
+    }
+
+    return a;
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool dowhile_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+
+    do {
+        a += 1;
+    } while(a < 10);
+
+    return a;
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool dowhile_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 10;
+
+    do {
+        a += 1;
+    } while(a < 10);
+
+    return a;
+}
+
+    )");
+
+    return result == 11;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -888,6 +968,8 @@ int main(int argc, char *argv[]) {
     test(for_0);
     test(for_1);
     test(for_2);
+    test(while_0);
+    test(dowhile_0);
 
     print_report();
 }
