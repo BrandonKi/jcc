@@ -262,10 +262,16 @@ ExprNode *Parser::parse_postfix_expr() {
             assert(false);
         case TokenKind::_arrow:
             assert(false);
-        case TokenKind::_inc:
-            return UnaryExprNode::create(UnaryOp::_prefix_inc, base);
-        case TokenKind::_dec:
-            return UnaryExprNode::create(UnaryOp::_prefix_dec, base);
+        case TokenKind::_inc: // FIXME behaves like prefix inc
+            m_lex.next();
+            extra = BinExprNode::create(BinOp::_add, base,
+                                        NumLitExprNode::create(1));
+            return BinExprNode::create(BinOp::_assign, base, extra);
+        case TokenKind::_dec: // FIXME behaves like prefix dec
+            m_lex.next();
+            extra = BinExprNode::create(BinOp::_sub, base,
+                                        NumLitExprNode::create(1));
+            return BinExprNode::create(BinOp::_assign, base, extra);
         default:
             return base;
         }
@@ -290,19 +296,24 @@ ExprNode *Parser::parse_unary_expr() {
     JCC_PROFILE();
 
     ExprNode *expr = nullptr;
+    ExprNode *rhs = nullptr;
 
-    TokenKind op = m_lex.curr().kind;
+    UnaryOp op;
 
     // TODO deduplicate code
-    switch (op) {
+    switch (m_lex.curr().kind) {
     case TokenKind::_inc:
         m_lex.next();
         expr = parse_cast_expr();
-        return UnaryExprNode::create(UnaryOp::_prefix_inc, expr);
+        rhs = BinExprNode::create(BinOp::_add, expr, NumLitExprNode::create(1));
+        return BinExprNode::create(BinOp::_assign, expr, rhs);
+
     case TokenKind::_dec:
         m_lex.next();
         expr = parse_cast_expr();
-        return UnaryExprNode::create(UnaryOp::_prefix_dec, expr);
+        rhs = BinExprNode::create(BinOp::_sub, expr, NumLitExprNode::create(1));
+        return BinExprNode::create(BinOp::_assign, expr, rhs);
+
     case TokenKind::_and:
         m_lex.next();
         expr = parse_cast_expr();

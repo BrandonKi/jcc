@@ -1,11 +1,8 @@
 int main() {
-    int a = 10;
+    int i = 10;
+    int j = --i;
 
-    do {
-        a += 1;
-    } while(a < 10);
-
-    return a;
+    return i + j;
 }
 
 // int main() {

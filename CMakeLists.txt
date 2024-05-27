@@ -71,13 +71,13 @@ target_include_directories(jcc_tests
 
 target_link_libraries(jcc_tests ${llvm_libs})
 
-if(${LTO})
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT result)
-    if(result)
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif()
+# if(${LTO})
+#     include(CheckIPOSupported)
+#     check_ipo_supported(RESULT result)
+#     if(result)
+#         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+#     endif()
+# endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_compile_options(jcc PRIVATE -Wall -Wextra -pedantic)

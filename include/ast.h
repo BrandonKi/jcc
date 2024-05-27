@@ -128,6 +128,9 @@ struct IdExprNode final : public ExprNode {
 enum class UnaryOp : char {
     _none,
 
+    _postfix_inc,
+    _postfix_dec,
+
     _prefix_inc,
     _prefix_dec,
 

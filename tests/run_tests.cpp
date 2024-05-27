@@ -222,7 +222,7 @@ bool not_equal_literals_2() {
 bool ooo_literals() {
     jcc::Compiler c(co);
 
-    auto result = c.compile_string("int main() { return (1--1*2+2*4+1)/6; }");
+    auto result = c.compile_string("int main() { return (1- -1*2+2*4+1)/6; }");
 
     return result == 2;
 }
@@ -255,10 +255,12 @@ bool int_variable() {
     jcc::Compiler c(co);
 
     auto result = c.compile_string(R"(
-        int main() {
-            int i = 10;
-            return i;
-        }
+
+int main() {
+    int i = 10;
+    return i;
+}
+
     )");
 
     return result == 10;
@@ -268,11 +270,13 @@ bool int_variables_arithmetic_0() {
     jcc::Compiler c(co);
 
     auto result = c.compile_string(R"(
-        int main() {
-            int i = 10;
-            int x = 20;
-            return i - x;
-        }
+
+int main() {
+    int i = 10;
+    int x = 20;
+    return i - x;
+}
+
     )");
 
     return result == -10;
@@ -289,6 +293,7 @@ int main() {
     int z = y - x + 5;
     return (y * z);
 }
+
     )");
 
     return result == 300;
@@ -305,6 +310,7 @@ int main() {
     int z = y - x + 5;
     return -(+y * +z) / -(+x);
 }
+
     )");
 
     return result == 30;
@@ -322,6 +328,7 @@ int three() {
 int main() {
     return three();
 }
+
     )");
 
     return result == 3;
@@ -339,6 +346,7 @@ int identity(int a) {
 int main() {
     return identity(42);
 }
+
     )");
 
     return result == 42;
@@ -357,6 +365,7 @@ int fn(int x, int y) {
 int main() {
     return fn(10, 20);
 }
+
     )");
 
     return result == 30;
@@ -372,6 +381,7 @@ int main() {
     int *p = &i;
     return *p;
 }
+
     )");
 
     return result == 88;
@@ -391,6 +401,7 @@ int identity(int x) {
 int main() {
     return identity(1001);
 }
+
     )");
 
     return result == 1001;
@@ -410,6 +421,7 @@ int identity(int x) {
 int main() {
     return identity(3);
 }
+
     )");
 
     return result == 33;
@@ -425,6 +437,7 @@ int main() {
     x *= 2;
     return x;
 }
+
     )");
 
     return result == 180;
@@ -440,6 +453,7 @@ int main() {
     x /= 2;
     return x;
 }
+
     )");
 
     return result == 45;
@@ -455,6 +469,7 @@ int main() {
     x %= 4;
     return x;
 }
+
     )");
 
     return result == 2;
@@ -470,6 +485,7 @@ int main() {
     x += 11;
     return x;
 }
+
     )");
 
     return result == 101;
@@ -485,6 +501,7 @@ int main() {
     x -= 50;
     return x;
 }
+
     )");
 
     return result == 40;
@@ -500,6 +517,7 @@ int main() {
     x <<= 3;
     return x;
 }
+
     )");
 
     return result == 16;
@@ -515,6 +533,7 @@ int main() {
     x >>= 3;
     return x;
 }
+
     )");
 
     return result == 2;
@@ -530,6 +549,7 @@ int main() {
     x &= 11;
     return x;
 }
+
     )");
 
     return result == 2;
@@ -545,6 +565,7 @@ int main() {
     x ^= 11;
     return x;
 }
+
     )");
 
     return result == 25;
@@ -560,9 +581,44 @@ int main() {
     x |= 11;
     return x;
 }
+
     )");
 
     return result == 27;
+}
+
+bool prefix_inc_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i = 10;
+    int j = ++i;
+
+    return i + j;
+}
+
+    )");
+
+    return result == 22;
+}
+
+bool prefix_dec_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i = 10;
+    int j = --i;
+
+    return i + j;
+}
+
+    )");
+
+    return result == 18;
 }
 
 // TODO capture and compare stdout
@@ -776,7 +832,7 @@ bool for_0() {
 int main() {
     int a = 0;
 
-    for(int i = 0; i < 10; i += 1) {
+    for(int i = 0; i < 10; ++i) {
         a += i;
     }
 
@@ -816,7 +872,7 @@ bool for_2() {
 int main() {
     int a = 0;
 
-    for(int i = 0; i < 10; i += 1) {
+    for(int i = 0; i < 10; i++) {
         if(i % 2 == 0)
             a += i;
         else
@@ -956,6 +1012,8 @@ int main(int argc, char *argv[]) {
     test(assign_8);
     test(assign_9);
     test(assign_10);
+    test(prefix_inc_0);
+    test(prefix_dec_0);
     test(hello_world_0);
     test(hello_world_1);
     test(branch_0);

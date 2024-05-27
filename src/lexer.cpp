@@ -223,6 +223,15 @@ Token Lexer::internal_next() {
             i += 2;
             return Token(TokenKind::_or_equal);
         }
+
+        if (m_text[i] == '+' && m_text[i + 1] == '+') {
+            i += 2;
+            return Token(TokenKind::_inc);
+        }
+        if (m_text[i] == '-' && m_text[i + 1] == '-') {
+            i += 2;
+            return Token(TokenKind::_dec);
+        }
     }
 
     result = Token((TokenKind)m_text[i++]);

@@ -2,6 +2,7 @@
 #include "ast.h"
 // #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
@@ -117,8 +118,26 @@ llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
     llvm::Value *expr;
 
     switch (unary_expr->op) {
-    case UnaryOp::_prefix_inc:
-    case UnaryOp::_prefix_dec:
+    case UnaryOp::_postfix_inc: {
+        return m_builder->CreateAdd(
+            gen_expr(unary_expr->expr),
+            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+    }
+    case UnaryOp::_postfix_dec: {
+        return m_builder->CreateSub(
+            gen_expr(unary_expr->expr),
+            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+    }
+    case UnaryOp::_prefix_inc: {
+        return m_builder->CreateAdd(
+            gen_expr(unary_expr->expr),
+            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+    }
+    case UnaryOp::_prefix_dec: {
+        return m_builder->CreateSub(
+            gen_expr(unary_expr->expr),
+            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+    }
     case UnaryOp::_sizeof:
     case UnaryOp::__Alignof:
         assert(false);
@@ -163,7 +182,7 @@ llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
         m_builder->CreateAlignedStore(
             rhs, addr,
             llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
-        return addr;
+        return rhs;
     }
     case UnaryExpr: {
         auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
