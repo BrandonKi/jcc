@@ -36,6 +36,7 @@ public:
     llvm::Value *gen_unary_expr(UnaryExprNode *);
     llvm::Value *gen_assign(BinExprNode *);
     llvm::Value *gen_bin_expr(BinExprNode *);
+    llvm::Value *gen_cast_expr(CastExprNode *);
     llvm::Value *gen_call_expr(CallExprNode *);
     llvm::Value *gen_expr(ExprNode *);
 

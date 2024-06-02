@@ -69,6 +69,14 @@ public:
 
     static CType *getBuiltinType(CTypeKind type, bool is_signed = true);
 
+    bool is_int_type() {
+        return (type >= Char && type <= LLong);
+    }
+
+    static CType *pointer_to(CType *target) {
+        return CType::create(CTypeKind::Pointer, target);
+    }
+
     ARENA_CREATE(CType);
 };
 
@@ -81,8 +89,8 @@ enum ExprKind {
     CallExpr,
     PrimaryExpr,
     PostfixExpr,
-    UnaryExpr,
     CastExpr,
+    UnaryExpr,
     BinExpr,
     CondExpr,
 };
@@ -125,6 +133,32 @@ struct IdExprNode final : public ExprNode {
     ARENA_CREATE(IdExprNode);
 };
 
+struct CallExprNode final : public ExprNode {
+    ExprNode *base;
+    std::vector<ExprNode *> args;
+
+    CallExprNode() : ExprNode{ExprKind::CallExpr}, base{nullptr}, args{} {}
+
+    CallExprNode(ExprNode *base, std::vector<ExprNode *> args)
+        : ExprNode{ExprKind::CallExpr}, base{base}, args{args} {}
+
+    ARENA_CREATE(CallExprNode);
+};
+
+struct CastExprNode final : public ExprNode {
+    ExprNode *base;
+    CType *type;
+
+    CastExprNode()
+        : ExprNode{ExprKind::CastExpr}, base{nullptr}, type{nullptr} {}
+
+    CastExprNode(ExprNode *base, CType *type)
+        : ExprNode{ExprKind::CastExpr}, base{base}, type{type} {}
+
+    ARENA_CREATE(CastExprNode);
+};
+
+// TODO get rid of _cast and cast_to
 enum class UnaryOp : char {
     _none,
 
@@ -166,18 +200,6 @@ struct UnaryExprNode final : public ExprNode {
         : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op}, cast_to{cast_to} {}
 
     ARENA_CREATE(UnaryExprNode);
-};
-
-struct CallExprNode final : public ExprNode {
-    ExprNode *base;
-    std::vector<ExprNode *> args;
-
-    CallExprNode() : ExprNode{ExprKind::CallExpr}, base{nullptr}, args{} {}
-
-    CallExprNode(ExprNode *base, std::vector<ExprNode *> args)
-        : ExprNode{ExprKind::CallExpr}, base{base}, args{args} {}
-
-    ARENA_CREATE(CallExprNode);
 };
 
 enum class BinOp : char {

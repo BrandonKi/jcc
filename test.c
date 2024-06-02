@@ -1,8 +1,9 @@
-int main() {
-    int i = 10;
-    int j = --i;
+extern void puts(char *);
 
-    return i + j;
+int main() {
+    char *a = "Hello World!";
+    puts(a);
+    return 0;
 }
 
 // int main() {

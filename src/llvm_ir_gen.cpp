@@ -146,9 +146,9 @@ llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
     }
     case UnaryOp::_deref: {
         expr = gen_expr(unary_expr->expr);
-        llvm::Value *val = m_builder->CreateAlignedLoad(
-            expr->getType(), expr,
-            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        llvm::Value *val =
+            m_builder->CreateAlignedLoad(to_llvm_type(unary_expr->type), expr,
+                                         llvm::Align(unary_expr->type->align));
         return val;
     }
     case UnaryOp::_add:
@@ -277,6 +277,24 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     return nullptr;
 }
 
+llvm::Value *LLVMIRGen::gen_cast_expr(CastExprNode *cast_expr) {
+    JCC_PROFILE();
+
+    llvm::Value *val = gen_expr(cast_expr->base);
+
+    CType *src = cast_expr->base->type;
+    CType *dest = cast_expr->type;
+
+    // FIXME temporary, need to add size info to each type to make this easier
+    if (src->is_int_type() && dest->is_int_type()) {
+        val = m_builder->CreateSExtOrTrunc(val, to_llvm_type(dest));
+    } else if (src->type == CTypeKind::Bool && dest->is_int_type()) {
+        val = m_builder->CreateZExtOrTrunc(val, to_llvm_type(dest));
+    }
+
+    return val;
+}
+
 llvm::Value *LLVMIRGen::gen_call_expr(CallExprNode *call_expr) {
     JCC_PROFILE();
 
@@ -318,6 +336,8 @@ llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
         return gen_unary_expr(static_cast<UnaryExprNode *>(expr));
     case ExprKind::BinExpr:
         return gen_bin_expr(static_cast<BinExprNode *>(expr));
+    case ExprKind::CastExpr:
+        return gen_cast_expr(static_cast<CastExprNode *>(expr));
     case ExprKind::CallExpr:
         return gen_call_expr(static_cast<CallExprNode *>(expr));
     default:

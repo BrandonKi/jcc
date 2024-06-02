@@ -86,7 +86,7 @@ CType *Parser::parse_type(Attributes *attr) {
     }
 
     while (m_lex.curr().kind == TokenKind::_star) {
-        type = new CType(CTypeKind::Pointer, type);
+        type = CType::pointer_to(type);
         m_lex.next();
     }
 
