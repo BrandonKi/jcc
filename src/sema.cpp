@@ -29,7 +29,7 @@ void Sema::add_var(DeclNode *decl) {
 ExprNode *Sema::insert_cast(ExprNode *expr, CType *type) {
     JCC_PROFILE();
 
-    return CastExprNode::create(expr, type);
+    return UnaryExprNode::create_cast(expr, type);
 }
 
 ExprNode *Sema::maybe_insert_cast(ExprNode *expr, CType *type) {
@@ -101,7 +101,8 @@ void Sema::sema_id_expr(IdExprNode *id_expr) {
 void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
     JCC_PROFILE();
 
-    sema_expr(unary_expr->expr);
+    if (unary_expr->base)
+        sema_expr(unary_expr->base);
 
     switch (unary_expr->op) {
     case UnaryOp::_postfix_inc:
@@ -109,25 +110,41 @@ void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
 
     case UnaryOp::_prefix_inc:
     case UnaryOp::_prefix_dec:
+        // TODO double check this is correct
+        unary_expr->type = unary_expr->base->type;
+        unary_expr->base =
+            maybe_insert_cast(unary_expr->base, unary_expr->type);
+        break;
 
     case UnaryOp::_sizeof:
     case UnaryOp::__Alignof:
+        unary_expr->type = CType::getBuiltinType(CTypeKind::Int);
         break;
 
     case UnaryOp::_address:
-        unary_expr->type = CType::pointer_to(unary_expr->expr->type);
+        unary_expr->type = CType::pointer_to(unary_expr->base->type);
         break;
     case UnaryOp::_deref:
-        unary_expr->type = unary_expr->expr->type->ptr;
+        unary_expr->type = unary_expr->base->type->base;
         break;
 
     case UnaryOp::_add:
     case UnaryOp::_sub:
+        unary_expr->type = CType::getBuiltinType(CTypeKind::Int);
+        unary_expr->base =
+            maybe_insert_cast(unary_expr->base, unary_expr->type);
+        break;
 
     case UnaryOp::_bit_not:
         break;
     case UnaryOp::_log_not:
         unary_expr->type = CType::getBuiltinType(CTypeKind::Bool);
+        unary_expr->base =
+            maybe_insert_cast(unary_expr->base, unary_expr->type);
+        break;
+
+    case UnaryOp::_cast:
+        sema_cast_expr(unary_expr);
     default:
         break;
     }
@@ -135,6 +152,19 @@ void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
 
 void Sema::sema_call_expr(CallExprNode *call_expr) {
     JCC_PROFILE();
+
+    assert(call_expr->base->kind == ExprKind::IdExpr);
+    // sema_expr(call_expr->base);
+    FunctionNode *callee =
+        fn_tab[*static_cast<IdExprNode *>(call_expr->base)->val];
+
+    for (int i = 0; i < call_expr->args.size(); ++i) {
+        sema_expr(call_expr->args[i]);
+        call_expr->args[i] =
+            maybe_insert_cast(call_expr->args[i], callee->proto->args[i]->type);
+    }
+
+    call_expr->type = callee->proto->ret_type;
 }
 
 void Sema::sema_bin_expr(BinExprNode *bin_expr) {
@@ -144,6 +174,7 @@ void Sema::sema_bin_expr(BinExprNode *bin_expr) {
     sema_expr(bin_expr->rhs);
 
     bool skip_lhs = false;
+    CType *final_expr_type = nullptr;
 
     switch (bin_expr->op) {
     case BinOp::_less_than:
@@ -152,29 +183,39 @@ void Sema::sema_bin_expr(BinExprNode *bin_expr) {
     case BinOp::_greater_than_equal:
     case BinOp::_equal:
     case BinOp::_not_equal:
-        bin_expr->type = CType::getBuiltinType(CTypeKind::Bool);
-        return;
+        final_expr_type = CType::getBuiltinType(CTypeKind::Bool);
+        break;
     case BinOp::_log_and:
     case BinOp::_log_or:
         assert(false);
-    case BinOp::_assign:
+    case BinOp::_assign: // TODO ensure lhs is lvalue
+        skip_lhs = true;
+        bin_expr->type = bin_expr->lhs->type;
+        break;
     case BinOp::_comma:
         skip_lhs = true;
         break;
     default:
-        bin_expr->type = get_type(bin_expr->lhs->type, bin_expr->rhs->type);
+        break;
     }
 
-    if (!skip_lhs)
+    if (!skip_lhs) {
+        bin_expr->type = get_type(bin_expr->lhs->type, bin_expr->rhs->type);
         bin_expr->lhs = maybe_insert_cast(bin_expr->lhs, bin_expr->type);
+    }
     bin_expr->rhs = maybe_insert_cast(bin_expr->rhs, bin_expr->type);
+
+    if (final_expr_type)
+        bin_expr->type = final_expr_type;
 }
 
 void Sema::sema_cond_expr(CondExprNode *cond_expr) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
-void Sema::sema_cast_expr(CastExprNode *cast_expr) {
+void Sema::sema_cast_expr(UnaryExprNode *cast_expr) {
     JCC_PROFILE();
 
     sema_expr(cast_expr->base);
@@ -204,9 +245,6 @@ void Sema::sema_expr(ExprNode *expr) {
     case PostfixExpr:
         assert(false);
         break;
-    case CastExpr:
-        sema_cast_expr(static_cast<CastExprNode *>(expr));
-        break;
     case UnaryExpr:
         sema_unary_expr(static_cast<UnaryExprNode *>(expr));
         break;
@@ -224,43 +262,83 @@ void Sema::sema_expr(ExprNode *expr) {
 void Sema::sema_decl(DeclNode *decl) {
     JCC_PROFILE();
 
-    if(decl->id)
+    if (decl->id)
         add_var(decl);
 
-    if (decl->init)
+    if (decl->init) {
         sema_expr(decl->init);
+        decl->init = maybe_insert_cast(decl->init, decl->type);
+    }
 }
 
 void Sema::sema_case_stmnt(CaseStmntNode *case_stmnt) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
 void Sema::sema_default_stmnt(DefaultStmntNode *default_stmnt) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
 void Sema::sema_if_stmnt(IfStmntNode *if_stmnt) {
     JCC_PROFILE();
+
+    sema_expr(if_stmnt->cond);
+    if_stmnt->cond = maybe_insert_cast(if_stmnt->cond,
+                                       CType::getBuiltinType(CTypeKind::Bool));
+
+    sema_stmnt(if_stmnt->true_branch);
+    if (if_stmnt->false_branch)
+        sema_stmnt(if_stmnt->false_branch);
 }
 
 void Sema::sema_switch_stmnt(SwitchStmntNode *switch_stmnt) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
 void Sema::sema_while_stmnt(WhileStmntNode *while_stmnt) {
     JCC_PROFILE();
+
+    sema_expr(while_stmnt->cond);
+    while_stmnt->cond = maybe_insert_cast(
+        while_stmnt->cond, CType::getBuiltinType(CTypeKind::Bool));
+
+    sema_stmnt(while_stmnt->body);
 }
 
 void Sema::sema_do_stmnt(DoStmntNode *do_stmnt) {
     JCC_PROFILE();
+
+    sema_stmnt(do_stmnt->body);
+
+    sema_expr(do_stmnt->cond);
+    do_stmnt->cond = maybe_insert_cast(do_stmnt->cond,
+                                       CType::getBuiltinType(CTypeKind::Bool));
 }
 
 void Sema::sema_for_stmnt(ForStmntNode *for_stmnt) {
     JCC_PROFILE();
+
+    sema_decl(for_stmnt->init);
+
+    sema_expr(for_stmnt->cond);
+    for_stmnt->cond = maybe_insert_cast(for_stmnt->cond,
+                                        CType::getBuiltinType(CTypeKind::Bool));
+
+    sema_expr(for_stmnt->inc);
+
+    sema_stmnt(for_stmnt->body);
 }
 
 void Sema::sema_goto_stmnt(GotoStmntNode *goto_stmnt) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
 void Sema::sema_return_stmnt(ReturnStmntNode *ret_stmnt) {
@@ -274,6 +352,8 @@ void Sema::sema_return_stmnt(ReturnStmntNode *ret_stmnt) {
 
 void Sema::sema_label_stmnt(LabelStmntNode *label_stmnt) {
     JCC_PROFILE();
+
+    assert(false);
 }
 
 void Sema::sema_expr_stmnt(ExprStmntNode *expr_stmnt) {
@@ -285,6 +365,8 @@ void Sema::sema_expr_stmnt(ExprStmntNode *expr_stmnt) {
 void Sema::sema_compound_stmnt(CompoundStmntNode *compound_stmnt) {
     JCC_PROFILE();
 
+    var_tab.emplace_back();
+
     for (auto *decl : compound_stmnt->decl_list) {
         sema_decl(decl);
     }
@@ -292,6 +374,8 @@ void Sema::sema_compound_stmnt(CompoundStmntNode *compound_stmnt) {
     for (auto *stmnt : compound_stmnt->stmnt_list) {
         sema_stmnt(stmnt);
     }
+
+    var_tab.pop_back();
 }
 
 void Sema::sema_stmnt(StmntNode *stmnt) {
@@ -347,6 +431,7 @@ void Sema::sema_prototype(PrototypeNode *proto) {
     JCC_PROFILE();
 
     // TODO add self to symbol table?
+    fn_tab[*proto->id] = current_fn;
 
     for (auto *arg : proto->args) {
         sema_decl(arg);
@@ -355,8 +440,6 @@ void Sema::sema_prototype(PrototypeNode *proto) {
 
 void Sema::sema_function(FunctionNode *fn) {
     JCC_PROFILE();
-
-    fn_tab[*fn->proto->id] = fn;
 
     current_fn = fn;
 

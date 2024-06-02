@@ -338,6 +338,27 @@ ExprNode *Parser::parse_unary_expr() {
         m_lex.next();
         expr = parse_cast_expr();
         return UnaryExprNode::create(UnaryOp::_log_not, expr);
+    case TokenKind::k_sizeof: {
+        m_lex.next();
+        if (m_lex.curr().kind == TokenKind::_open_paren &&
+            is_start_of_type(m_lex.peek())) {
+            m_lex.next();
+            CType *type = parse_type();
+            m_lex.eat(')');
+            return UnaryExprNode::create(UnaryOp::_sizeof, type);
+        }
+        expr = parse_unary_expr();
+        return UnaryExprNode::create(UnaryOp::_sizeof, expr);
+    }
+    case TokenKind::k__Alignof:
+        m_lex.next();
+        if (m_lex.curr().kind == TokenKind::_open_paren) {
+            m_lex.next();
+            CType *type = parse_type();
+            m_lex.eat(')');
+            return UnaryExprNode::create(UnaryOp::__Alignof, type);
+        }
+        assert(false);
     default:
         return parse_postfix_expr();
     }
@@ -358,7 +379,7 @@ ExprNode *Parser::parse_cast_expr() {
         CType *ty = parse_type();
         m_lex.eat(TokenKind::_close_paren);
         ExprNode *cast_expr = parse_cast_expr();
-        return UnaryExprNode::create(UnaryOp::_cast, ty, cast_expr);
+        return UnaryExprNode::create(UnaryOp::_cast, cast_expr, ty);
     }
 
     return parse_unary_expr();

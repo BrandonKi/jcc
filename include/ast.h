@@ -49,23 +49,30 @@ enum CTypeKind : int {
 class CType {
 public:
     CTypeKind type;
-    CType *ptr;
+    CType *base;
     int align;
+    int size;
     bool is_signed;
 
-    CType() : type{CTypeKind::None}, ptr{nullptr}, align{1}, is_signed{true} {}
-    CType(CTypeKind type)
-        : type{type}, ptr{nullptr}, align{1}, is_signed{true} {}
-    CType(CTypeKind type, CType *ptr)
-        : type{type}, ptr{ptr},
-          align{CType::getBuiltinType(CTypeKind::Pointer)->align},
+    CType()
+        : type{CTypeKind::None}, base{nullptr}, align{1}, size{1},
           is_signed{true} {}
-    CType(CTypeKind type, int align)
-        : type{type}, ptr{nullptr}, align{align}, is_signed{true} {}
-    CType(CTypeKind type, int align, bool is_signed)
-        : type{type}, ptr{nullptr}, align{align}, is_signed{is_signed} {}
-    CType(CTypeKind type, CType *ptr, int align, bool is_signed)
-        : type{type}, ptr{ptr}, align{align}, is_signed{is_signed} {}
+    CType(CTypeKind type)
+        : type{type}, base{nullptr}, align{1}, size{1}, is_signed{true} {}
+    CType(CTypeKind type, CType *ptr)
+        : type{type}, base{ptr},
+          align{CType::getBuiltinType(CTypeKind::Pointer)->align},
+          size{CType::getBuiltinType(CTypeKind::Pointer)->size},
+          is_signed{true} {}
+    CType(CTypeKind type, int align, int size)
+        : type{type}, base{nullptr}, align{align}, size{size}, is_signed{true} {
+    }
+    CType(CTypeKind type, int align, int size, bool is_signed)
+        : type{type}, base{nullptr}, align{align}, size{size},
+          is_signed{is_signed} {}
+    CType(CTypeKind type, CType *ptr, int align, int size, bool is_signed)
+        : type{type}, base{ptr}, align{align}, size{size},
+          is_signed{is_signed} {}
 
     static CType *getBuiltinType(CTypeKind type, bool is_signed = true);
 
@@ -73,8 +80,11 @@ public:
         return (type >= Char && type <= LLong);
     }
 
-    static CType *pointer_to(CType *target) {
-        return CType::create(CTypeKind::Pointer, target);
+    static CType *pointer_to(CType *base) {
+        CType *plt_ptr = CType::getBuiltinType(CTypeKind::Pointer);
+        auto *temp = CType::create(CTypeKind::Pointer, base, plt_ptr->align,
+                                   plt_ptr->size, plt_ptr->is_signed);
+        return temp;
     }
 
     ARENA_CREATE(CType);
@@ -89,7 +99,6 @@ enum ExprKind {
     CallExpr,
     PrimaryExpr,
     PostfixExpr,
-    CastExpr,
     UnaryExpr,
     BinExpr,
     CondExpr,
@@ -145,20 +154,6 @@ struct CallExprNode final : public ExprNode {
     ARENA_CREATE(CallExprNode);
 };
 
-struct CastExprNode final : public ExprNode {
-    ExprNode *base;
-    CType *type;
-
-    CastExprNode()
-        : ExprNode{ExprKind::CastExpr}, base{nullptr}, type{nullptr} {}
-
-    CastExprNode(ExprNode *base, CType *type)
-        : ExprNode{ExprKind::CastExpr}, base{base}, type{type} {}
-
-    ARENA_CREATE(CastExprNode);
-};
-
-// TODO get rid of _cast and cast_to
 enum class UnaryOp : char {
     _none,
 
@@ -180,24 +175,36 @@ enum class UnaryOp : char {
     _bit_not,
     _log_not,
 
-    _cast,
+    _cast
 };
 
+// NOTE base and base_type should not be active at the same time
+// could be a union
 struct UnaryExprNode final : public ExprNode {
-    ExprNode *expr;
-    CType *cast_to;
+    ExprNode *base;
+    CType *base_type;
     UnaryOp op;
 
     UnaryExprNode()
-        : ExprNode{ExprKind::UnaryExpr}, expr{nullptr}, op{0},
-          cast_to{CType::getBuiltinType(CTypeKind::None)} {}
+        : ExprNode{ExprKind::UnaryExpr, CType::getBuiltinType(CTypeKind::None)},
+          base{nullptr}, base_type{nullptr}, op{0} {}
 
     UnaryExprNode(UnaryOp op, ExprNode *expr)
-        : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op},
-          cast_to{CType::getBuiltinType(CTypeKind::None)} {}
+        : ExprNode{ExprKind::UnaryExpr, CType::getBuiltinType(CTypeKind::None)},
+          base{expr}, base_type{nullptr}, op{op} {}
 
-    UnaryExprNode(UnaryOp op, CType *cast_to, ExprNode *expr)
-        : ExprNode{ExprKind::UnaryExpr}, expr{expr}, op{op}, cast_to{cast_to} {}
+    UnaryExprNode(UnaryOp op, CType *type)
+        : ExprNode{ExprKind::UnaryExpr}, base{nullptr}, base_type{type},
+          op{op} {}
+
+    UnaryExprNode(UnaryOp op, ExprNode *expr, CType *type)
+        : ExprNode{ExprKind::UnaryExpr}, base{expr}, base_type{type}, op{op} {}
+
+    static UnaryExprNode *create_cast(ExprNode *expr, CType *type) {
+        auto *result = UnaryExprNode::create(UnaryOp::_cast, expr, type);
+        result->type = type;
+        return result;
+    }
 
     ARENA_CREATE(UnaryExprNode);
 };

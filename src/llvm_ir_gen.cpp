@@ -47,14 +47,14 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
     case Void:
         return llvm::Type::getVoidTy(*m_context);
     case Pointer:
-        return to_llvm_type(type->ptr)->getPointerTo();
+        return to_llvm_type(type->base)->getPointerTo();
     case Struct:
     case Union:
     case Array:
     case Function:
         assert(false);
     case Bool:
-        return llvm::Type::getInt8Ty(*m_context);
+        return llvm::Type::getInt1Ty(*m_context);
     case Enum:
     default:
         assert(false);
@@ -73,8 +73,10 @@ llvm::Value *LLVMIRGen::gen_str_lit_expr(StrLitExprNode *str_expr) {
 llvm::Value *LLVMIRGen::gen_num_lit_expr(NumLitExprNode *num_expr) {
     JCC_PROFILE();
 
-    return llvm::ConstantInt::get(*m_context,
-                                  llvm::APInt(32, num_expr->val, true));
+    return llvm::ConstantInt::get(
+        *m_context,
+        llvm::APInt(to_llvm_type(num_expr->type)->getPrimitiveSizeInBits(),
+                    num_expr->val, true));
 }
 
 llvm::Value *LLVMIRGen::gen_id_expr(IdExprNode *id_expr) {
@@ -102,7 +104,7 @@ llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
     }
     case UnaryExpr: {
         auto expr = static_cast<UnaryExprNode *>(base_expr);
-        return gen_expr(expr->expr);
+        return gen_expr(expr->base);
     }
     default:
         assert(false);
@@ -120,48 +122,72 @@ llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
     switch (unary_expr->op) {
     case UnaryOp::_postfix_inc: {
         return m_builder->CreateAdd(
-            gen_expr(unary_expr->expr),
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+            gen_expr(unary_expr->base),
+            llvm::ConstantInt::get(
+                *m_context,
+                llvm::APInt(unary_expr->base->type->size, 1, true)));
     }
     case UnaryOp::_postfix_dec: {
         return m_builder->CreateSub(
-            gen_expr(unary_expr->expr),
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+            gen_expr(unary_expr->base),
+            llvm::ConstantInt::get(
+                *m_context,
+                llvm::APInt(unary_expr->base->type->size, 1, true)));
     }
     case UnaryOp::_prefix_inc: {
         return m_builder->CreateAdd(
-            gen_expr(unary_expr->expr),
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+            gen_expr(unary_expr->base),
+            llvm::ConstantInt::get(
+                *m_context,
+                llvm::APInt(unary_expr->base->type->size, 1, true)));
     }
     case UnaryOp::_prefix_dec: {
         return m_builder->CreateSub(
-            gen_expr(unary_expr->expr),
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 1, true)));
+            gen_expr(unary_expr->base),
+            llvm::ConstantInt::get(
+                *m_context,
+                llvm::APInt(unary_expr->base->type->size, 1, true)));
     }
-    case UnaryOp::_sizeof:
-    case UnaryOp::__Alignof:
-        assert(false);
+    case UnaryOp::_sizeof: {
+        if (unary_expr->base) {
+            return llvm::ConstantInt::get(
+                *m_context,
+                llvm::APInt(32, unary_expr->base->type->size, true));
+        }
+        return llvm::ConstantInt::get(
+            *m_context, llvm::APInt(32, unary_expr->base_type->size, true));
+    }
+    case UnaryOp::__Alignof: {
+        return llvm::ConstantInt::get(
+            *m_context, llvm::APInt(32, unary_expr->base_type->align, true));
+    }
     case UnaryOp::_address: {
-        return gen_address_of(unary_expr->expr);
+        return gen_address_of(unary_expr->base);
     }
     case UnaryOp::_deref: {
-        expr = gen_expr(unary_expr->expr);
+        expr = gen_expr(unary_expr->base);
         llvm::Value *val =
             m_builder->CreateAlignedLoad(to_llvm_type(unary_expr->type), expr,
                                          llvm::Align(unary_expr->type->align));
         return val;
     }
     case UnaryOp::_add:
-        expr = gen_expr(unary_expr->expr);
+        expr = gen_expr(unary_expr->base);
         return expr;
     case UnaryOp::_sub:
-        expr = gen_expr(unary_expr->expr);
+        expr = gen_expr(unary_expr->base);
         expr = m_builder->CreateNSWSub(
-            llvm::ConstantInt::get(*m_context, llvm::APInt(32, 0, true)), expr);
+            llvm::ConstantInt::get(
+                *m_context, llvm::APInt(to_llvm_type(unary_expr->base->type)
+                                            ->getPrimitiveSizeInBits(),
+                                        0, true)),
+            expr);
         return expr;
     case UnaryOp::_bit_not:
     case UnaryOp::_log_not:
+        assert(false);
     case UnaryOp::_cast:
+        return gen_cast_expr(unary_expr);
     default:
         assert(false);
     }
@@ -179,9 +205,8 @@ llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
     case IdExpr: {
         auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
         auto &[decl, addr] = m_named_values[*lhs->val];
-        m_builder->CreateAlignedStore(
-            rhs, addr,
-            llvm::Align(CType::getBuiltinType(CTypeKind::LLong)->align));
+        m_builder->CreateAlignedStore(rhs, addr,
+                                      llvm::Align(bin_expr->rhs->type->align));
         return rhs;
     }
     case UnaryExpr: {
@@ -277,7 +302,7 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     return nullptr;
 }
 
-llvm::Value *LLVMIRGen::gen_cast_expr(CastExprNode *cast_expr) {
+llvm::Value *LLVMIRGen::gen_cast_expr(UnaryExprNode *cast_expr) {
     JCC_PROFILE();
 
     llvm::Value *val = gen_expr(cast_expr->base);
@@ -336,8 +361,6 @@ llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
         return gen_unary_expr(static_cast<UnaryExprNode *>(expr));
     case ExprKind::BinExpr:
         return gen_bin_expr(static_cast<BinExprNode *>(expr));
-    case ExprKind::CastExpr:
-        return gen_cast_expr(static_cast<CastExprNode *>(expr));
     case ExprKind::CallExpr:
         return gen_call_expr(static_cast<CallExprNode *>(expr));
     default:

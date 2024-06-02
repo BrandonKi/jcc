@@ -99,7 +99,7 @@ struct ASTVisitor {
             return;
         derived().visitUnaryExpr(unary_expr);
 
-        derived().traverseExpr(unary_expr->expr);
+        derived().traverseExpr(unary_expr->base);
 
         derived().leaveUnaryExpr(unary_expr);
     }

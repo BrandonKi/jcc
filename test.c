@@ -1,9 +1,7 @@
-extern void puts(char *);
-
 int main() {
-    char *a = "Hello World!";
-    puts(a);
-    return 0;
+    short a = 0;
+    short b = 1;
+    return sizeof a + b;
 }
 
 // int main() {

@@ -29,7 +29,7 @@ public:
     void sema_str_lit_expr(StrLitExprNode *);
     void sema_id_expr(IdExprNode *);
     void sema_call_expr(CallExprNode *);
-    void sema_cast_expr(CastExprNode *);
+    void sema_cast_expr(UnaryExprNode *);
     void sema_unary_expr(UnaryExprNode *);
     void sema_bin_expr(BinExprNode *);
     void sema_cond_expr(CondExprNode *);

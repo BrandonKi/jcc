@@ -967,6 +967,131 @@ int main() {
     return result == 11;
 }
 
+bool sizeof_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i;
+    return sizeof(int);
+}
+
+    )");
+
+    return result == sizeof(int);
+}
+
+bool sizeof_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i;
+    return sizeof &i + sizeof(&i);
+}
+
+    )");
+
+    return result == sizeof(int *) * 2;
+}
+
+bool sizeof_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    short *s;
+    int j = sizeof *s;
+    return j;
+}
+
+    )");
+
+    return result == sizeof(short);
+}
+
+bool sizeof_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    short a = 0;
+    short b = 1;
+    return sizeof a + b;
+}
+
+    )");
+
+    return result == sizeof(short) + 1;
+}
+
+bool sizeof_4() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    short a = 0;
+    short b = 1;
+    return sizeof a + b;
+}
+
+    )");
+
+    return result == sizeof(short) + 1;
+}
+
+bool sizeof_5() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    short a = 0;
+    short b = 1;
+    return sizeof (a + b);
+}
+
+    )");
+
+    return result == sizeof(int);
+}
+
+bool alignof_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    return _Alignof(int*);
+}
+
+    )");
+
+    return result == alignof(int *);
+}
+
+bool sizeof_alignof_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int i = sizeof(int);
+    int j = sizeof &i;
+    int k = _Alignof(int*);
+    return i + j + k;
+}
+
+    )");
+
+    return result == sizeof(int) + sizeof(int *) + alignof(int *);
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1028,6 +1153,14 @@ int main(int argc, char *argv[]) {
     test(for_2);
     test(while_0);
     test(dowhile_0);
+    test(sizeof_0);
+    test(sizeof_1);
+    test(sizeof_2);
+    test(sizeof_3);
+    test(sizeof_4);
+    test(sizeof_5);
+    test(alignof_0);
+    test(sizeof_alignof_0);
 
     print_report();
 }
