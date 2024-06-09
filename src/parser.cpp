@@ -38,7 +38,7 @@ CType *Parser::parse_type(Attributes *attr) {
     }
 
     if (t1.kind == TokenKind::k_extern) {
-        assert(attr);
+        ice(attr);
         attr->_extern = true;
         t1 = m_lex.next();
     }
@@ -77,7 +77,7 @@ CType *Parser::parse_type(Attributes *attr) {
         m_lex.next();
         break;
     case TokenKind::k_struct:
-        assert(false);
+        ice(false);
     default:
         if (sign_prefix)
             type = CType::getBuiltinType(CTypeKind::Int, type->is_signed);
@@ -179,7 +179,7 @@ ExprNode *Parser::parse_primary_expr() {
         m_lex.eat(')');
         break;
     default:
-        assert(false);
+        ice(false);
     }
     return expr;
 }
@@ -221,7 +221,7 @@ std::vector<DeclNode *> Parser::parse_function_decl_args() {
 
     while (m_lex.curr().kind != TokenKind::_close_paren) {
         if (m_lex.curr().kind != TokenKind::_comma)
-            assert(false);
+            ice(false);
         m_lex.next();
         result.push_back(parse_decl());
     }
@@ -254,14 +254,14 @@ ExprNode *Parser::parse_postfix_expr() {
     while (true) {
         switch (op) {
         case TokenKind::_open_bracket:
-            assert(false);
+            ice(false);
         case TokenKind::_open_paren:
             extra = CallExprNode::create(base, parse_function_call_args());
             return extra;
         case TokenKind::_dot:
-            assert(false);
+            ice(false);
         case TokenKind::_arrow:
-            assert(false);
+            ice(false);
         case TokenKind::_inc: // FIXME behaves like prefix inc
             m_lex.next();
             extra = BinExprNode::create(BinOp::_add, base,
@@ -279,7 +279,7 @@ ExprNode *Parser::parse_postfix_expr() {
         op = m_lex.next().kind;
     }
 
-    assert(false);
+    ice(false);
 }
 
 // unary-expression:
@@ -358,12 +358,12 @@ ExprNode *Parser::parse_unary_expr() {
             m_lex.eat(')');
             return UnaryExprNode::create(UnaryOp::__Alignof, type);
         }
-        assert(false);
+        ice(false);
     default:
         return parse_postfix_expr();
     }
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -762,14 +762,14 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
 CaseStmntNode *Parser::parse_case_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
 DefaultStmntNode *Parser::parse_default_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -796,7 +796,7 @@ IfStmntNode *Parser::parse_if_stmnt() {
 SwitchStmntNode *Parser::parse_switch_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -850,21 +850,21 @@ ForStmntNode *Parser::parse_for_stmnt() {
 GotoStmntNode *Parser::parse_goto_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
 ContinueStmntNode *Parser::parse_continue_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
 BreakStmntNode *Parser::parse_break_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -881,7 +881,7 @@ ReturnStmntNode *Parser::parse_return_stmnt() {
 LabelStmntNode *Parser::parse_label_stmnt() {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 

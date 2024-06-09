@@ -256,7 +256,7 @@ static std::string str(Token t) {
     case TokenKind::_num_lit:
         return std::to_string(t.number.val);
     default:
-        assert(false);
+        ice(false);
     }
 
     return str;

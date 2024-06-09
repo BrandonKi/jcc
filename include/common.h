@@ -4,13 +4,34 @@
 #define VERBOSE_ICE
 // #define JCC_PROFILE_BUILD
 
+#ifdef RELEASE_ASSERTS
+#undef NDEBUG
+#endif
+
+#ifdef VERBOSE_ICE
+#include <iostream>
+#include <stacktrace>
+
+inline void jcc_ice_assert(const char *expr, std::stacktrace s,
+                           const char *message = nullptr) {
+    if (message)
+        std::cout << "ICE: " << message << ", " << expr << "\n\n";
+    else
+        std::cout << "ICE: " << expr << "\n\n";
+    std::cout << "Stack Trace:\n" << s << '\n';
+    std::exit(-1);
+}
+
+#define ice(expression, ...)                                                   \
+    (void)((!!(expression)) ||                                                 \
+           (jcc_ice_assert(#expression, std::stacktrace::current(),            \
+                           __VA_ARGS__),                                       \
+            0))
+#else
 #include <cassert>
 
 #define ice(expression, ...) assert(expression)
 
-
-#ifdef RELEASE_ASSERTS
-#undef NDEBUG
 #endif
 
 #ifdef JCC_PROFILE_BUILD
@@ -26,7 +47,6 @@
 
 #include <vector>
 #include <string>
-#include <cassert>
 
 using namespace cprint;
 

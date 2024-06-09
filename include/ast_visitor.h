@@ -72,7 +72,7 @@ struct ASTVisitor {
             traverseCallExpr(static_cast<CallExprNode *>(expr));
             break;
         default:
-            assert(false);
+            ice(false);
         }
 
         derived().leaveExpr(expr);

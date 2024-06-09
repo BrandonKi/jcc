@@ -52,14 +52,14 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
     case Union:
     case Array:
     case Function:
-        assert(false);
+        ice(false);
     case Bool:
         return llvm::Type::getInt1Ty(*m_context);
     case Enum:
     default:
-        assert(false);
+        ice(false);
     }
-    assert(false);
+    ice(false);
     return llvm::Type::getVoidTy(*m_context);
 }
 
@@ -84,7 +84,7 @@ llvm::Value *LLVMIRGen::gen_id_expr(IdExprNode *id_expr) {
 
     auto [decl, val] = m_named_values[*id_expr->val];
     if (!val)
-        assert(false);
+        ice(false);
     val = m_builder->CreateAlignedLoad(to_llvm_type(decl->type), val,
                                        llvm::Align(decl->type->align), false);
     return val;
@@ -107,7 +107,7 @@ llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
         return gen_expr(expr->base);
     }
     default:
-        assert(false);
+        ice(false);
     }
 
     return nullptr;
@@ -185,11 +185,11 @@ llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
         return expr;
     case UnaryOp::_bit_not:
     case UnaryOp::_log_not:
-        assert(false);
+        ice(false);
     case UnaryOp::_cast:
         return gen_cast_expr(unary_expr);
     default:
-        assert(false);
+        ice(false);
     }
     return nullptr;
 }
@@ -213,7 +213,7 @@ llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
         auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
     }
     default:
-        assert(false);
+        ice(false);
     }
 
     return nullptr;
@@ -242,7 +242,7 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     lhs = gen_expr(bin_expr->lhs);
     rhs = gen_expr(bin_expr->rhs);
     if (!lhs || !rhs)
-        assert(false);
+        ice(false);
 
     switch (bin_expr->op) {
     case BinOp::_mul:
@@ -295,10 +295,10 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     case BinOp::_log_or:
     case BinOp::_assign:
     default:
-        assert(false);
+        ice(false);
     }
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -325,23 +325,23 @@ llvm::Value *LLVMIRGen::gen_call_expr(CallExprNode *call_expr) {
 
     // FIXME hack
     if (call_expr->base->kind != ExprKind::IdExpr)
-        assert(false);
+        ice(false);
 
     llvm::Function *callee =
         m_module->getFunction(*static_cast<IdExprNode *>(call_expr->base)->val);
 
     if (!callee)
-        assert(false);
+        ice(false);
 
     if (callee->arg_size() != call_expr->args.size())
-        assert(false);
+        ice(false);
 
     std::vector<llvm::Value *> args;
 
     for (auto *a : call_expr->args) {
         args.push_back(gen_expr(a));
         if (!args.back())
-            assert(false);
+            ice(false);
     }
 
     return m_builder->CreateCall(callee, args);
@@ -364,10 +364,10 @@ llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
     case ExprKind::CallExpr:
         return gen_call_expr(static_cast<CallExprNode *>(expr));
     default:
-        assert(false);
+        ice(false);
     }
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -556,12 +556,12 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
     case LabelStmnt:
     case CaseStmnt:
     case DefaultStmnt:
-        assert(false);
+        ice(false);
     case IfStmnt:
         gen_if_stmnt(static_cast<IfStmntNode *>(stmnt));
         break;
     case SwitchStmnt:
-        assert(false);
+        ice(false);
     case WhileStmnt:
         gen_while_stmnt(static_cast<WhileStmntNode *>(stmnt));
         break;
@@ -574,7 +574,7 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
     case GotoStmnt:
     case ContinueStmnt:
     case BreakStmnt:
-        assert(false);
+        ice(false);
     case ReturnStmnt:
         m_builder->CreateRet(
             gen_expr(static_cast<ReturnStmntNode *>(stmnt)->expr));
@@ -589,7 +589,7 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
         gen_expr(static_cast<ExprStmntNode *>(stmnt)->expr);
         break;
     default:
-        assert(false);
+        ice(false);
     }
 }
 
@@ -624,12 +624,12 @@ llvm::Function *LLVMIRGen::gen_function(FunctionNode *fn) {
     llvm::Function *function = m_module->getFunction(*fn->proto->id);
 
     if (function)
-        assert(false);
+        ice(false);
 
     function = gen_prototype(fn->proto);
 
     if (!function)
-        assert(false);
+        ice(false);
 
     llvm::BasicBlock *bb =
         llvm::BasicBlock::Create(*m_context, "entry", function);

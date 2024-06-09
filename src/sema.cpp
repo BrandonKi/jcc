@@ -15,7 +15,7 @@ CType *Sema::get_id_type(std::string *id) {
         if (m.contains(*id))
             return m[*id]->type;
 
-    assert(false);
+    ice(false);
     return nullptr;
 }
 
@@ -153,7 +153,7 @@ void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
 void Sema::sema_call_expr(CallExprNode *call_expr) {
     JCC_PROFILE();
 
-    assert(call_expr->base->kind == ExprKind::IdExpr);
+    ice(call_expr->base->kind == ExprKind::IdExpr);
     // sema_expr(call_expr->base);
     FunctionNode *callee =
         fn_tab[*static_cast<IdExprNode *>(call_expr->base)->val];
@@ -187,7 +187,7 @@ void Sema::sema_bin_expr(BinExprNode *bin_expr) {
         break;
     case BinOp::_log_and:
     case BinOp::_log_or:
-        assert(false);
+        ice(false);
     case BinOp::_assign: // TODO ensure lhs is lvalue
         skip_lhs = true;
         bin_expr->type = bin_expr->lhs->type;
@@ -212,7 +212,7 @@ void Sema::sema_bin_expr(BinExprNode *bin_expr) {
 void Sema::sema_cond_expr(CondExprNode *cond_expr) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_cast_expr(UnaryExprNode *cast_expr) {
@@ -240,10 +240,10 @@ void Sema::sema_expr(ExprNode *expr) {
         sema_call_expr(static_cast<CallExprNode *>(expr));
         break;
     case PrimaryExpr:
-        assert(false);
+        ice(false);
         break;
     case PostfixExpr:
-        assert(false);
+        ice(false);
         break;
     case UnaryExpr:
         sema_unary_expr(static_cast<UnaryExprNode *>(expr));
@@ -255,7 +255,7 @@ void Sema::sema_expr(ExprNode *expr) {
         sema_cond_expr(static_cast<CondExprNode *>(expr));
         break;
     default:
-        assert(false);
+        ice(false);
     }
 }
 
@@ -274,13 +274,13 @@ void Sema::sema_decl(DeclNode *decl) {
 void Sema::sema_case_stmnt(CaseStmntNode *case_stmnt) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_default_stmnt(DefaultStmntNode *default_stmnt) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_if_stmnt(IfStmntNode *if_stmnt) {
@@ -298,7 +298,7 @@ void Sema::sema_if_stmnt(IfStmntNode *if_stmnt) {
 void Sema::sema_switch_stmnt(SwitchStmntNode *switch_stmnt) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_while_stmnt(WhileStmntNode *while_stmnt) {
@@ -338,7 +338,7 @@ void Sema::sema_for_stmnt(ForStmntNode *for_stmnt) {
 void Sema::sema_goto_stmnt(GotoStmntNode *goto_stmnt) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_return_stmnt(ReturnStmntNode *ret_stmnt) {
@@ -353,7 +353,7 @@ void Sema::sema_return_stmnt(ReturnStmntNode *ret_stmnt) {
 void Sema::sema_label_stmnt(LabelStmntNode *label_stmnt) {
     JCC_PROFILE();
 
-    assert(false);
+    ice(false);
 }
 
 void Sema::sema_expr_stmnt(ExprStmntNode *expr_stmnt) {
@@ -423,7 +423,7 @@ void Sema::sema_stmnt(StmntNode *stmnt) {
         sema_expr_stmnt(static_cast<ExprStmntNode *>(stmnt));
         break;
     default:
-        assert(false);
+        ice(false);
     }
 }
 

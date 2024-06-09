@@ -40,7 +40,7 @@ int Platform::init() {
         } else if (os == OS::linux) {
 
         } else {
-            assert(false);
+            ice(false);
         }
         break;
     }
@@ -50,13 +50,13 @@ int Platform::init() {
         } else if (os == OS::linux) {
 
         } else {
-            assert(false);
+            ice(false);
         }
         break;
     }
     case Arch::unknown:
     default:
-        assert(false);
+        ice(false);
     }
 
     return 0;
