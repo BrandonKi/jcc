@@ -1,7 +1,13 @@
 #pragma once
 
-// #define RELEASE_ASSERTS
+#define RELEASE_ASSERTS
+#define VERBOSE_ICE
 // #define JCC_PROFILE_BUILD
+
+#include <cassert>
+
+#define ice(expression, ...) assert(expression)
+
 
 #ifdef RELEASE_ASSERTS
 #undef NDEBUG

@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include <unordered_map>
+#include <unordered_set>
 
 namespace jcc {
 
@@ -52,8 +53,7 @@ enum TokenKind : char {
     _bang = '!',
     _space = ' ',
     _printable_start = ' ',
-    UNUSED_31 = 31,
-    UNUSED_1 = 1,
+    _newline = '\n',
     NONE = 0,
     _eof = -1,
 
@@ -135,6 +135,7 @@ enum TokenKind : char {
     _and_equal = -68,
     _xor_equal = -69,
     _or_equal = -70,
+    _hash_hash = -71,
 
     _sentinel_start = -128,
 };
@@ -142,12 +143,15 @@ enum TokenKind : char {
 struct Token {
     TokenKind kind;
 
+    // TODO intern
+    std::unordered_set<std::string *> hide_set;
+
     union {
         struct {
             std::string *val; // TODO intern
         } id;
         struct {
-            int val; // TODO float/int
+            i64 val; // TODO float/int
         } number;
         struct {
             std::string *val;
@@ -155,15 +159,72 @@ struct Token {
     };
 };
 
+enum class MacroKind : char { none, object_like, function_like };
+
+struct Macro {
+    MacroKind kind;
+
+    std::vector<Token> content;
+};
+
 class Lexer {
     std::string m_text;
     Token m_current;
-    Token m_cache;
+    std::vector<Token> m_cache;
     int i;
+
+    // TODO intern
+    std::unordered_map<std::string, Macro> m_macro_table;
+
+    // TODO find include paths at runtime, need to extend find_windows.h
+    // functionality which is currently used to find the linker
+    std::vector<std::string> m_include_paths = {
+        "C:/Program Files/Microsoft Visual "
+        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/include"
+
+        "C:/Program Files/Microsoft Visual "
+        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/atlmfc/include"
+
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/ucrt"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/shared"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/um"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/winrt"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/cppwinrt"};
 
 public:
     Lexer();
     Lexer(std::string text);
+
+    Token internal_next_no_update(bool keep_newline);
+    Token internal_next(bool keep_newline = false);
+
+    void add_tokens(std::vector<Token> &);
+
+    Token ppc_expand_object_like(Macro);
+    Token ppc_expand_function_like(Macro);
+
+    Token ppc_expand();
+
+    void ppc_if();
+    void ppc_elif();
+    void ppc_else();
+    void ppc_line();
+    void ppc_ifdef();
+    void ppc_endif();
+    void ppc_undef();
+    void ppc_error();
+    void ppc_ifndef();
+    void ppc_define();
+    void ppc_pragma();
+    void ppc_include();
+
+    void ppc_directive();
+
+    Token ppc_next();
+
+    Token next();
+
+    Token peek();
 
     void eat(TokenKind);
     void eat(char);
@@ -171,11 +232,6 @@ public:
     void try_eat(char);
     void eat_next(TokenKind);
     void eat_next(char);
-
-    Token peek();
-
-    Token next();
-    Token internal_next();
 
     bool on(TokenKind);
     bool on(char);

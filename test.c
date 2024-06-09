@@ -1,7 +1,9 @@
+#define X 1
+#define Y 2
+#define Z 3
+
 int main() {
-    short a = 0;
-    short b = 1;
-    return sizeof a + b;
+    return X + Y + Z;
 }
 
 // int main() {

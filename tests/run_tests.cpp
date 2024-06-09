@@ -1092,6 +1092,36 @@ int main() {
     return result == sizeof(int) + sizeof(int *) + alignof(int *);
 }
 
+bool preproc_0() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+#define W 1 + 2
+int main() {
+    return W;
+}
+
+    )");
+
+    return result == 3;
+}
+bool preproc_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+#define X 1
+#define Y 2
+#define Z 3
+
+int main() {
+    return X + Y + Z;
+}
+
+    )");
+
+    return result == 6;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1161,6 +1191,8 @@ int main(int argc, char *argv[]) {
     test(sizeof_5);
     test(alignof_0);
     test(sizeof_alignof_0);
+    test(preproc_0);
+    test(preproc_1);
 
     print_report();
 }
