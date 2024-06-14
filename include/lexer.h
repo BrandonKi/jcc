@@ -6,145 +6,22 @@
 
 namespace jcc {
 
+#define X(a, b, _) a = b,
 enum TokenKind : char {
-    _sentinel_end = 127,
 
-    _printable_end = '~',
-    _tilde = '~',
-    _close_curly = '}',
-    _or = '|',
-    _open_curly = '{',
-    _lowercase_end = 'z',
-    // ...
-    _lowercase_start = 'a',
-    _backtick = '`',
-    _underscore = '_',
-    _xor = '^',
-    _close_bracket = ']',
-    _backslash = '\\',
-    _open_bracket = '[',
-    _uppercase_end = 'Z',
-    // ...
-    _uppercase_begin = 'A',
-    _at = '@',
-    _question_mark = '?',
-    _greater_than = '>',
-    _equal = '=',
-    _less_than = '<',
-    _semicolon = ';',
-    _colon = ':',
-    _number_end = '9',
-    // ...
-    _number_begin = '0',
-    _slash = '/',
-    _dot = '.',
-    _sub = '-',
-    _comma = ',',
-    _add = '+',
-    _star = '*',
-    _close_paren = ')',
-    _open_paren = '(',
-    _single_quote = '\'',
-    _and = '&',
-    _percent = '%',
-    _dollar = '$',
-    _hash = '#',
-    _double_quote = '"',
-    _bang = '!',
-    _space = ' ',
-    _printable_start = ' ',
-    _newline = '\n',
-    NONE = 0,
-    _eof = -1,
+#include "inc/token_kinds.inc"
 
-    // _keyword_end = -2,
-    k_char = -2,
-    k_double = -3,
-    k_float = -4,
-    k_int = -5,
-    k_short = -6,
-    k_long = -7,
-    k_signed = -8,
-    k_unsigned = -9,
-
-    k_void = -10,
-    k_enum = -11,
-    k_struct = -12,
-    k_union = -13,
-
-    k_auto = -14,
-    k_const = -15,
-    k_extern = -16,
-    k_inline = -17,
-    k_register = -18,
-    k_restrict = -19,
-    k_static = -20,
-    k_volatile = -21,
-
-    k_break = -22,
-    k_case = -23,
-    k_continue = -24,
-    k_default = -25,
-    k_do = -26,
-    k_else = -27,
-    k_for = -28,
-    k_goto = -29,
-    k_if = -30,
-    k_return = -31,
-    k_switch = -32,
-    k_while = -33,
-
-    k_typedef = -34,
-    k_sizeof = -35,
-
-    k__Alignas = -36,
-    k__Alignof = -37,
-    k__Atomic = -38,
-    k__Bool = -39,
-    k__Complex = -40,
-    k__Generic = -41,
-    k__Imaginary = -42,
-    k__Noreturn = -43,
-    k__Static_assert = -44,
-    k__Thread_local = -45,
-    // _keyword_start = -46,
-
-    _id = -47,
-    _num_lit = -48,
-    _str_lit = -49,
-
-    _log_or = -50,
-    _log_and = -51,
-    _equal_equal = -52,
-    _not_equal = -53,
-    _less_than_equal = -54,
-    _greater_than_equal = -55,
-    _shift_left = -56,
-    _shift_right = -57,
-    _inc = -58,
-    _dec = -59,
-    _arrow = -60,
-
-    _star_equal = -61,
-    _slash_equal = -62,
-    _percent_equal = -63,
-    _add_equal = -64,
-    _sub_equal = -65,
-    _shift_left_equal = -66,
-    _shift_right_equal = -67,
-    _and_equal = -68,
-    _xor_equal = -69,
-    _or_equal = -70,
-    _hash_hash = -71,
-
-    _sentinel_start = -128,
 };
+#undef X
+
+// TODO intern
+using HideSet = std::unordered_set<std::string *>;
 
 struct Token {
     TokenKind kind;
+    bool start_of_line;
 
-    // TODO intern
-    std::unordered_set<std::string *> hide_set;
+    HideSet hide_set;
 
     union {
         struct {
@@ -163,18 +40,26 @@ enum class MacroKind : char { none, object_like, function_like };
 
 struct Macro {
     MacroKind kind;
+    // TODO intern
+    std::unordered_map<std::string, int> params;
 
     std::vector<Token> content;
 };
 
+struct IfDirective {};
+
 class Lexer {
+    std::string m_filename;
     std::string m_text;
-    Token m_current;
-    std::vector<Token> m_cache;
+    std::vector<Token> m_tokens;
     int i;
+    int line;
+    bool m_saw_newline = true;
 
     // TODO intern
     std::unordered_map<std::string, Macro> m_macro_table;
+
+    std::vector<IfDirective> m_if_stack;
 
     // TODO find include paths at runtime, need to extend find_windows.h
     // functionality which is currently used to find the linker
@@ -194,9 +79,20 @@ class Lexer {
 public:
     Lexer();
     Lexer(std::string text);
+    Lexer(InputFile);
+
+    void report_lex_error(Token);
 
     Token internal_next_no_update(bool keep_newline);
     Token internal_next(bool keep_newline = false);
+
+    void discard_until_newline();
+    void collect_until_newline(std::vector<Token> &);
+
+    void ppc_stringize(std::vector<Token> &);
+
+    std::vector<Token> ppc_subst(Macro, std::vector<std::vector<Token>>,
+                                 HideSet);
 
     void add_tokens(std::vector<Token> &);
 
@@ -205,6 +101,7 @@ public:
 
     Token ppc_expand();
 
+    void ppc_internal_if(bool cond);
     void ppc_if();
     void ppc_elif();
     void ppc_else();
@@ -236,30 +133,61 @@ public:
     bool on(TokenKind);
     bool on(char);
     Token curr();
+
+    std::string lexer__debug_token_to_string(Token);
+    void lexer__debug_dump();
 };
 
-// TODO fix this
-static std::string str(Token t) {
-    std::string str = "";
+static std::string str(TokenKind kind) {
+    std::string result = "";
 
-    if (t.kind >= TokenKind::_printable_start &&
-        t.kind < TokenKind::_printable_end)
-        return std::string(1, (char)t.kind);
+#define X(a, b, _)                                                             \
+    case TokenKind::a:                                                         \
+        result = #a;                                                           \
+        break;
 
-    switch (t.kind) {
-    case TokenKind::_eof:
-        return "EOF";
-    case TokenKind::k_extern:
-        return "extern";
-    case TokenKind::_id:
-        return *t.id.val;
-    case TokenKind::_num_lit:
-        return std::to_string(t.number.val);
+    switch (kind) {
+
+#include "inc/token_kinds.inc"
+
     default:
         ice(false);
     }
 
-    return str;
+#undef X
+
+    return result;
+}
+
+static std::string str_rep(Token token) {
+    std::string result = "";
+
+    if (token.kind == TokenKind::_id) {
+        return *token.id.val;
+    } else if (token.kind == TokenKind::_num_lit) {
+        return std::to_string(token.number.val);
+    } else if (token.kind == TokenKind::_str_lit) {
+        return *token.str.val;
+    } else if ((int)token.kind >= (int)TokenKind::_newline) {
+        return std::string(1, (char)(token.kind));
+    }
+
+#define X(a, b, c)                                                             \
+    case TokenKind::a:                                                         \
+        result = c;                                                            \
+        break;
+
+    switch (token.kind) {
+
+#include "inc/token_kinds.inc"
+
+    default:
+        ice(false);
+    }
+
+#undef X
+
+    return result;
 }
 
 static std::unordered_map<std::string, TokenKind> keywords = {

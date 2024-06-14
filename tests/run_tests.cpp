@@ -1096,6 +1096,7 @@ bool preproc_0() {
     jcc::Compiler c(co);
 
     auto result = c.compile_string(R"(
+
 #define W 1 + 2
 int main() {
     return W;
@@ -1105,10 +1106,12 @@ int main() {
 
     return result == 3;
 }
+
 bool preproc_1() {
     jcc::Compiler c(co);
 
     auto result = c.compile_string(R"(
+
 #define X 1
 #define Y 2
 #define Z 3
@@ -1120,6 +1123,58 @@ int main() {
     )");
 
     return result == 6;
+}
+
+bool preproc_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+#define X 2
+    return X;
+}
+
+    )");
+
+    return result == 2;
+}
+
+bool preproc_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define X 2
+#define Y X
+
+int main() {
+    return Y;
+}
+
+    )");
+
+    return result == 2;
+}
+
+bool preproc_4() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define ii i
+#define jj j
+#define X(x, y) x+y-1
+
+int main() {
+    int i = 10;
+    int j = 12;
+    return X((ii), jj);
+}
+
+    )");
+
+    return result == 21;
 }
 
 int main(int argc, char *argv[]) {
@@ -1193,6 +1248,9 @@ int main(int argc, char *argv[]) {
     test(sizeof_alignof_0);
     test(preproc_0);
     test(preproc_1);
+    test(preproc_2);
+    test(preproc_3);
+    test(preproc_4);
 
     print_report();
 }

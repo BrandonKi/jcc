@@ -19,6 +19,8 @@ class Parser {
     // TODO intern
     std::unordered_map<std::string, CType> m_tags;
 
+    void report_parse_error(Token);
+
     CType *parse_type(Attributes *attr = nullptr);
     bool is_start_of_type(Token);
 

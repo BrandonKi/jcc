@@ -94,6 +94,7 @@
         "xutility": "cpp",
         "codecvt": "cpp",
         "filesystem": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "stacktrace": "cpp"
     }
 }

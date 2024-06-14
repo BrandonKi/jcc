@@ -21,6 +21,7 @@ public:
     Compiler();
     Compiler(CompileOptions);
 
+    int compile_file(InputFile);
     int compile_string(std::string text);
     int compile(std::string filepath);
 

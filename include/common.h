@@ -1,26 +1,27 @@
 #pragma once
 
 #define RELEASE_ASSERTS
-#define VERBOSE_ICE
 // #define JCC_PROFILE_BUILD
+#define VERBOSE_ICE
 
 #ifdef RELEASE_ASSERTS
 #undef NDEBUG
 #endif
 
+#ifdef JCC_PROFILE_BUILD
+#include "small_profiler.h"
+#define JCC_PROFILE() PROFILE();
+#define JCC_PROFILE_SCOPE(x) PROFILE_SCOPE(x)
+#else
+#define JCC_PROFILE()
+#define JCC_PROFILE_SCOPE(x)
+#endif
+
 #ifdef VERBOSE_ICE
-#include <iostream>
 #include <stacktrace>
 
-inline void jcc_ice_assert(const char *expr, std::stacktrace s,
-                           const char *message = nullptr) {
-    if (message)
-        std::cout << "ICE: " << message << ", " << expr << "\n\n";
-    else
-        std::cout << "ICE: " << expr << "\n\n";
-    std::cout << "Stack Trace:\n" << s << '\n';
-    std::exit(-1);
-}
+void jcc_ice_assert(const char *expr, std::stacktrace s,
+                    const char *message = nullptr);
 
 #define ice(expression, ...)                                                   \
     (void)((!!(expression)) ||                                                 \
@@ -34,20 +35,10 @@ inline void jcc_ice_assert(const char *expr, std::stacktrace s,
 
 #endif
 
-#ifdef JCC_PROFILE_BUILD
-#include "small_profiler.h"
-#define JCC_PROFILE() PROFILE();
-#define JCC_PROFILE_SCOPE(x) PROFILE_SCOPE(x)
-#else
-#define JCC_PROFILE()
-#define JCC_PROFILE_SCOPE(x)
-#endif
-
-#include "cprint.h"
-
 #include <vector>
 #include <string>
 
+#include "cprint.h"
 using namespace cprint;
 
 using i8 = int8_t;
@@ -119,3 +110,8 @@ constexpr Arch host_arch = get_host_arch();
 // ------------------------------------
 // end of duplicated section
 // ----------------------------
+
+struct InputFile {
+    std::string filepath;
+    std::string text;
+};

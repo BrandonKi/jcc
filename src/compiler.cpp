@@ -24,12 +24,14 @@ Compiler::Compiler() : m_parser{}, m_options{} {}
 
 Compiler::Compiler(CompileOptions options) : m_parser{}, m_options{options} {}
 
-int Compiler::compile_string(std::string text) {
+int Compiler::compile_file(InputFile infile) {
     JCC_PROFILE();
 
     Platform::init();
 
-    m_parser = Parser(Lexer(text));
+    auto lexer = Lexer(InputFile{infile.filepath, infile.text});
+    // lexer.lexer__debug_dump();
+    m_parser = Parser(lexer);
     FileNode *file = m_parser.parse_file();
 
     Sema sema;
@@ -112,10 +114,16 @@ int Compiler::compile_string(std::string text) {
     return 0;
 }
 
+int Compiler::compile_string(std::string text) {
+    JCC_PROFILE();
+
+    return compile_file(InputFile{"<string>", text});
+}
+
 int Compiler::compile(std::string filepath) {
     JCC_PROFILE();
 
-    return this->compile_string(read_file(filepath));
+    return this->compile_file(InputFile{filepath, read_file(filepath)});
 }
 
 // FIXME lazy, inefficient

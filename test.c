@@ -1,10 +1,14 @@
-#define X 1
-#define Y 2
-#define Z 3
+#define ii z
+#define z ii
+#undef z
 
 int main() {
-    return X + Y + Z;
+    return z;
 }
+
+// int main() {
+//     return 1;
+// }
 
 // int main() {
 //     struct s {

@@ -10,6 +10,10 @@
 
 using namespace jcc;
 
+void Parser::report_parse_error(Token tkn) {
+    m_lex.report_lex_error(tkn);
+}
+
 CType *CType::getBuiltinType(CTypeKind type, bool is_signed) {
     JCC_PROFILE();
 
@@ -179,7 +183,8 @@ ExprNode *Parser::parse_primary_expr() {
         m_lex.eat(')');
         break;
     default:
-        ice(false);
+        report_parse_error(m_lex.curr());
+        return nullptr;
     }
     return expr;
 }
