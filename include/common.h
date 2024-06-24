@@ -53,7 +53,7 @@ using f32 = float;
 using f64 = double;
 
 // ------------------------------------
-// TODO this is all duplicated from JAB
+// TODO this is all duplicated from JB
 // should be changed in the future
 // ------------------------------------
 enum class Arch : i8 { unknown, x64, aarch64 };

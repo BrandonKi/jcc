@@ -5,4 +5,4 @@ AccessModifierOffset: -4
 AlwaysBreakTemplateDeclarations: true
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: false
-
+ColumnLimit: 120

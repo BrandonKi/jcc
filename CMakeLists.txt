@@ -16,7 +16,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
-add_subdirectory(jab)
+add_subdirectory(jb)
 
 add_library(jcc_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/compiler.cpp
@@ -32,11 +32,11 @@ target_include_directories(jcc_lib
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib
 
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jab/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jb/include
 )
 
 set(cmd_driver_src
-	$<TARGET_OBJECTS:jab_lib>
+	$<TARGET_OBJECTS:jb_lib>
 	$<TARGET_OBJECTS:jcc_lib>
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 )
@@ -47,7 +47,7 @@ target_include_directories(jcc
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib
 
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jab/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jb/include
 )
 
 llvm_map_components_to_libnames(llvm_libs support core irreader native)
@@ -55,7 +55,7 @@ llvm_map_components_to_libnames(llvm_libs support core irreader native)
 target_link_libraries(jcc ${llvm_libs})
 
 set(test_driver_src
-	$<TARGET_OBJECTS:jab_lib>
+	$<TARGET_OBJECTS:jb_lib>
     $<TARGET_OBJECTS:jcc_lib>
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.cpp
 )
@@ -66,7 +66,7 @@ target_include_directories(jcc_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib
     
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jab/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jb/include
 )
 
 target_link_libraries(jcc_tests ${llvm_libs})

@@ -96,7 +96,7 @@ int Compiler::compile_file(InputFile infile) {
     dest.close();
 
     if (m_options.link) {
-        jab::link_coff_files(
+        jb::link_coff_files(
             "temp_files/test",
             {"C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.obj"},
             m_options.print_link_command);

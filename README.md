@@ -1,14 +1,12 @@
-# jcc
+# Just a C Compiler (jcc)
 
 C Compiler.
 
-:)
-
 Can use either the custom backend or llvm.
 
-The custom backend is located in [jab/](jab/) which was previously a separate project([just-another-backend](https://github.com/BrandonKi/just-another-backend)).
+The custom backend is located in [jb/](jb/) which was previously a separate project([jb](https://github.com/BrandonKi/just-another-backend)).
 
-## Sample
+## Examples
 
 WIP, can currently handle a decent amount of stuff (functions, pointers, if/else, for, do/while, etc.).
 Take a look in the tests directory or commit history for a fuller picture of how much is supported.
