@@ -3,6 +3,7 @@
 #include "jb.h"
 
 #include "module_builder.h"
+#include "baseline_interp.h"
 #include "jit_env.h"
 #include "arch/x86_64/mcir_gen.h"
 
@@ -24,6 +25,8 @@ public:
     void link_objects();
 
     JITEnv *new_jit_env(ModuleBuilder *, CompileOptions = {});
+
+    Interp *new_baseline_interp(ModuleBuilder *, CompileOptions = {});
 };
 
 } // namespace jb

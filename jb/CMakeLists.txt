@@ -12,6 +12,8 @@ add_library(jb_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/module_builder.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/jit_env.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/context.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/baseline_interp.cpp
+
 
 # Register stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/register_manager.cpp

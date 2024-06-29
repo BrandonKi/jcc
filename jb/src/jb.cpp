@@ -46,28 +46,34 @@ IRInst::IRInst(IROp op, i32 dest, IRValue src1,
 
 IRInst::IRInst(IROp op, IRValue dest, IRValue src1, IRValue src2) : op{op}, dest{dest}, src1{src1}, src2{src2} {}
 
-IRInst::IRInst(IROp op, BasicBlock *bb) : op{op}, dest{}, bb{bb}, src2{} {}
+IRInst::IRInst(IROp op, BasicBlock *bb) : op{op}, dest{}, src1{bb}, src2{} {}
 
-IRInst::IRInst(IROp op, IRValue cond, BasicBlock *bb) : op{op}, dest{}, bb{bb}, src2{cond} {}
+IRInst::IRInst(IROp op, IRValue cond, BasicBlock *bb) : op{op}, dest{}, src1{bb}, src2{cond} {}
 
 IRInst::IRInst(IROp op, i32 dest, Function *fn, std::vector<IRValue> params)
-    : op{op}, dest{IRValueKind::vreg, fn->ret.type, dest}, fn{fn}, src2{}, params{params} {}
+    : op{op}, dest{IRValueKind::vreg, fn->ret.type, dest}, src1{fn}, src2{}, params{params} {}
 
 IRInst::IRInst(IROp op, IRValue dest, Function *fn, std::vector<IRValue> params)
-    : op{op}, dest{}, fn{fn}, src2{}, params{params} {}
+    : op{op}, dest{}, src1{fn}, src2{}, params{params} {}
 
-IRInst::IRInst(IROp op, IRValue dest, std::vector<std::pair<BasicBlock *, IRValue>> values)
-    : op{op}, dest{dest}, src1{}, src2{}, values{values} {}
+IRInst::IRInst(IROp op, i32 dest, std::vector<std::pair<BasicBlock *, IRValue>> values)
+    : op{op}, dest{values[0].second.type, dest}, src1{}, src2{}, values{values} {}  // TODO fix type
 
 // start of IRValue impl
 
 IRValue::IRValue() : kind{IRValueKind::none}, type{Type::none}, vreg{} {}
 
-IRValue::IRValue(i64 imm) : kind{IRValueKind::imm}, type{Type::i64}, imm{imm} {}
-
 IRValue::IRValue(Type type) : kind{IRValueKind::vreg}, type{type}, vreg{} {}
 
 IRValue::IRValue(Type type, i32 vreg) : kind{IRValueKind::vreg}, type{type}, vreg{vreg} {}
+
+// TODO, not i64, info is in the constant
+IRValue::IRValue(IRConstantInt imm_int) : kind{IRValueKind::imm}, type{Type::i64}, imm_int{imm_int} {}
+
+// TODO, not f64, info is in the constant
+IRValue::IRValue(IRConstantFloat imm_float) : kind{IRValueKind::imm}, type{Type::f64}, imm_float{imm_float} {}
+
+IRValue::IRValue(IRLabel lbl): kind{IRValueKind::lbl}, type{Type::none}, lbl{lbl} {}
 
 IRValue::IRValue(IRValueKind kind, Type type, int num) : kind{kind}, type{type} {
     switch (kind) {
@@ -78,3 +84,17 @@ IRValue::IRValue(IRValueKind kind, Type type, int num) : kind{kind}, type{type} 
         assert(false);
     }
 }
+
+IRConstantInt::IRConstantInt() : val{0}, size{0}, has_sign{false} {}
+
+IRConstantInt::IRConstantInt(i64 val, i8 size, bool has_sign) : val{val}, size{size}, has_sign{has_sign} {}
+
+IRConstantFloat::IRConstantFloat() : val{0.0}, size{0} {}
+
+IRConstantFloat::IRConstantFloat(f64 val, i8 size) : val{val}, size{size} {}
+
+IRLabel::IRLabel() : kind{IRLabelKind::none}, bb{nullptr} {}
+
+IRLabel::IRLabel(BasicBlock *bb) : kind{IRLabelKind::basic_block}, bb{bb} {}
+
+IRLabel::IRLabel(Function *fn) : kind{IRLabelKind::function}, fn{fn} {}

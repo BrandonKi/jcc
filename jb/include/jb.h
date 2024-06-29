@@ -117,7 +117,19 @@ inline ObjType get_default_obj_type(OS os) {
     }
 }
 
-enum class Type : i8 { none, i8, i16, i32, i64, f32, f64 };
+enum class Type : i8 { none, i8, i16, i32, i64, f32, f64, ptr };
+
+inline bool is_int(Type t) {
+    return t >= Type::i8 && t <= Type::i64;
+}
+
+inline bool is_float(Type t) {
+    return t == Type::f32 || t == Type::f64;
+}
+
+inline bool is_ptr(Type t) {
+    return t == Type::ptr;
+}
 
 enum class CallConv : i8 { none, win64, sysv64 };
 
@@ -186,35 +198,71 @@ enum class IROp : i8 {
 };
 
 // TODO mem
-enum class IRValueKind : i8 { none, vreg, imm };
+enum class IRValueKind : i8 { none, vreg, imm, lbl };
+
+struct IRConstantInt {
+    i64 val;
+    i8 size : 7;
+    bool has_sign : 1;
+
+    IRConstantInt();
+    IRConstantInt(i64, i8, bool);
+};
+
+struct IRConstantFloat {
+    f64 val;
+    i8 size;
+
+    IRConstantFloat();
+    IRConstantFloat(f64, i8);
+};
+
+enum class IRLabelKind : i8 {
+    none,
+    basic_block,
+    function,
+};
+
+struct BasicBlock;
+struct Function;
+
+struct IRLabel {
+    IRLabelKind kind;
+    union {
+        BasicBlock *bb;
+        Function *fn;
+    };
+
+    IRLabel();
+    IRLabel(BasicBlock *);
+    IRLabel(Function *);
+};
 
 struct IRValue {
     IRValueKind kind;
     Type type;
     union {
         Reg vreg;
-        i64 imm;
+        IRConstantInt imm_int;
+        IRConstantFloat imm_float;
+        IRLabel lbl;
     };
 
     IRValue();
-    IRValue(i64);
     IRValue(Type);
     IRValue(Type, i32);
+    IRValue(IRConstantInt);
+    IRValue(IRConstantFloat);
+    IRValue(IRLabel);
     IRValue(IRValueKind, Type, int);
 };
 
-struct BasicBlock;
-struct Function;
-
 struct IRInst {
     IROp op;
+    Type type;
     IRValue dest;
 
-    union {
-        IRValue src1;
-        BasicBlock *bb;
-        Function *fn;
-    };
+    IRValue src1;
     IRValue src2;
 
     // NOTE should only store a pointer and/or variant here
@@ -230,7 +278,7 @@ struct IRInst {
     IRInst(IROp, IRValue, BasicBlock *);
     IRInst(IROp, i32, Function *, std::vector<IRValue>);
     IRInst(IROp, IRValue, Function *, std::vector<IRValue>);
-    IRInst(IROp, IRValue, std::vector<std::pair<BasicBlock *, IRValue>>);
+    IRInst(IROp, i32, std::vector<std::pair<BasicBlock *, IRValue>>);
     // TODO move these into a different file
     bool has_dest() {
         return dest.kind != IRValueKind::none;
@@ -300,16 +348,12 @@ struct CompileOptions {
     std::string output_name = "a"; // same default as gcc *shrug*
 };
 
-inline bool is_imm(IROp op) {
-    return (i64)op >= (i64)IROp::iconst8 && (i64)op <= (i64)IROp::fconst64;
-}
-
 inline bool is_mov(IROp op) {
     return op == IROp::mov;
 }
 
 inline bool is_bin(IROp op) {
-    return (i64)op >= (i64)IROp::addi && (i64)op <= (i64)IROp::eq;
+    return (i64)op >= (i64)IROp::iadd && (i64)op <= (i64)IROp::eq;
 }
 
 inline bool is_branch(IROp op) {

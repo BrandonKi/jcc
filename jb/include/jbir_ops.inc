@@ -1,26 +1,25 @@
 #ifdef X
 
 X(none)
-X(iconst8)
-X(iconst16)
-X(iconst32)
-X(iconst64)
-X(fconst32)
-X(fconst64)
 
 X(mov)
 
-X(addi)
-X(subi)
-X(muli)
-X(divi)
-X(modi)
+X(zx)
+X(sx)
 
-X(addf)
-X(subf)
-X(mulf)
-X(divf)
-X(modf)
+X(f2i)
+X(i2f)
+
+X(iadd)
+X(isub)
+X(imul)
+X(idiv)
+X(imod)
+
+X(fadd)
+X(fsub)
+X(fmul)
+X(fdiv)
 
 X(lt)
 X(lte)

@@ -15,7 +15,8 @@ MCValue::MCValue(IRValue ir_value) {
         assert(false);
     case IRValueKind::imm:
         this->kind = (i8)MCValueKind::imm;
-        this->imm = ir_value.imm;
+        assert(ir_value.type == Type::i64); // TODO fix type
+        this->imm = ir_value.imm_int.val;
         break;
     case IRValueKind::vreg:
         this->kind = (i8)MCValueKind::vreg;

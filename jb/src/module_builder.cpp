@@ -19,7 +19,8 @@ MachineModule* ModuleBuilder::compile(CompileOptions options) {
 }
 */
 
-Function *ModuleBuilder::newFn(std::string name, std::vector<Type> parameters, Type ret, CallConv callconv) {
+Function *ModuleBuilder::newFn(std::string name, std::vector<Type> parameters, Type ret, CallConv callconv,
+                               bool make_entry) {
     auto *fn = new Function(name, parameters, ret, callconv);
     module->functions.push_back(fn);
 
@@ -28,7 +29,8 @@ Function *ModuleBuilder::newFn(std::string name, std::vector<Type> parameters, T
     ssa += (i32)parameters.size();
 
     function = fn;
-    auto *bb = newBB(name + "_" + std::to_string(fn->blocks.size()));
+    if (make_entry)
+        newBB(name + "_" + std::to_string(fn->blocks.size()));
 
     return fn;
 }
@@ -42,6 +44,17 @@ BasicBlock *ModuleBuilder::newBB(std::string name) {
 
 void ModuleBuilder::setInsertPoint(BasicBlock *bb) {
     insert_point = bb;
+}
+
+IRValue ModuleBuilder::addInst(IROp op, IRValue src1, Type type) {
+    IRInst inst;
+    if (has_dest(op))
+        inst = IRInst(op, next_ssa(), src1, {});
+    else
+        inst = IRInst(op, {}, src1, {});
+    inst.type = type;
+    insert_point->insts.push_back(inst);
+    return inst.dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, IRValue src1, IRValue src2) {
@@ -108,72 +121,84 @@ IRValue ModuleBuilder::none() {
     return {};
 }
 
-IRValue ModuleBuilder::iconst8(IRValue src) {
-    return addInst(IROp::iconst8, src);
+IRConstantInt ModuleBuilder::iconst8(i8 val) {
+    return IRConstantInt(val, 8, true);
 }
 
-IRValue ModuleBuilder::iconst16(IRValue src) {
-    return addInst(IROp::iconst16, src);
+IRConstantInt ModuleBuilder::iconst16(i16 val) {
+    return IRConstantInt(val, 16, true);
 }
 
-IRValue ModuleBuilder::iconst32(IRValue src) {
-    return addInst(IROp::iconst32, src);
+IRConstantInt ModuleBuilder::iconst32(i32 val) {
+    return IRConstantInt(val, 32, true);
 }
 
-IRValue ModuleBuilder::iconst64(IRValue src) {
-    return addInst(IROp::iconst64, src);
+IRConstantInt ModuleBuilder::iconst64(i64 val) {
+    return IRConstantInt(val, 64, true);
 }
 
-IRValue ModuleBuilder::fconst32(IRValue src) {
-    return addInst(IROp::fconst32, src);
+IRConstantFloat ModuleBuilder::fconst32(float val) {
+    return IRConstantFloat(val, 32);
 }
 
-IRValue ModuleBuilder::fconst64(IRValue src) {
-    return addInst(IROp::fconst64, src);
+IRConstantFloat ModuleBuilder::fconst64(double val) {
+    return IRConstantFloat(val, 64);
 }
 
 IRValue ModuleBuilder::mov(IRValue src) {
     return addInst(IROp::mov, src);
 }
 
-IRValue ModuleBuilder::addi(IRValue src1, IRValue src2) {
-    return addInst(IROp::addi, src1, src2);
+IRValue ModuleBuilder::zx(IRValue src) {
+    return addInst(IROp::zx, src);
 }
 
-IRValue ModuleBuilder::subi(IRValue src1, IRValue src2) {
-    return addInst(IROp::subi, src1, src2);
+IRValue ModuleBuilder::sx(IRValue src) {
+    return addInst(IROp::sx, src);
 }
 
-IRValue ModuleBuilder::muli(IRValue src1, IRValue src2) {
-    return addInst(IROp::muli, src1, src2);
+IRValue ModuleBuilder::f2i(IRValue src) {
+    return addInst(IROp::f2i, src);
 }
 
-IRValue ModuleBuilder::divi(IRValue src1, IRValue src2) {
-    return addInst(IROp::divi, src1, src2);
+IRValue ModuleBuilder::i2f(IRValue src) {
+    return addInst(IROp::i2f, src);
 }
 
-IRValue ModuleBuilder::modi(IRValue src1, IRValue src2) {
-    return addInst(IROp::modi, src1, src2);
+IRValue ModuleBuilder::iadd(IRValue src1, IRValue src2) {
+    return addInst(IROp::iadd, src1, src2);
 }
 
-IRValue ModuleBuilder::addf(IRValue src1, IRValue src2) {
-    return addInst(IROp::addf, src1, src2);
+IRValue ModuleBuilder::isub(IRValue src1, IRValue src2) {
+    return addInst(IROp::isub, src1, src2);
 }
 
-IRValue ModuleBuilder::subf(IRValue src1, IRValue src2) {
-    return addInst(IROp::subf, src1, src2);
+IRValue ModuleBuilder::imul(IRValue src1, IRValue src2) {
+    return addInst(IROp::imul, src1, src2);
 }
 
-IRValue ModuleBuilder::mulf(IRValue src1, IRValue src2) {
-    return addInst(IROp::mulf, src1, src2);
+IRValue ModuleBuilder::idiv(IRValue src1, IRValue src2) {
+    return addInst(IROp::idiv, src1, src2);
 }
 
-IRValue ModuleBuilder::divf(IRValue src1, IRValue src2) {
-    return addInst(IROp::divf, src1, src2);
+IRValue ModuleBuilder::imod(IRValue src1, IRValue src2) {
+    return addInst(IROp::imod, src1, src2);
 }
 
-IRValue ModuleBuilder::modf(IRValue src1, IRValue src2) {
-    return addInst(IROp::modf, src1, src2);
+IRValue ModuleBuilder::fadd(IRValue src1, IRValue src2) {
+    return addInst(IROp::fadd, src1, src2);
+}
+
+IRValue ModuleBuilder::fsub(IRValue src1, IRValue src2) {
+    return addInst(IROp::fsub, src1, src2);
+}
+
+IRValue ModuleBuilder::fmul(IRValue src1, IRValue src2) {
+    return addInst(IROp::fmul, src1, src2);
+}
+
+IRValue ModuleBuilder::fdiv(IRValue src1, IRValue src2) {
+    return addInst(IROp::fdiv, src1, src2);
 }
 
 IRValue ModuleBuilder::lt(IRValue src1, IRValue src2) {
@@ -220,12 +245,12 @@ IRValue ModuleBuilder::salloc(IRValue src) {
     return addInst(IROp::salloc, src);
 }
 
-IRValue ModuleBuilder::store(IRValue src, IRValue dest) {
-    return addInst(IROp::store, src, dest);
+IRValue ModuleBuilder::store(IRValue src1, IRValue src2) {
+    return addInst(IROp::store, src1, src2);
 }
 
-IRValue ModuleBuilder::load(IRValue src, IRValue dest) {
-    return addInst(IROp::load, src, dest);
+IRValue ModuleBuilder::load(IRValue src, Type type) {
+    return addInst(IROp::load, src, type);
 }
 
 IRValue ModuleBuilder::phi(std::vector<std::pair<BasicBlock *, IRValue>> values) {

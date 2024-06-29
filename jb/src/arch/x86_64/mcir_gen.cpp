@@ -163,9 +163,10 @@ MCFunction *MCIRGen::gen_function(Function *fn) {
 }
 
 void MCIRGen::gen_inst(MCFunction *mc_fn, IRInst ir_inst) {
-    if (is_imm(ir_inst.op))
-        gen_imm(mc_fn, ir_inst);
-    else if (is_mov(ir_inst.op))
+    // if (is_imm(ir_inst.op))
+    //     gen_imm(mc_fn, ir_inst);
+    // else if (is_mov(ir_inst.op))
+    if (is_mov(ir_inst.op))
         gen_mov(mc_fn, ir_inst);
     else if (is_bin(ir_inst.op))
         gen_bin(mc_fn, ir_inst);
@@ -179,30 +180,31 @@ void MCIRGen::gen_inst(MCFunction *mc_fn, IRInst ir_inst) {
         assert(false);
 }
 
-void MCIRGen::gen_imm(MCFunction *mc_fn, IRInst ir_inst) {
-    auto op = ir_inst.op;
-    auto dest = ir_inst.dest;
-    auto src1 = ir_inst.src1;
-    auto src2 = ir_inst.src2;
+void MCIRGen::gen_imm(MCFunction *mc_fn, IRInst ir_inst) {}
+// void MCIRGen::gen_imm(MCFunction *mc_fn, IRInst ir_inst) {
+//     auto op = ir_inst.op;
+//     auto dest = ir_inst.dest;
+//     auto src1 = ir_inst.src1;
+//     auto src2 = ir_inst.src2;
 
-    switch (ir_inst.op) {
-    case IROp::iconst8:
-    case IROp::iconst16:
-    case IROp::iconst32:
-    case IROp::iconst64: {
-        MCInst mcinst((i8)mov_imm, MCValue(dest), MCValue(src1));
-        append_inst(mc_fn, mcinst);
-        return;
-    }
-    case IROp::fconst32:
-    case IROp::fconst64:
-        // TODO not implemented yet
-        assert(false);
-        return;
-    default:
-        assert(false);
-    }
-}
+//     switch (ir_inst.op) {
+//     case IROp::iconst8:
+//     case IROp::iconst16:
+//     case IROp::iconst32:
+//     case IROp::iconst64: {
+//         MCInst mcinst((i8)mov_imm, MCValue(dest), MCValue(src1));
+//         append_inst(mc_fn, mcinst);
+//         return;
+//     }
+//     case IROp::fconst32:
+//     case IROp::fconst64:
+//         // TODO not implemented yet
+//         assert(false);
+//         return;
+//     default:
+//         assert(false);
+//     }
+// }
 
 void MCIRGen::gen_mov(MCFunction *mc_fn, IRInst ir_inst) {
     assert(false);
@@ -217,17 +219,16 @@ void MCIRGen::gen_bin(MCFunction *mc_fn, IRInst ir_inst) {
     assert(dest.kind != Kind::imm);
 
     switch (ir_inst.op) {
-    case IROp::addi:
-    case IROp::subi:
-    case IROp::muli:
-    case IROp::divi:
-    case IROp::modi:
+    case IROp::iadd:
+    case IROp::isub:
+    case IROp::imul:
+    case IROp::idiv:
+    case IROp::imod:
 
-    case IROp::addf:
-    case IROp::subf:
-    case IROp::mulf:
-    case IROp::divf:
-    case IROp::modf:
+    case IROp::fadd:
+    case IROp::fsub:
+    case IROp::fmul:
+    case IROp::fdiv:
 
     case IROp::lt:
     case IROp::lte:
@@ -273,7 +274,7 @@ void MCIRGen::gen_branch(MCFunction *mc_fn, IRInst ir_inst) {
 void MCIRGen::gen_call(MCFunction *mc_fn, IRInst ir_inst) {
     auto op = ir_inst.op;
     auto dest = ir_inst.dest;
-    auto fn = ir_inst.fn;
+    auto fn = ir_inst.src1.lbl.fn;
     auto &params = ir_inst.params;
 
     // TODO this is where we need to move everything to/from registers
@@ -293,7 +294,7 @@ void MCIRGen::gen_call(MCFunction *mc_fn, IRInst ir_inst) {
 
     MCInst mcinst((i8)call);
     MCValue label((i8)MCValueKind::lbl, Type::i32); // TODO i32??
-    label.label = ir_inst.fn->id;
+    label.label = ir_inst.src1.lbl.fn->id;
     mcinst.DEST = label;
     append_inst(mc_fn, mcinst);
 
@@ -319,8 +320,9 @@ void MCIRGen::gen_ret(MCFunction *mc_fn, IRInst ir_inst) {
         mov_inst.SRC1 = MCValue(src1);
         append_inst(mc_fn, mov_inst);
 
-    } else if (ir_inst.src1.kind == Kind::imm) {
-        mov_inst.DEST = MCValue(mc_fn->new_vreg());
+    } else if (ir_inst.src1.kind == Kind::imm) {    // TODO why is this separate?
+        mov_inst.DEST = MCValue((i8)MCValueKind::vreg, ir_inst.dest.type);
+        mov_inst.DEST.reg = mc_fn->new_vreg();
         mov_inst.DEST.hint = rax;
         mov_inst.SRC1 = MCValue(src1);
         append_inst(mc_fn, mov_inst);

@@ -7,6 +7,8 @@
 #include "register_manager.h"
 #include "register_allocator.h"
 
+#include "baseline_interp.h"
+
 #include "pretty_print.h"
 //TODO temporary
 #include "arch/x86_64/pretty_print.h"
@@ -99,4 +101,11 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
     }
 
     return new JITEnv(bin);
+}
+
+Interp *Context::new_baseline_interp(ModuleBuilder *builder, CompileOptions options) {
+    pretty_print(builder->module);
+
+    Interp *interp = new Interp(options, builder->module);
+    return interp;
 }

@@ -38,10 +38,22 @@ inline std::string str(Type type) {
         return "f32";
     case Type::f64:
         return "f64";
+    case Type::ptr:
+        return "ptr";
     default:
         assert(false);
         return "";
     }
+}
+
+inline std::string str(IRConstantInt imm_int) {
+    return std::to_string(imm_int.val) + "(" + std::to_string(imm_int.size) + ")";
+    ;
+}
+
+inline std::string str(IRConstantFloat imm_float) {
+    return std::to_string(imm_float.val) + "(" + std::to_string(imm_float.size) + ")";
+    ;
 }
 
 inline std::string str(IRValue irval) {
@@ -51,7 +63,13 @@ inline std::string str(IRValue irval) {
     case IRValueKind::vreg:
         return std::string("%") + std::to_string(irval.vreg);
     case IRValueKind::imm:
-        return std::to_string(irval.imm);
+        if (irval.type == Type::i64) // TODO not i64
+            return str(irval.imm_int);
+        return str(irval.imm_float);
+    case IRValueKind::lbl:
+        if (irval.lbl.kind == IRLabelKind::function)
+            return irval.lbl.fn->id + std::string("()");
+        return irval.lbl.bb->id;
     default:
         assert(false);
         return "";
@@ -77,39 +95,33 @@ inline std::string str(IRInst irinst) {
     switch (irinst.op) {
     case IROp::none:
         return std::format("{}", op);
-    case IROp::iconst8:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
-    case IROp::iconst16:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
-    case IROp::iconst32:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
-    case IROp::iconst64:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
-    case IROp::fconst32:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
-    case IROp::fconst64:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
     case IROp::mov:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::addi:
+    case IROp::zx:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::subi:
+    case IROp::sx:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::muli:
+    case IROp::f2i:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::divi:
+    case IROp::i2f:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::modi:
+    case IROp::iadd:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::addf:
+    case IROp::isub:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::subf:
+    case IROp::imul:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::mulf:
+    case IROp::idiv:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::divf:
+    case IROp::imod:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
-    case IROp::modf:
+    case IROp::fadd:
+        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
+    case IROp::fsub:
+        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
+    case IROp::fmul:
+        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
+    case IROp::fdiv:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::lt:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
@@ -122,33 +134,36 @@ inline std::string str(IRInst irinst) {
     case IROp::eq:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::br:
-        return std::format("{}", op);
+        return std::format("{} {}", op, str(irinst.src1));
     case IROp::brz:
-        return std::format("{}", op);
+        return std::format("{} {}", op, str(irinst.src1), str(irinst.src2));
     case IROp::brnz:
-        return std::format("{}", op);
+        return std::format("{} {}", op, str(irinst.src1), str(irinst.src2));
     case IROp::call: {
+        assert(irinst.src1.lbl.kind == IRLabelKind::function);
         std::string args = "";
         for (auto &param : irinst.params)
             args += str(param) + " ";
-        return std::format("{} = {} {} {}", str(irinst.fn->ret), op, irinst.fn->id, args);
+        return std::format("{} = {} {} {}", str(irinst.dest), op, str(irinst.src1), args);
     }
     case IROp::ret:
         return std::format("{} {}", op, str(irinst.src1));
 
     case IROp::salloc:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
+        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1.type));
     case IROp::store:
-        return std::format("{} {}", str(irinst.src1), op, str(irinst.dest));
+        return std::format("{} {}, {}", op, str(irinst.src1), str(irinst.src2));
     case IROp::load:
-        return std::format("{} = {}", str(irinst.dest), op, str(irinst.src1));
+        return std::format("{} = {} {} {}", str(irinst.dest), op, str(irinst.src1), str(irinst.type));
 
-        // case IROp::phi:
-        //     std::string args = "";
-        //     for (auto [bb, val] : irinst.values)
-        //         args += "(" bb->id + str(val) + ")";
-        //     return std::format("{} = [{}]", str(irinst.dest), op, args);
-        // }
+    case IROp::phi: {
+        std::string args = "";
+        for (auto [bb, val] : irinst.values)
+            args += "[" + bb->id + "," + str(val) + "], ";
+        if (!args.empty())
+            args = args.substr(0, args.size() - 2);
+        return std::format("{} = {} {}", str(irinst.dest), op, args);
+    }
     default:
         assert(false);
         return "";
@@ -157,13 +172,13 @@ inline std::string str(IRInst irinst) {
 
 inline void pretty_print(Module *module) {
     auto tab_count = 0;
-    std::cout << module->name << ":\n";
+    std::cout << "module " << module->name << ":\n";
     ++tab_count;
     for (auto *fn : module->functions) {
         std::string btab_string(tab_count, '\t');
         std::string ntab_string(tab_count + 1, '\t');
 
-        std::string fn_string = btab_string + "[" + str(fn->callconv) + "]\n" + btab_string + fn->id + '(';
+        std::string fn_string = btab_string + "[" + str(fn->callconv) + "]\n" + btab_string + "fn " + fn->id + '(';
 
         for (auto param : fn->params) {
             fn_string += str(param) + ":" + str(param.type) + ", ";
@@ -178,28 +193,29 @@ inline void pretty_print(Module *module) {
         std::cout << fn_string << "\n";
 
         for (auto *block : fn->blocks) {
-            std::string pred_string = "[[";
-            for (auto *pred : block->preds)
-                pred_string += pred->id + ", ";
-            if (!block->preds.empty()) {
-                pred_string[pred_string.size() - 2] = ']';
-                pred_string[pred_string.size() - 1] = ']';
-                std::cout << ntab_string << pred_string << '\n';
-            } else {
-                std::cout << ntab_string << "[[]]\n";
-            }
+            // std::string pred_string = "[[";
+            // for (auto *pred : block->preds)
+            //     pred_string += pred->id + ", ";
+            // if (!block->preds.empty()) {
+            //     pred_string[pred_string.size() - 2] = ']';
+            //     pred_string[pred_string.size() - 1] = ']';
+            //     std::cout << ntab_string << pred_string << '\n';
+            // } else {
+            //     std::cout << ntab_string << "[[]]\n";
+            // }
 
             std::string bb_string = block->id;
             for (auto param : block->params) {
                 bb_string += str(param) + ":" + str(param.type) + ", ";
             }
-            if (!block->params.empty()) {
-                bb_string[bb_string.size() - 2] = ')';
-                bb_string[bb_string.size() - 1] = ':';
-                std::cout << ntab_string << bb_string << "\n";
-            } else {
-                std::cout << ntab_string << bb_string << ":\n";
-            }
+            // if (!block->params.empty()) {
+            //     bb_string[bb_string.size() - 2] = ')';
+            //     bb_string[bb_string.size() - 1] = ':';
+            //     std::cout << ntab_string << bb_string << "\n";
+            // } else {
+            // std::cout << ntab_string << bb_string << ":\n";
+            // }
+            std::cout << btab_string << bb_string << ":\n";
 
             for (auto inst : block->insts) {
                 std::cout << ntab_string << str(inst) << "\n";
