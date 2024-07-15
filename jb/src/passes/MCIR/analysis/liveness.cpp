@@ -61,68 +61,89 @@ std::vector<Interval> Liveness::run_pass(MCFunction* fn) {
 		for(auto inst: bb->insts) {
 			++i;
 			
-			// TODO this is what using live in/out would avoid...
 			for(int x = 3; x >= 0; --x) {
 				MCValue o = inst.operands[x];
 				if(o.is_vreg()) {
-					if(!result.contains(o.reg) && o.has_hint()) {
+					if(!result.contains(o.reg)) {
 						auto interval = Interval {
 							.type = IntervalType::vreg,
 							.reg = o.reg,
 							.start = i,
 							.end = i,
-							.hint = (Reg)o.hint
+							.hint = (Reg)o.hint,
+							.fixed = o.is_fixed
 						};
 						result.emplace(o.reg, vec_result.size());
 						vec_result.push_back(interval);
+					} else {
+						Interval& interval = vec_result[result[o.reg]];
+						interval.end = i;
 					}
 				}
 			}
 
-			// TODO replace all of this with a loop
-			// also switch to live in/out to make it easier
-			// instead of adhoc dest/src stuff
-			if(inst.DEST.is_vreg()) {
-				auto dest = inst.DEST.reg;
+			// // TODO this is what using live in/out would avoid...
+			// for(int x = 3; x >= 0; --x) {
+			// 	MCValue o = inst.operands[x];
+			// 	if(o.is_vreg()) {
+			// 		if(!result.contains(o.reg) && o.has_hint()) {
+			// 			auto interval = Interval {
+			// 				.type = IntervalType::vreg,
+			// 				.reg = o.reg,
+			// 				.start = i,
+			// 				.end = i,
+			// 				.hint = (Reg)o.hint
+			// 			};
+			// 			result.emplace(o.reg, vec_result.size());
+			// 			vec_result.push_back(interval);
+			// 		}
+			// 	}
+			// }
 
-				auto interval = Interval {
-				    .type = IntervalType::vreg,
-					.reg = dest,
-					.start = i,
-					.end = i,
-					.hint = (Reg)inst.DEST.hint
-				};
-				result.emplace(dest, vec_result.size());
-				vec_result.push_back(interval);
-			}
-			if(inst.SRC1.is_vreg()) {
-				auto src1 = inst.SRC1.reg;
-				assert(result.contains(src1));
-				assert(!vec_result[result[src1]].has_hint() || vec_result[result[src1]].hint == inst.SRC1.hint);
+			// // TODO replace all of this with a loop
+			// // also switch to live in/out to make it easier
+			// // instead of adhoc dest/src stuff
+			// if(inst.DEST.is_vreg()) {
+			// 	auto dest = inst.DEST.reg;
 
-				Interval& interval = vec_result[result[src1]];
-				interval.end = i;
-				// result[src1] = Interval {
-				//     .type = IntervalType::vreg,
-				// 	.reg = result[src1].reg,
-				// 	.start = result[src1].start,
-				// 	.end = i,
-				// };
-			}
-			if(inst.SRC2.is_vreg()) {
-				auto src2 = inst.SRC2.reg;
-				assert(result.contains(src2));
-				assert(!vec_result[result[src2]].has_hint() || vec_result[result[src2]].hint == inst.SRC2.hint);
+			// 	auto interval = Interval {
+			// 	    .type = IntervalType::vreg,
+			// 		.reg = dest,
+			// 		.start = i,
+			// 		.end = i,
+			// 		.hint = (Reg)inst.DEST.hint
+			// 	};
+			// 	result.emplace(dest, vec_result.size());
+			// 	vec_result.push_back(interval);
+			// }
+			// if(inst.SRC1.is_vreg()) {
+			// 	auto src1 = inst.SRC1.reg;
+			// 	assert(result.contains(src1));
+			// 	// assert(!vec_result[result[src1]].has_hint() || vec_result[result[src1]].hint == inst.SRC1.hint);
 
-				Interval& interval = vec_result[result[src2]];
-				interval.end = i;
-				// result[src2] = Interval {
-				//     .type = IntervalType::vreg,
-				// 	.reg = result[src2].reg,
-				// 	.start = result[src2].start,
-				// 	.end = i,
-				// };
-			}
+			// 	Interval& interval = vec_result[result[src1]];
+			// 	interval.end = i;
+			// 	// result[src1] = Interval {
+			// 	//     .type = IntervalType::vreg,
+			// 	// 	.reg = result[src1].reg,
+			// 	// 	.start = result[src1].start,
+			// 	// 	.end = i,
+			// 	// };
+			// }
+			// if(inst.SRC2.is_vreg()) {
+			// 	auto src2 = inst.SRC2.reg;
+			// 	assert(result.contains(src2));
+			// 	assert(!vec_result[result[src2]].has_hint() || vec_result[result[src2]].hint == inst.SRC2.hint);
+
+			// 	Interval& interval = vec_result[result[src2]];
+			// 	interval.end = i;
+			// 	// result[src2] = Interval {
+			// 	//     .type = IntervalType::vreg,
+			// 	// 	.reg = result[src2].reg,
+			// 	// 	.start = result[src2].start,
+			// 	// 	.end = i,
+			// 	// };
+			// }
 		}
 	}
     for (const auto& [index, res_index]: result) {

@@ -119,6 +119,27 @@ inline ObjType get_default_obj_type(OS os) {
 
 enum class Type : i8 { none, i8, i16, i32, i64, f32, f64, ptr };
 
+inline i32 size(Type t) {
+    switch(t) {
+    case Type::none:
+        return 0;
+    case Type::i8:
+        return 1;
+    case Type::i16:
+        return 2;
+    case Type::i32:
+    case Type::f32:
+        return 4;
+    case Type::i64:
+    case Type::f64:
+    case Type::ptr:
+        return 8;
+    default:
+        assert(false);
+    }
+    return -1;
+}
+
 inline bool is_int(Type t) {
     return t >= Type::i8 && t <= Type::i64;
 }
@@ -366,6 +387,10 @@ inline bool is_call(IROp op) {
 
 inline bool is_ret(IROp op) {
     return op == IROp::ret;
+}
+
+inline bool is_mem_op(IROp op) {
+    return op == IROp::slot || op == IROp::store || op == IROp::load;
 }
 
 inline bool has_dest(IROp op) {

@@ -20,7 +20,7 @@ enum MCReg: Reg {
     ax, cx, dx, bx, sp, bp, si, di,
     r8w, r9w, r10w, r11w, r12w, r13w, r14w, r15w,
 
-	// only includes low regs
+	// FIXME this is missing some regs
     al, cl, dl, bl, ah, ch, dh, bh,
     r8b, r9b, r10b, r11b, r12b, r13b, r14b, r15b,
 
@@ -32,6 +32,7 @@ enum MCReg: Reg {
 };
 // clang-format on
 
+// NOTE depends on enum order
 inline byte id(MCReg reg) {
     using enum MCReg;
 
@@ -52,6 +53,7 @@ inline byte id(MCReg reg) {
     return -1;
 }
 
+// NOTE depends on enum order
 inline i32 size(MCReg reg) {
     using enum MCReg;
 
@@ -72,6 +74,7 @@ inline i32 size(MCReg reg) {
     return -1;
 }
 
+// NOTE depends on enum order
 // registers r8-r15/r8d-r15d/r8w-r15w/r8b-r15b
 inline bool is_extended(MCReg reg) {
     return (int)reg & 0x08;
@@ -89,38 +92,6 @@ enum class Condition : i8 {
     lesser,
     lesser_equal,
 };
-
-// enum class Opcode : i8 {
-//     mov,
-//     mov_reg_imm,
-//     mov_reg_scale,
-//     mov_scale_imm,
-//     mov_mem_imm,
-//     mov_index_imm,
-//
-//     cmov,
-//
-//     add,
-//     add_reg_imm,
-//     add_reg_scale,
-//     add_scale_imm,
-//     add_mem_imm,
-//     add_index_imm,
-//
-//     call,
-//     jmp,
-//     ret,
-//
-//     push,
-//     push_mem,
-//     push_imm,
-//     pop,
-//     pop_mem,
-//
-//     syscall,
-//     breakpoint,
-//     nop,
-// };
 
 enum class MCType { none = 0, byte = 1, word = 2, dword = 4, qword = 8 };
 
@@ -141,6 +112,7 @@ inline MCType to_mc_type(Type type) {
         return MCType::dword;
     case Type::i64:
     case Type::f64:
+    case Type::ptr:
         return MCType::qword;
     default:
         assert(false);
@@ -150,39 +122,39 @@ inline MCType to_mc_type(Type type) {
 
 enum class OpCode : i8 {
     label = -1,
-#define X(a, ...) a,
+#define X(a) a,
 #include "insts.inc"
 #undef X
 };
 
-enum class EncodingKind {
-    NONE = -1,
-    RX_0 = 0,
-    RX_1 = 1,
-    RX_2 = 2,
-    RX_3 = 3,
-    RX_4 = 4,
-    RX_5 = 5,
-    RX_6 = 6,
-    RX_7 = 7,
-    BASIC,
-    OFFSET,
-    REG_RM,
-    MOD_R_RM,
-    PREFIX_0x0f,
-};
+// enum class EncodingKind {
+//     NONE = -1,
+//     RX_0 = 0,
+//     RX_1 = 1,
+//     RX_2 = 2,
+//     RX_3 = 3,
+//     RX_4 = 4,
+//     RX_5 = 5,
+//     RX_6 = 6,
+//     RX_7 = 7,
+//     BASIC,
+//     OFFSET,
+//     REG_RM,
+//     MOD_R_RM,
+//     PREFIX_0x0f,
+// };
 
-struct OpCodeDesc {
-    i32 op; // FIXME unecessary size
-    EncodingKind enc_kind;
-    i8 num_operands;
-};
+// struct OpCodeDesc {
+//     i32 op; // FIXME unecessary size
+//     EncodingKind enc_kind;
+//     i8 num_operands;
+// };
 
-static const OpCodeDesc OpCodeTable[] = {
-#define X(a, b, c, d, e) OpCodeDesc{e, EncodingKind::c, d},
-#include "insts.inc"
-#undef X
-};
+// static const OpCodeDesc OpCodeTable[] = {
+// #define X(a, b, c, d, e) OpCodeDesc{e, EncodingKind::c, d},
+// #include "insts.inc"
+// #undef X
+// };
 
 enum class MCValueKind : i8 {
     none = (i8)GenericMCValueKind::none,
@@ -190,6 +162,7 @@ enum class MCValueKind : i8 {
     mcreg = (i8)GenericMCValueKind::mcreg,
     imm = (i8)GenericMCValueKind::imm,
     lbl = (i8)GenericMCValueKind::lbl,
+    slot = (i8)GenericMCValueKind::slot,
     mem = (i8)GenericMCValueKind::mem,
 };
 

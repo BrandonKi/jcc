@@ -91,6 +91,7 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
 
         x86_64::MCIRGen mcir_gen(options, builder->module);
         mcir_gen.compile();
+        x86_64::pretty_print(mcir_gen.machine_module);
 
         auto mng = x86_64::register_manager();
         RegisterAllocator reg_alloc(mng);

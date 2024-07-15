@@ -225,6 +225,8 @@ inline std::string str(MCValue mc_val) {
         return "%" + std::to_string((i32)mc_val.reg);
     case (i32)MCValueKind::mcreg:
         return "$" + str((MCReg)mc_val.reg);
+    case (i32)MCValueKind::slot:
+        return "[" + std::to_string(mc_val.offset) + "]";
     case (i32)MCValueKind::mem:
         return "mem";
     case (i32)MCValueKind::imm:
@@ -327,9 +329,9 @@ inline std::string str(Condition condition) {
 inline std::string str(OpCode op) {
 
     switch (op) {
-#define X(a, b, ...)                                                           \
+#define X(a)                                                           \
     case OpCode::a:                                                            \
-        return b;
+        return #a;
 #include "insts.inc"
 #undef X
     default:
@@ -347,8 +349,8 @@ inline std::string str(MCInst i) {
     switch ((OpCode)i.op) {
     case mov:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
-    case mov_imm:
-        return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);
+    // case mov_imm:
+    //     return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);
     // case mov_reg_scale:
     //     return ret_str + str(i.DEST);
     // case mov_scale_imm:
@@ -360,6 +362,9 @@ inline std::string str(MCInst i) {
     case cmov:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
     case add:
+    case sub:
+    case imul:
+    case idiv:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
     // case add_reg_imm:
     //     return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);
@@ -430,6 +435,7 @@ inline void pretty_print(MCModule *mm) {
                 std::cout << ntab_string << str(inst) << "\n";
             }
         }
+
     }
     std::cout << '\n';
 }

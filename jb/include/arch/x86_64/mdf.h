@@ -15,7 +15,7 @@ namespace jb::x86_64 {
 // TODO assumes win64 calling convention
 inline RegisterManager register_manager() {
     RegisterManager rm;
-    rm.gpr_mask = {rbx, rbp, rdi, rsi, r12, r13, r14, r15,
+    rm.gpr_mask = {rbx, rbp, rsp, rdi, rsi, r12, r13, r14, r15,
                    rax, rcx, rdx, r8,  r9,  r10, r11};
     // xmm6 | xmm7 | xmm8 |
     // xmm9 | xmm10 | xmm11 |

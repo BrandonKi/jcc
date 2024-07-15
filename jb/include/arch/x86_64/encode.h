@@ -29,12 +29,16 @@ constexpr byte modrm_direct(byte reg, byte rm) {
     return modrm(0b11, reg, rm);
 }
 
-constexpr byte modrm_disp0(byte reg, byte rm) {
-    return modrm(0b00, reg, rm);
-}
+// constexpr byte modrm_disp0(byte reg, byte rm) {
+//     return modrm(0b00, reg, rm);
+// }
 
 constexpr byte modrm_disp8(byte reg, byte rm) {
     return modrm(0b01, reg, rm);
+}
+
+constexpr byte modrm_disp32(byte reg, byte rm) {
+    return modrm(0b10, reg, rm);
 }
 
 constexpr byte modrm_SIB_disp0(byte reg) {
@@ -69,17 +73,17 @@ constexpr byte sib_disp32() {
     return sib(0b00, 0b100, 0b101);
 }
 
-constexpr bool uses_data_type_info(EncodingKind e) {
-    return e != EncodingKind::BASIC && e != EncodingKind::OFFSET;
-}
+// constexpr bool uses_data_type_info(EncodingKind e) {
+//     return e != EncodingKind::BASIC && e != EncodingKind::OFFSET;
+// }
 
-constexpr bool is_rx(EncodingKind e) {
-    return e >= EncodingKind::RX_0 && e <= EncodingKind::RX_7;
-}
+// constexpr bool is_rx(EncodingKind e) {
+//     return e >= EncodingKind::RX_0 && e <= EncodingKind::RX_7;
+// }
 
-constexpr bool need_modrm_byte(EncodingKind e) {
-    return is_rx(e) || e == EncodingKind::MOD_R_RM;
-}
+// constexpr bool need_modrm_byte(EncodingKind e) {
+//     return is_rx(e) || e == EncodingKind::MOD_R_RM;
+// }
 
 enum class RelocKind {
     none,
@@ -95,11 +99,13 @@ struct Reloc {
 
 class Encoder {
 public:
+    std::vector<byte> buf;
+
     Encoder(MCModule *);
     // just for debug purposes at the moment
     std::vector<byte> raw_bin();
 
-    void encode_function(std::vector<byte> &, MCFunction *);
+    void encode_function(MCFunction *);
 
 private:
     MCModule *module;
@@ -107,27 +113,35 @@ private:
     std::unordered_map<std::string, i32> labels;
     std::vector<Reloc> relocs;
 
-    void encode_inst(std::vector<byte> &, MCInst);
 
-    void encode_mov(std::vector<byte> &, MCValue, MCValue);
-    void encode_mov_imm(std::vector<byte> &, MCValue, i64);
+    void encode_inst(MCInst);
 
-    void encode_cmov(std::vector<byte> &, MCValue, MCValue, Condition);
+    void mov(MCValue, MCValue);
+    void mov_imm(MCValue, i64);
+    void mov_mem(MCValue, i32);
 
-    void encode_add(std::vector<byte> &, MCValue, MCValue);
-    void encode_add_reg_imm(std::vector<byte> &, MCValue, i64);
+    void cmov(MCValue, MCValue, Condition);
 
-    void encode_call(std::vector<byte> &);
-    void encode_jmp(std::vector<byte> &);
-    void encode_ret(std::vector<byte> &);
+    void add(MCValue, MCValue);
+    void add_reg_imm(MCValue, i64);
+    void sub(MCValue, MCValue);
+    void sub_reg_imm(MCValue, i64);
+    void imul(MCValue, MCValue);
+    void imul_reg_imm(MCValue, i64);
+    void idiv(MCValue, MCValue);
+    void idiv_reg_imm(MCValue, i64);
 
-    void encode_push(std::vector<byte> &, MCValue);
-    void encode_push_imm(std::vector<byte> &, i64);
-    void encode_pop(std::vector<byte> &, MCValue);
+    void call(MCValue);
+    void jmp(MCValue);
+    void ret();
 
-    void encode_syscall(std::vector<byte> &);
-    void encode_breakpoint(std::vector<byte> &);
-    void encode_nop(std::vector<byte> &, i64);
+    void push(MCValue);
+    void push_imm(i64);
+    void pop(MCValue);
+
+    void syscall();
+    void breakpoint();
+    void nop(i64);
 
     byte get_rex_prefix_dest(MCReg);
     byte get_rex_prefix_src(MCReg);
@@ -135,8 +149,8 @@ private:
     byte get_rex_prefix(MCValue, MCValue);
     byte get_rex_prefix(MCValue, MCValue, MCValue);
 
-    void emit_imm(std::vector<byte> &, MCValue, MCType);
-    void emit_rel32(std::vector<byte> &, i64, MCValue);
+    void emit_imm(MCValue, MCType);
+    void emit_rel32(i64, MCValue);
 
     template <typename T>
         requires requires(T a) {
@@ -144,7 +158,7 @@ private:
             { std::is_pointer_v<T> };
             { std::is_floating_point_v<T> };
         }
-    static inline void emit(std::vector<byte> &buf, const T val_) {
+    inline void emit(const T val_) {
 
         using U = std::conditional_t<
             std::is_same_v<T, bool>, uint8_t,
@@ -179,16 +193,16 @@ private:
             { std::is_pointer_v<T> };
             { std::is_floating_point_v<T> };
         }
-    static inline void emit_if_nz(std::vector<byte> &buf, const T val_) {
+    inline void emit_if_nz(const T val_) {
         if (val_ != 0)
-            emit<T>(buf, val_);
+            emit<T>(val_);
     }
 
     template <int count_, typename S>
         requires requires(S s) {
             { std::is_integral_v<S> };
         }
-    static inline void patch(std::vector<byte> &buf, size_t dest_, S src_) {
+    inline void patch(size_t dest_, S src_) {
         for (int i = dest_; i < dest_ + count_; ++i) {
             buf[i] = byte(src_ >> ((i-dest_) * 8)) & 0xff;
         }

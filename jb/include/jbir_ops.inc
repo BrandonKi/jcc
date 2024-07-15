@@ -33,7 +33,7 @@ X(brnz)
 X(call)
 X(ret)
 
-X(salloc)
+X(slot)
 X(store)
 X(load)
 

@@ -149,7 +149,7 @@ inline std::string str(IRInst irinst) {
     case IROp::ret:
         return std::format("{} {}", op, str(irinst.src1));
 
-    case IROp::salloc:
+    case IROp::slot:
         return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1.type));
     case IROp::store:
         return std::format("{} {}, {}", op, str(irinst.src1), str(irinst.src2));

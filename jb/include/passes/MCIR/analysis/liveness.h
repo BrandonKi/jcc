@@ -16,6 +16,7 @@ struct Interval {
     i32 start;
     i32 end;
     Reg hint = -1;
+    bool fixed = false;
 
     bool is_vreg() {
         return type == IntervalType::vreg;
@@ -26,6 +27,7 @@ struct Interval {
     }
 
     bool has_hint() { return hint != x86_64::MCReg::none; }
+    bool is_fixed() { return fixed; }
 };
 
 struct Liveness {

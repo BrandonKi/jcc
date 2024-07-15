@@ -111,11 +111,12 @@ BinaryFile *MCIRGen::emit_bin() {
     Encoder enc(machine_module);
 
     for (auto *function : machine_module->functions) {
-        auto sym = Symbol{function->id, SymbolType::function, 1, text.bin.size()};
+        auto sym = Symbol{function->id, SymbolType::function, 1, enc.buf.size()};
         bin->symbols.push_back(sym);
 
-        enc.encode_function(text.bin, function);
+        enc.encode_function(function);
     }
+    text.bin = enc.buf;
 
     // .data section
     auto data = Section{".data"};
@@ -146,6 +147,57 @@ MCModule *MCIRGen::gen_module() {
     return mm;
 }
 
+void MCIRGen::gen_prolog(MCFunction *mc_fn) {
+    MCBasicBlock *prolog = new MCBasicBlock("prolog");
+
+    MCInst push_inst((i8)push, MCValue((i8)MCValueKind::vreg, Type::ptr));
+    push_inst.DEST.reg = mc_fn->new_vreg();
+    push_inst.DEST.hint = rbp;
+    push_inst.DEST.is_fixed = true;
+    prolog->insts.push_back(push_inst);
+    get_vreg[rbp] = push_inst.DEST.reg;
+    
+    MCInst mov_inst((i8)mov, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::vreg, Type::ptr));
+    mov_inst.DEST.reg = get_vreg[rbp];
+    mov_inst.SRC1.reg = mc_fn->new_vreg();
+    mov_inst.SRC1.hint = rsp;
+    mov_inst.SRC1.is_fixed = true;
+    prolog->insts.push_back(mov_inst);
+    get_vreg[rsp] = mov_inst.SRC1.reg;
+
+    MCInst sub_inst((i8)sub, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+    sub_inst.DEST.reg = get_vreg[rsp];
+    sub_inst.SRC1.imm = mc_fn->stack_space;
+    prolog->insts.push_back(sub_inst);
+
+    mc_fn->blocks.insert(mc_fn->blocks.begin(), prolog);
+}
+
+// TODO temporary
+void MCIRGen::gen_epilog(MCFunction *mc_fn) {
+    // MCBasicBlock *epilog = new MCBasicBlock("epilog");
+
+    MCInst add_inst((i8)add, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+    add_inst.DEST.reg = get_vreg[rsp];
+    add_inst.SRC1.imm = mc_fn->stack_space;
+    // epilog->insts.push_back(add_inst);
+    append_inst(mc_fn, add_inst);
+
+    MCInst pop_inst((i8)pop, MCValue((i8)MCValueKind::vreg, Type::ptr));
+    pop_inst.DEST.reg = get_vreg[rbp];
+    // epilog->insts.push_back(pop_inst);
+    append_inst(mc_fn, pop_inst);
+
+    MCInst ret_inst((i8)ret);
+    ret_inst.DEST = mc_fn->ret;
+    ret_inst.DEST.hint = rax;
+    ret_inst.DEST.is_fixed = true;
+    // epilog->insts.push_back(ret_inst);
+    append_inst(mc_fn, ret_inst);
+
+    // mc_fn->blocks.push_back(epilog);
+}
+
 MCFunction *MCIRGen::gen_function(Function *fn) {
     auto *mc_fn = new MCFunction(fn);
 
@@ -158,6 +210,10 @@ MCFunction *MCIRGen::gen_function(Function *fn) {
     for (auto *block : fn->blocks)
         for (auto ir_inst : block->insts)
             gen_inst(mc_fn, ir_inst);
+
+    // TODO temporary
+    // gen_prolog(mc_fn);
+    // gen_epilog(mc_fn);
 
     return mc_fn;
 }
@@ -176,6 +232,8 @@ void MCIRGen::gen_inst(MCFunction *mc_fn, IRInst ir_inst) {
         gen_call(mc_fn, ir_inst);
     else if (is_ret(ir_inst.op))
         gen_ret(mc_fn, ir_inst);
+    else if (is_mem_op(ir_inst.op))
+        gen_mem_op(mc_fn, ir_inst);
     else
         assert(false);
 }
@@ -210,6 +268,36 @@ void MCIRGen::gen_mov(MCFunction *mc_fn, IRInst ir_inst) {
     assert(false);
 }
 
+static i8 convert_bin_op(IROp op) {
+    switch(op) {
+    case IROp::iadd:
+        return (i8)add;
+    case IROp::isub:
+        return (i8)sub;
+    case IROp::imul:
+        return (i8)imul;
+    case IROp::idiv:
+        return (i8)idiv;
+    case IROp::imod:
+        return (i8)idiv;
+
+    case IROp::fadd:
+    case IROp::fsub:
+    case IROp::fmul:
+    case IROp::fdiv:
+        assert(false);
+
+    case IROp::lt:
+    case IROp::lte:
+    case IROp::gt:
+    case IROp::gte:
+    case IROp::eq:
+    default:
+        assert(false);
+    }
+    return -1;
+}
+
 void MCIRGen::gen_bin(MCFunction *mc_fn, IRInst ir_inst) {
     auto op = ir_inst.op;
     auto dest = ir_inst.dest;
@@ -218,7 +306,7 @@ void MCIRGen::gen_bin(MCFunction *mc_fn, IRInst ir_inst) {
 
     assert(dest.kind != Kind::imm);
 
-    switch (ir_inst.op) {
+    switch (op) {
     case IROp::iadd:
     case IROp::isub:
     case IROp::imul:
@@ -234,26 +322,55 @@ void MCIRGen::gen_bin(MCFunction *mc_fn, IRInst ir_inst) {
     case IROp::lte:
     case IROp::gt:
     case IROp::gte:
-    case IROp::eq:
+    case IROp::eq: {
+        i8 bin_op = convert_bin_op(op);
         if (src1.kind == Kind::vreg && src2.kind == Kind::vreg) {
             // TODO could encode as an lea
             MCInst mov_inst((i8)mov, MCValue(dest), MCValue(src1));
-            append_inst(mc_fn, mov_inst);
+            MCInst bin_inst(bin_op, MCValue(dest), MCValue(src2));
+            
+            if(bin_op == (i8)IROp::idiv) {
+                mov_inst.DEST.hint = rax;
+                bin_inst.DEST.hint = rax;
+            }
 
-            MCInst add_inst((i8)add, MCValue(dest), MCValue(src2));
-            append_inst(mc_fn, add_inst);
+            append_inst(mc_fn, mov_inst);
+            append_inst(mc_fn, bin_inst);
         }
         // FIXME idk what this case is
         else if (src1.kind == Kind::vreg && src2.kind == Kind::imm) {
-            MCInst add_inst((i8)add, MCValue(src1), MCValue(src2));
-            append_inst(mc_fn, add_inst);
+            MCInst bin_inst(bin_op, MCValue(src1), MCValue(src2));
+
+            if(bin_op == (i8)IROp::idiv) {
+                bin_inst.DEST.hint = rax;
+            }
+
+            append_inst(mc_fn, bin_inst);
         }
-        // FIXME idk what this case is
-        else { // src1.kind == imm
-            MCInst add_inst((i8)add, MCValue(dest), MCValue(src1));
-            append_inst(mc_fn, add_inst);
+        else if(src1.kind == Kind::imm && src2.kind == Kind::imm){ // should have been folded
+            MCInst mov_inst((i8)mov, MCValue(dest), MCValue(src1));
+            MCInst bin_inst(bin_op, MCValue(dest), MCValue(src2));
+
+            if(bin_op == (i8)idiv) {
+                MCInst mov_inst2((i8)mov);
+                mov_inst2.DEST = MCValue((i8)MCValueKind::vreg, src2.type);
+                mov_inst2.DEST.reg = mc_fn->new_vreg();
+                mov_inst2.SRC1 = MCValue(src2);
+                
+                mov_inst.DEST.hint = rax;
+                bin_inst.DEST.hint = rax;
+                bin_inst.SRC1 = mov_inst2.DEST;
+                
+                append_inst(mc_fn, mov_inst2);
+            }
+
+            append_inst(mc_fn, mov_inst);
+            append_inst(mc_fn, bin_inst);
+        } else {
+            assert(false);
         }
         return;
+    }
     default:
         assert(false);
     }
@@ -288,6 +405,7 @@ void MCIRGen::gen_call(MCFunction *mc_fn, IRInst ir_inst) {
         mov_inst.DEST = MCValue((i8)MCValueKind::vreg, p.type);
         mov_inst.DEST.reg = mc_fn->new_vreg();
         mov_inst.DEST.hint = reg;
+        mov_inst.DEST.is_fixed = true;
         mov_inst.SRC1 = MCValue(p);
         append_inst(mc_fn, mov_inst);
     }
@@ -302,6 +420,7 @@ void MCIRGen::gen_call(MCFunction *mc_fn, IRInst ir_inst) {
     mov_inst.SRC1 = MCValue((i8)MCValueKind::vreg, ir_inst.dest.type);
     mov_inst.SRC1.reg = mc_fn->new_vreg();
     mov_inst.SRC1.hint = rax;
+    mov_inst.SRC1.is_fixed = true;
     mov_inst.DEST = MCValue(dest);
     append_inst(mc_fn, mov_inst);
 }
@@ -312,27 +431,56 @@ void MCIRGen::gen_ret(MCFunction *mc_fn, IRInst ir_inst) {
     auto src1 = ir_inst.src1;
     auto src2 = ir_inst.src2;
 
-    MCInst mov_inst((i8)mov);
-    if (ir_inst.src1.kind == Kind::vreg) {
-        mov_inst.DEST = MCValue((i8)MCValueKind::vreg, ir_inst.src1.type);
-        mov_inst.DEST.reg = mc_fn->new_vreg();
-        mov_inst.DEST.hint = rax;
+    MCInst mov_inst;
+    if (ir_inst.src1.kind == Kind::vreg || ir_inst.src1.kind == Kind::imm) {
+        mov_inst.op = (i8)mov;
+        mov_inst.DEST = mc_fn->ret;
         mov_inst.SRC1 = MCValue(src1);
         append_inst(mc_fn, mov_inst);
-
-    } else if (ir_inst.src1.kind == Kind::imm) {    // TODO why is this separate?
-        mov_inst.DEST = MCValue((i8)MCValueKind::vreg, ir_inst.dest.type);
-        mov_inst.DEST.reg = mc_fn->new_vreg();
-        mov_inst.DEST.hint = rax;
-        mov_inst.SRC1 = MCValue(src1);
-        append_inst(mc_fn, mov_inst);
-    } else
+    } else {
         assert(false);
+    }
 
-    MCInst ret_inst((i8)ret);
-    ret_inst.DEST = mov_inst.DEST;
-    // ret_inst.SRC1 = mov_inst.DEST;
-    append_inst(mc_fn, ret_inst);
+    // TODO temporary
+    gen_prolog(mc_fn);
+    gen_epilog(mc_fn);
+    // MCInst ret_inst((i8)ret);
+    // ret_inst.DEST = mov_inst.DEST;
+    // append_inst(mc_fn, ret_inst);
+}
+
+// FIXME use ir_inst.type everywhere instead of operands types
+void MCIRGen::gen_mem_op(MCFunction *mc_fn, IRInst ir_inst) {
+    static std::unordered_map<Reg, i64> map;
+
+    switch(ir_inst.op) {
+    case IROp::slot: {
+        mc_fn->stack_space += size(to_mc_type(ir_inst.dest.type)) / 8;
+        map[ir_inst.dest.vreg] = mc_fn->stack_space;
+        break;
+    }
+    case IROp::store: {
+        i64 offset = map[ir_inst.src1.vreg];
+        MCInst store_inst((i8)mov);
+        store_inst.DEST = MCValue((i8)MCValueKind::slot, Type::i32);
+        store_inst.DEST.offset = offset;
+        store_inst.SRC1 = MCValue(ir_inst.src2);
+        append_inst(mc_fn, store_inst);
+        break;
+    }
+    case IROp::load: {
+        i64 offset = map[ir_inst.src1.vreg];
+        MCInst load_inst((i8)mov);
+        load_inst.DEST = MCValue(ir_inst.dest);
+        load_inst.SRC1 = MCValue((i8)MCValueKind::slot, Type::i32);
+        load_inst.SRC1.offset = offset;
+        append_inst(mc_fn, load_inst);
+        break;
+    }
+    default:
+        assert(false);
+    }
+    return;
 }
 
 void MCIRGen::append_inst(MCFunction *mc_fn, MCInst mc_inst) {

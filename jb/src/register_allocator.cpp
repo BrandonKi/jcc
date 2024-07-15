@@ -34,9 +34,15 @@ void RegisterAllocator::alloc(MCFunction *function) {
 }
 
 void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval) {
-    if (interval.has_hint()) {
+    if (interval.is_fixed()) {
         if (active.contains(interval.hint)) {
-            int i = 10;
+            // TODO assumes we have enough regs!!
+            // if not we would have to spill
+            Interval other = active[interval.hint];
+            assign_to_interval(fn, other, (Reg)mng.alloc_gpr());
+            active.erase(interval.hint);
+            mng.free_gpr(interval.hint);
+            assign_to_interval(fn, interval, (Reg)mng.alloc_gpr(interval.hint));
         } else {
             assign_to_interval(fn, interval, (Reg)mng.alloc_gpr(interval.hint));
         }
@@ -47,8 +53,7 @@ void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval) {
 
 // FIXME does not account for types at all
 // always uses a gpr
-void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval,
-                                           Reg reg) {
+void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval, Reg reg) {
     // add to active map
     active[reg] = interval;
     std::cout << "assigning a register: " << reg << "\n";
@@ -58,13 +63,12 @@ void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval,
     for (auto *bb : fn->blocks) {
         for (auto &inst : bb->insts) {
             if (i >= interval.start && i <= interval.end) {
-                if (inst.DEST.is_vreg()) {
+                if (inst.DEST.is_vreg()) {  // FIXME duplication
                     auto num = inst.DEST.reg;
 
                     if (interval.reg == num)
                         inst.DEST = MCValue((i8)GenericMCValueKind::mcreg,
                                             inst.DEST.type, reg);
-                    // inst.dest = IRValue(inst.dest.type, reg);
                 }
                 if (inst.SRC1.is_vreg()) {
                     auto num = inst.SRC1.reg;

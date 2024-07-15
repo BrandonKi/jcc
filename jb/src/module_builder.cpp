@@ -241,8 +241,8 @@ IRValue ModuleBuilder::ret(IRValue src) {
     return addInst(IROp::ret, src);
 }
 
-IRValue ModuleBuilder::salloc(IRValue src) {
-    return addInst(IROp::salloc, src);
+IRValue ModuleBuilder::slot(IRValue src) {
+    return addInst(IROp::slot, src);
 }
 
 IRValue ModuleBuilder::store(IRValue src1, IRValue src2) {

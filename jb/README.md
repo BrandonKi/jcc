@@ -8,9 +8,12 @@ WIP
 
 
 
-misc. (unfinished and most likely outdated)stuff
+<!-- misc. (unfinished and most likely outdated)stuff
 
-![High-Level flow chart](docs/flow_chart.png)
+![High-Level flow chart](docs/flow_chart.png) -->
 
-register allocator based loosely on
-https://dl.acm.org/doi/10.1145/330249.330250
+### Resources
+
+[Register Allocation on SSA](https://dl.acm.org/doi/pdf/10.1145/1772954.1772979)
+
+[Linear Scan](https://www.researchgate.net/publication/221137827_Optimized_interval_splitting_in_a_linear_scan_register_allocator)

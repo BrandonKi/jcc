@@ -17,6 +17,7 @@ enum class GenericMCValueKind : i8 {
     mcreg,
     imm,
     lbl,
+    slot,
     mem,
 };
 
@@ -25,6 +26,7 @@ struct MCValue {
     Type type; // TODO MCType
     Reg hint;
     std::string label; // TODO use a pointer/view
+    bool is_fixed = false;
 
     union {
         Reg reg;
@@ -41,6 +43,10 @@ struct MCValue {
 
     bool is_vreg();
     bool is_mcreg();
+    bool is_imm();
+    bool is_lbl();
+    bool is_slot();
+    bool is_mem();
 
     bool has_hint();
 };
@@ -76,7 +82,9 @@ struct MCFunction {
     MCValue ret;
     CallConv callconv;
     std::vector<MCBasicBlock *> blocks;
+
     Reg vreg_id;
+    i64 stack_space = 0;
 
     MCFunction(Function *);
 

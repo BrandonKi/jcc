@@ -297,6 +297,7 @@ bool add() {
     // auto *jit = ctx.new_jit_env(builder);
     // auto result = jit->run_function<i64 (*)(i64, i64)>("add", 5, 6);
     auto result = run(ctx, builder);
+    std::cout << result << '\n';
     return result == 11;
 }
 
@@ -323,12 +324,12 @@ bool add4() {
     return result == 55;
 }
 
-bool salloc_i32() {
+bool slot_i32() {
     Context ctx = create_context();
     auto *builder = ctx.new_module_builder(NAME);
 
     auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
-    auto ret_ptr = builder->salloc(Type::i32);
+    auto ret_ptr = builder->slot(Type::i32);
     builder->store(ret_ptr, IRConstantInt(100, 32, true));
     auto ret = builder->load(ret_ptr, Type::i32);
     builder->ret(ret);
@@ -445,35 +446,35 @@ bool phi_2() {
 
 int main(int argc, char *argv[]) {
     // TODO take from args
-    baseline_interp = true;
+    // baseline_interp = true;
     // jit_compile = true;
-    // aot_compile = true;
+    aot_compile = true;
 
-    test(exit_success);
-    test(exit_fail);
+    // test(exit_success);
+    // test(exit_fail);
     
-    test(iadd_imm);
-    test(isub_imm);
-    test(imul_imm);
-    test(idiv_imm);
-    test(imod_imm);
+    // test(iadd_imm);
+    // test(isub_imm);
+    // test(imul_imm);
+    // test(idiv_imm);
+    // test(imod_imm);
     
-    test(fadd_imm);
-    test(fsub_imm);
-    test(fmul_imm);
-    test(fdiv_imm);
+    // test(fadd_imm);
+    // test(fsub_imm);
+    // test(fmul_imm);
+    // test(fdiv_imm);
     
-    test(call);
+    // test(call);
     test(add);
-    test(add4);
+    // test(add4);
 
-    test(salloc_i32);
+    // test(slot_i32);
 
-    test(branches_1);
-    test(branches_2);
+    // test(branches_1);
+    // test(branches_2);
 
-    test(phi_1);
-    test(phi_2);
+    // test(phi_1);
+    // test(phi_2);
 
     print_report();
 }

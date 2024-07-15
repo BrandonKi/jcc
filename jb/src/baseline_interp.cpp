@@ -231,7 +231,7 @@ InterpValue Interp::run_inst_ret(IRInst inst) {
     return {};
 }
 
-InterpValue Interp::run_inst_salloc(IRInst inst) {
+InterpValue Interp::run_inst_slot(IRInst inst) {
     stack.push_back(InterpValue(inst.src1.type));
     vregs[inst.dest.vreg] = InterpValue(Type::ptr, stack.size() - 1);
     return {};

@@ -35,6 +35,22 @@ bool MCValue::is_mcreg() {
     return kind == (i8)MCValueKind::mcreg;
 }
 
+bool MCValue::is_imm() {
+    return kind == (i8)MCValueKind::imm;
+}
+
+bool MCValue::is_lbl() {
+    return kind == (i8)MCValueKind::lbl;
+}
+
+bool MCValue::is_slot() {
+    return kind == (i8)MCValueKind::slot;
+}
+
+bool MCValue::is_mem() {
+    return kind == (i8)MCValueKind::mem;
+}
+
 bool MCValue::has_hint() {
     return hint != (i8)MCReg::none;
 }
