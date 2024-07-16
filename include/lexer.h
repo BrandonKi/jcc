@@ -46,12 +46,13 @@ struct Macro {
     std::vector<Token> content;
 };
 
-struct IfDirective {};
+// struct IfDirective {};
 
 class Lexer {
     std::string m_filename;
     std::string m_text;
     std::vector<Token> m_tokens;
+    std::vector<bool> m_cond_incs;
     int i;
     int line;
     bool m_saw_newline = true;
@@ -59,7 +60,7 @@ class Lexer {
     // TODO intern
     std::unordered_map<std::string, Macro> m_macro_table;
 
-    std::vector<IfDirective> m_if_stack;
+    // std::vector<IfDirective> m_if_stack;
 
     // TODO find include paths at runtime, need to extend find_windows.h
     // functionality which is currently used to find the linker
@@ -88,6 +89,7 @@ public:
 
     void discard_until_newline();
     void collect_until_newline(std::vector<Token> &);
+    void discard_rest_of_line();
 
     void ppc_stringize(std::vector<Token> &);
 
@@ -101,7 +103,8 @@ public:
 
     Token ppc_expand();
 
-    void ppc_internal_if(bool cond);
+    void continue_to_cond_inc();
+    void ppc_internal_if(bool);
     void ppc_if();
     void ppc_elif();
     void ppc_else();

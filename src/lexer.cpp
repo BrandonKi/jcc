@@ -7,25 +7,21 @@ using namespace jcc;
 
 static bool PPC_DEBUG = false;
 
-#define PPC_DEBUG_PRINT(x)                                                     \
-    if (PPC_DEBUG)                                                             \
+#define PPC_DEBUG_PRINT(x)                                                                                             \
+    if (PPC_DEBUG)                                                                                                     \
     std::cout << std::string(__FUNCTION__).substr(12) << ", " << x << "\n "
 
-Lexer::Lexer()
-    : m_filename{"<string>"}, m_text{""}, m_tokens{}, i{0}, line{1},
-      m_macro_table{}, m_if_stack{} {
+Lexer::Lexer() : m_filename{"<string>"}, m_text{""}, m_tokens{}, m_cond_incs{}, i{0}, line{1}, m_macro_table{} {
     m_tokens.emplace_back(TokenKind::NONE);
 }
 
 Lexer::Lexer(std::string text)
-    : m_filename{"<string>"}, m_text{text}, m_tokens{}, i{0}, line{1},
-      m_macro_table{}, m_if_stack{} {
+    : m_filename{"<string>"}, m_text{text}, m_tokens{}, m_cond_incs{}, i{0}, line{1}, m_macro_table{} {
     m_tokens.emplace_back(TokenKind::NONE);
 }
 
 Lexer::Lexer(InputFile file)
-    : m_filename{file.filepath}, m_text{file.text}, m_tokens{}, i{0}, line{1},
-      m_macro_table{}, m_if_stack{} {
+    : m_filename{file.filepath}, m_text{file.text}, m_tokens{}, m_cond_incs{}, i{0}, line{1}, m_macro_table{} {
     m_tokens.emplace_back(TokenKind::NONE);
 }
 
@@ -37,11 +33,9 @@ void Lexer::report_lex_error(Token tkn) {
         if (m_text[j] == '\n')
             col = 1;
 
-    std::string loc_string =
-        m_filename + ":" + std::to_string(line) + ":" + std::to_string(col);
+    std::string loc_string = m_filename + ":" + std::to_string(line) + ":" + std::to_string(col);
 
-    println(loc_string + " " + fmt("error: ", RED) + "unexpected token " +
-            str(tkn.kind));
+    println(loc_string + " " + fmt("error: ", RED) + "unexpected token " + str(tkn.kind));
 
     std::exit(-1);
 }
@@ -272,6 +266,15 @@ void Lexer::collect_until_newline(std::vector<Token> &out) {
     }
 }
 
+void Lexer::discard_rest_of_line() {
+    JCC_PROFILE();
+
+    while (curr().kind != TokenKind::_newline) {
+        internal_next(true);
+    }
+    internal_next(true);
+}
+
 void Lexer::ppc_stringize(std::vector<Token> &tokens) {
     JCC_PROFILE();
 }
@@ -279,16 +282,13 @@ void Lexer::ppc_stringize(std::vector<Token> &tokens) {
 // https://www.spinellis.gr/blog/20060626/cpp.algo.pdf
 /* substitute args, handle stringize and paste */
 // TODO separate into versions that do/don't need params
-std::vector<Token> Lexer::ppc_subst(Macro macro,
-                                    std::vector<std::vector<Token>> params,
-                                    HideSet hide_set) {
+std::vector<Token> Lexer::ppc_subst(Macro macro, std::vector<std::vector<Token>> params, HideSet hide_set) {
     std::vector<Token> tokens = {};
 
     Token tkn;
     for (int i = 0; i < macro.content.size(); ++i) {
         tkn = macro.content[i];
-        if (tkn.kind == TokenKind::_id &&
-            macro.params.contains(*tkn.id.val)) { // FIXME double lookup
+        if (tkn.kind == TokenKind::_id && macro.params.contains(*tkn.id.val)) { // FIXME double lookup
             tokens.append_range(params[macro.params[*tkn.id.val]]);
         } else {
             tokens.push_back(tkn);
@@ -362,9 +362,7 @@ Token Lexer::ppc_expand_function_like(Macro macro) {
     }
     Token close_paren = curr();
     internal_next();
-    auto view = tkn.hide_set | std::views::filter([&](auto e) {
-                    return close_paren.hide_set.contains(e);
-                });
+    auto view = tkn.hide_set | std::views::filter([&](auto e) { return close_paren.hide_set.contains(e); });
     HideSet new_hide_set(view.begin(), view.end());
     new_hide_set.insert(id);
     std::vector<Token> tokens = ppc_subst(macro, params, new_hide_set);
@@ -376,6 +374,9 @@ Token Lexer::ppc_expand_function_like(Macro macro) {
 // https://www.spinellis.gr/blog/20060626/cpp.algo.pdf
 Token Lexer::ppc_expand() {
     JCC_PROFILE();
+
+    if (curr().kind != _id)
+        return curr();
 
     PPC_DEBUG_PRINT(*curr().id.val);
 
@@ -394,7 +395,8 @@ Token Lexer::ppc_expand() {
         case MacroKind::none:
             ice(false);
         case MacroKind::object_like: {
-            return ppc_expand_object_like(macro);
+            ppc_expand_object_like(macro);
+            return ppc_expand();
         }
         case MacroKind::function_like: {
             return ppc_expand_function_like(macro);
@@ -407,10 +409,72 @@ Token Lexer::ppc_expand() {
     return tkn;
 }
 
-void Lexer::ppc_internal_if(bool cond) {
+void Lexer::continue_to_cond_inc() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+
+    ice(!m_cond_incs.empty());
+
+    bool cond = m_cond_incs.back();
+    if (!cond) {
+        int nested_ifs = 0;
+        bool ignore = false;
+        while (true) {
+            switch (m_text[i]) {
+            case '\n':
+                ++line;
+                m_saw_newline = true;
+                ++i;
+                continue;
+            case '#':  // TODO handle text in single/multi line comments
+                if (m_saw_newline && !ignore) {
+                    ++i;
+                    internal_next();
+                    if(*curr().id.val == "endif") {
+                        if(nested_ifs == 0) {
+                            internal_next();
+                            return;
+                        }
+                        else
+                            ++nested_ifs;
+                    } else if(*curr().id.val == "ifdef" || *curr().id.val == "ifndef" || *curr().id.val == "if") {
+                        ++nested_ifs;
+                    } else if(*curr().id.val == "else") {
+                        if(nested_ifs > 0) {
+                            --nested_ifs;
+                            break;
+                        }
+                        internal_next();
+                        return;
+                    }
+                }
+                break;
+            case '"':
+                ++i;
+                while (m_text[i] != '"') {
+                    ++i;
+                }
+                ++i;
+                break;
+            }
+            m_saw_newline = false;
+            ++i;
+        }
+    }
+}
+
+void Lexer::ppc_internal_if(bool cond) {
+    JCC_PROFILE();
+    PPC_DEBUG_PRINT(std::to_string(cond));
+
+    m_cond_incs.push_back(cond);
+
+    if(cond)
+        discard_rest_of_line();
+    else
+        discard_until_newline();
+
+    continue_to_cond_inc();
 }
 
 void Lexer::ppc_if() {
@@ -428,7 +492,13 @@ void Lexer::ppc_elif() {
 void Lexer::ppc_else() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+
+    ice(!m_cond_incs.empty());
+
+    m_cond_incs.back() = !m_cond_incs.back();
+
+    internal_next();
+    continue_to_cond_inc();
 }
 
 void Lexer::ppc_line() {
@@ -448,13 +518,18 @@ void Lexer::ppc_ifdef() {
     bool cond = m_macro_table.contains(*id);
 
     PPC_DEBUG_PRINT(*id + " " + std::to_string(cond));
+
     ppc_internal_if(cond);
 }
 
 void Lexer::ppc_endif() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+
+    ice(!m_cond_incs.empty());
+
+    m_cond_incs.pop_back();
+    internal_next();
 }
 
 void Lexer::ppc_undef() {
@@ -466,8 +541,7 @@ void Lexer::ppc_undef() {
 
     std::string *id = curr().id.val;
 
-    if (PPC_DEBUG)
-        std::cout << "ppc_undef(), " << *id << "\n";
+    PPC_DEBUG_PRINT(*id);
 
     m_macro_table.erase(*id);
     internal_next();
@@ -485,8 +559,17 @@ void Lexer::ppc_error() {
 
 void Lexer::ppc_ifndef() {
     JCC_PROFILE();
-    PPC_DEBUG_PRINT("");
-    ice(false);
+
+    Token tkn = internal_next();
+    if (tkn.kind != TokenKind::_id)
+        ice(false);
+
+    std::string *id = tkn.id.val;
+    bool cond = !m_macro_table.contains(*id);
+
+    PPC_DEBUG_PRINT(*id + " " + std::to_string(cond));
+
+    ppc_internal_if(cond);
 }
 
 void Lexer::ppc_define() {
@@ -501,7 +584,7 @@ void Lexer::ppc_define() {
     macro.kind = MacroKind::object_like;
     macro.content = {};
 
-    tkn = internal_next();
+    tkn = internal_next(true);
     if (tkn.kind == TokenKind::_open_paren) {
         macro.kind = MacroKind::function_like;
         macro.params = {};
@@ -518,8 +601,7 @@ void Lexer::ppc_define() {
         internal_next();
     }
 
-    std::string debug_str =
-        *id + (macro.kind == MacroKind::object_like ? "" : "(...)");
+    std::string debug_str = *id + (macro.kind == MacroKind::object_like ? "" : "(...)");
     PPC_DEBUG_PRINT(debug_str);
 
     collect_until_newline(macro.content);
@@ -642,10 +724,12 @@ Token Lexer::peek() {
     auto saved_tokens = m_tokens;
     auto saved_i = i;
     auto saved_line = line;
+    auto cond_incs = m_cond_incs;
     auto res = this->ppc_next();
     m_tokens = saved_tokens;
     i = saved_i;
     line = saved_line;
+    m_cond_incs = cond_incs;
     return res;
 }
 
@@ -727,8 +811,7 @@ void Lexer::lexer__debug_dump() {
     next();
     while (curr().kind != TokenKind::_eof) {
         result += str_rep(curr()) + " ";
-        std::cout << line << "," << i << ":\t"
-                  << lexer__debug_token_to_string(curr()) << "\n";
+        std::cout << line << "," << i << ":\t" << lexer__debug_token_to_string(curr()) << "\n";
         next();
     }
 

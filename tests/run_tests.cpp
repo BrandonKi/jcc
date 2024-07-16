@@ -8,8 +8,7 @@
 using namespace jcc;
 using namespace std::literals;
 
-#define NAME                                                                   \
-    std::string(extract_name(std::source_location::current().function_name()))
+#define NAME std::string(extract_name(std::source_location::current().function_name()))
 
 #define test(x) run_test(#x, x);
 
@@ -45,8 +44,7 @@ static void print_report() {
 
     std::string failed = std::to_string(failed_tests.size());
     std::string passed = std::to_string(passed_tests.size());
-    std::string total =
-        std::to_string(failed_tests.size() + passed_tests.size());
+    std::string total = std::to_string(failed_tests.size() + passed_tests.size());
 
     println();
     println(cprint::fmt("Failed: ", cprint::BRIGHT_RED) + failed);
@@ -1177,6 +1175,163 @@ int main() {
     return result == 21;
 }
 
+bool preproc_5() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define SQUARE(x) ((x) * (x))
+
+int main() {
+    int num = 5;
+    return SQUARE(num);
+}
+
+    )");
+
+    return result == 25;
+}
+
+bool preproc_6() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND
+
+int main() {
+#ifdef COND
+    return 300;
+#else
+    return 200;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 300;
+}
+
+bool preproc_7() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND
+
+int main() {
+#ifndef COND
+    return 300;
+#else
+    return 200;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 200;
+}
+
+bool preproc_8() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND
+#undef COND
+
+int main() {
+#ifndef COND
+    return 300;
+#else
+    return 200;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 300;
+}
+
+bool preproc_9() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND1
+
+int main() {
+#ifndef COND1
+#ifdef COND2
+    return 1;
+#else
+    return 2;
+#endif
+#else
+    return 100;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 100;
+}
+
+bool preproc_10() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND1
+
+int main() {
+#ifdef COND1
+#ifdef COND2
+    return 1;
+#else
+    return 2;
+#endif
+#else
+    return 100;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 2;
+}
+
+bool preproc_11() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define COND1
+#define COND2
+
+int main() {
+#ifdef COND1
+#ifdef COND2
+    return 1;
+#else
+    return 2;
+#endif
+#else
+    return 100;
+#endif
+    return -1;
+}
+
+    )");
+
+    return result == 1;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1251,6 +1406,13 @@ int main(int argc, char *argv[]) {
     test(preproc_2);
     test(preproc_3);
     test(preproc_4);
+    test(preproc_5);
+    test(preproc_6);
+    test(preproc_7);
+    test(preproc_8);
+    test(preproc_9);
+    test(preproc_10);
+    test(preproc_11);
 
     print_report();
 }

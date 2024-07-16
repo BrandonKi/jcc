@@ -374,7 +374,12 @@ llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
 llvm::Value *LLVMIRGen::gen_decl(DeclNode *decl) {
     JCC_PROFILE();
 
+    auto saved_ip = m_builder->saveIP();
+    m_builder->SetInsertPointPastAllocas(m_builder->GetInsertBlock()->getParent());
+    
     auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
+
+    m_builder->restoreIP(saved_ip);
     if (decl->init)
         m_builder->CreateAlignedStore(gen_expr(decl->init), alloca,
                                       llvm::Align(decl->type->align), false);
@@ -648,6 +653,21 @@ llvm::Function *LLVMIRGen::gen_function(FunctionNode *fn) {
     }
 
     gen_compound_stmnt(fn->body);
+
+    if (!function->back().getTerminator()) {
+        auto &last = function->back();
+        m_builder->SetInsertPoint(&last);
+
+        if(function->getName() == "main") {
+            m_builder->CreateRet(
+                llvm::ConstantInt::get(*m_context, llvm::APInt(function->getReturnType()->getPrimitiveSizeInBits(), 0, true)));
+        }
+        else {
+            m_builder->CreateCall(llvm::Intrinsic::getDeclaration(m_module.get(), llvm::Intrinsic::trap), {});
+            m_builder->CreateUnreachable();
+        }
+    }
+
     return function;
 }
 

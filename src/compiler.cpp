@@ -69,8 +69,7 @@ int Compiler::compile_file(InputFile infile) {
     auto Features = "";
 
     llvm::TargetOptions opt;
-    auto TargetMachine = Target->createTargetMachine(
-        TargetTriple, CPU, Features, opt, llvm::Reloc::PIC_);
+    auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, llvm::Reloc::PIC_);
 
     ir_gen.m_module->setDataLayout(TargetMachine->createDataLayout());
     ir_gen.m_module->setTargetTriple(TargetTriple);
@@ -96,18 +95,15 @@ int Compiler::compile_file(InputFile infile) {
     dest.close();
 
     if (m_options.link) {
-        jb::link_coff_files(
-            "temp_files/test",
-            {"C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.obj"},
-            m_options.print_link_command);
+        jb::link_coff_files("temp_files/test", {"C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.obj"},
+                            m_options.print_link_command);
     }
 
     // FIXME lazy
     // should use os-specific version and redirect stdout
     // learn.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
     if (m_options.run_exe) {
-        int res = system(
-            "C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.exe");
+        int res = system("C:/Users/Kirin/OneDrive/Desktop/dev/jcc/temp_files/test.exe");
         return res;
     }
 

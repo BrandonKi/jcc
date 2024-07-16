@@ -8,7 +8,9 @@ The custom backend is located in [jb/](jb/) which was previously a separate proj
 
 ## Examples
 
-WIP, can currently handle a decent amount of stuff (functions, pointers, if/else, for, do/while, etc.).
+WIP, can currently handle a decent amount of stuff (functions, pointers, if/else, for, do/while, etc.). It even supports a decent amount of preprocessor features so far.
+
+
 Take a look in the tests directory or commit history for a fuller picture of how much is supported.
 
 ## Spec/Reference
