@@ -122,22 +122,22 @@ struct NumLitExprNode final : public ExprNode {
 };
 
 struct StrLitExprNode final : public ExprNode {
-    std::string *val;
+    Strand val;
 
-    StrLitExprNode() : ExprNode{ExprKind::StrLitExpr}, val{nullptr} {}
+    StrLitExprNode() : ExprNode{ExprKind::StrLitExpr}, val{} {}
 
-    StrLitExprNode(std::string *val)
+    StrLitExprNode(Strand val)
         : ExprNode{ExprKind::StrLitExpr}, val{val} {}
 
     ARENA_CREATE(StrLitExprNode);
 };
 
 struct IdExprNode final : public ExprNode {
-    std::string *val; // TODO intern
+    Strand val;
 
-    IdExprNode() : ExprNode{ExprKind::IdExpr}, val{nullptr} {}
+    IdExprNode() : ExprNode{ExprKind::IdExpr}, val{} {}
 
-    IdExprNode(std::string *val) : ExprNode{ExprKind::IdExpr}, val{val} {}
+    IdExprNode(Strand val) : ExprNode{ExprKind::IdExpr}, val{val} {}
 
     ARENA_CREATE(IdExprNode);
 };
@@ -296,12 +296,12 @@ struct DeclNode {
     Attributes attr;
     Qualifier qual;
     CType *type;
-    std::string *id;
+    Strand id;
     ExprNode *init;
 
     DeclNode()
         : attr{}, qual{}, type{CType::getBuiltinType(CTypeKind::None)},
-          id{nullptr}, init{nullptr} {}
+          id{}, init{nullptr} {}
 
     ARENA_CREATE(DeclNode);
 };
@@ -468,14 +468,14 @@ struct CompoundStmntNode final : public StmntNode {
 struct PrototypeNode {
     Attributes attr;
     CType *ret_type;
-    std::string *id;
-    std::vector<DeclNode *> args; // TODO intern
+    Strand id;
+    std::vector<DeclNode *> args;
 
     PrototypeNode()
-        : attr{}, ret_type{CType::getBuiltinType(CTypeKind::None)}, id{nullptr},
+        : attr{}, ret_type{CType::getBuiltinType(CTypeKind::None)}, id{},
           args{} {}
 
-    PrototypeNode(Attributes attr, CType *ret_type, std::string *id,
+    PrototypeNode(Attributes attr, CType *ret_type, Strand id,
                   std::vector<DeclNode *> args)
         : attr{attr}, ret_type{ret_type}, id{id}, args{args} {}
 

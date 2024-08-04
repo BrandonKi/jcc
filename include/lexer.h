@@ -15,7 +15,7 @@ enum TokenKind : char {
 #undef X
 
 // TODO intern
-using HideSet = std::unordered_set<std::string *>;
+using HideSet = std::unordered_set<std::string>;
 
 struct Token {
     TokenKind kind;

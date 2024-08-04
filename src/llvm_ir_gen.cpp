@@ -66,7 +66,7 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
 llvm::Value *LLVMIRGen::gen_str_lit_expr(StrLitExprNode *str_expr) {
     JCC_PROFILE();
 
-    llvm::Value *v = m_builder->CreateGlobalString(*str_expr->val);
+    llvm::Value *v = m_builder->CreateGlobalString(str_expr->val.value());
     return v;
 }
 
@@ -82,7 +82,7 @@ llvm::Value *LLVMIRGen::gen_num_lit_expr(NumLitExprNode *num_expr) {
 llvm::Value *LLVMIRGen::gen_id_expr(IdExprNode *id_expr) {
     JCC_PROFILE();
 
-    auto [decl, val] = m_named_values[*id_expr->val];
+    auto [decl, val] = m_named_values[id_expr->val.value()];
     if (!val)
         ice(false);
     val = m_builder->CreateAlignedLoad(to_llvm_type(decl->type), val,
@@ -99,7 +99,7 @@ llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
     switch (base_expr->kind) {
     case IdExpr: {
         auto expr = static_cast<IdExprNode *>(base_expr);
-        auto &[decl, addr] = m_named_values[*expr->val];
+        auto &[decl, addr] = m_named_values[expr->val];
         return addr;
     }
     case UnaryExpr: {
@@ -204,7 +204,7 @@ llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
     switch (bin_expr->lhs->kind) {
     case IdExpr: {
         auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
-        auto &[decl, addr] = m_named_values[*lhs->val];
+        auto &[decl, addr] = m_named_values[lhs->val];
         m_builder->CreateAlignedStore(rhs, addr,
                                       llvm::Align(bin_expr->rhs->type->align));
         return rhs;
@@ -328,7 +328,7 @@ llvm::Value *LLVMIRGen::gen_call_expr(CallExprNode *call_expr) {
         ice(false);
 
     llvm::Function *callee =
-        m_module->getFunction(*static_cast<IdExprNode *>(call_expr->base)->val);
+        m_module->getFunction(static_cast<IdExprNode *>(call_expr->base)->val.value());
 
     if (!callee)
         ice(false);
@@ -383,7 +383,7 @@ llvm::Value *LLVMIRGen::gen_decl(DeclNode *decl) {
     if (decl->init)
         m_builder->CreateAlignedStore(gen_expr(decl->init), alloca,
                                       llvm::Align(decl->type->align), false);
-    m_named_values[*decl->id] = {decl, alloca};
+    m_named_values[decl->id] = {decl, alloca};
     return alloca;
 }
 
@@ -610,12 +610,12 @@ llvm::Function *LLVMIRGen::gen_prototype(PrototypeNode *proto) {
         to_llvm_type(proto->ret_type), arg_types, false);
 
     llvm::Function *f = llvm::Function::Create(
-        ft, llvm::Function::ExternalLinkage, *proto->id, m_module.get());
+        ft, llvm::Function::ExternalLinkage, proto->id.value(), m_module.get());
 
     if (!proto->attr._extern) {
         int index = 0;
         for (auto &arg : f->args()) {
-            arg.setName(*proto->args[index]->id);
+            arg.setName(proto->args[index]->id.value());
             ++index;
         }
     }
@@ -626,7 +626,7 @@ llvm::Function *LLVMIRGen::gen_prototype(PrototypeNode *proto) {
 llvm::Function *LLVMIRGen::gen_function(FunctionNode *fn) {
     JCC_PROFILE();
 
-    llvm::Function *function = m_module->getFunction(*fn->proto->id);
+    llvm::Function *function = m_module->getFunction(fn->proto->id.value());
 
     if (function)
         ice(false);

@@ -8,14 +8,13 @@ Sema::Sema() : type_tab{}, fn_tab{}, var_tab{}, current_fn{nullptr} {}
 
 // TODO intern
 // only works for variables, maybe rename: get_var_type()
-CType *Sema::get_id_type(std::string *id) {
+CType *Sema::get_id_type(Strand id) {
     JCC_PROFILE();
 
     for (auto &m : var_tab | std::views::reverse)
-        if (m.contains(*id))
-            return m[*id]->type;
+        if (m.contains(id))
+            return m[id]->type;
 
-    ice(false);
     return nullptr;
 }
 
@@ -23,7 +22,7 @@ CType *Sema::get_id_type(std::string *id) {
 void Sema::add_var(DeclNode *decl) {
     JCC_PROFILE();
 
-    var_tab.back()[*decl->id] = decl;
+    var_tab.back()[decl->id] = decl;
 }
 
 ExprNode *Sema::insert_cast(ExprNode *expr, CType *type) {
@@ -96,6 +95,11 @@ void Sema::sema_id_expr(IdExprNode *id_expr) {
     JCC_PROFILE();
 
     id_expr->type = get_id_type(id_expr->val);
+    
+    if(!id_expr->type) {
+        std::cout << "Undefined Identifier: " << id_expr->val << "\n";
+        std::exit(-1); // TODO better error reporting
+    }
 }
 
 void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
@@ -156,7 +160,7 @@ void Sema::sema_call_expr(CallExprNode *call_expr) {
     ice(call_expr->base->kind == ExprKind::IdExpr);
     // sema_expr(call_expr->base);
     FunctionNode *callee =
-        fn_tab[*static_cast<IdExprNode *>(call_expr->base)->val];
+        fn_tab[static_cast<IdExprNode *>(call_expr->base)->val];
 
     for (int i = 0; i < call_expr->args.size(); ++i) {
         sema_expr(call_expr->args[i]);
@@ -262,7 +266,7 @@ void Sema::sema_expr(ExprNode *expr) {
 void Sema::sema_decl(DeclNode *decl) {
     JCC_PROFILE();
 
-    if (decl->id)
+    if (decl->id.has_value())
         add_var(decl);
 
     if (decl->init) {
@@ -431,7 +435,7 @@ void Sema::sema_prototype(PrototypeNode *proto) {
     JCC_PROFILE();
 
     // TODO add self to symbol table?
-    fn_tab[*proto->id] = current_fn;
+    fn_tab[proto->id] = current_fn;
 
     for (auto *arg : proto->args) {
         sema_decl(arg);

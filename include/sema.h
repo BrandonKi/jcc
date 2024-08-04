@@ -5,16 +5,16 @@
 namespace jcc {
 
 class Sema {
-    std::vector<std::unordered_map<std::string, CType *>> type_tab;
-    std::unordered_map<std::string, FunctionNode *> fn_tab;
-    std::vector<std::unordered_map<std::string, DeclNode *>> var_tab;
+    std::vector<std::unordered_map<Strand, CType *>> type_tab;
+    std::unordered_map<Strand, FunctionNode *> fn_tab;
+    std::vector<std::unordered_map<Strand, DeclNode *>> var_tab;
 
     FunctionNode *current_fn;
 
 public:
     Sema();
 
-    CType *get_id_type(std::string *);
+    CType *get_id_type(Strand);
     void add_var(DeclNode *);
 
     ExprNode *insert_cast(ExprNode *, CType *);

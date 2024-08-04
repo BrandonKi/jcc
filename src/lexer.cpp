@@ -315,12 +315,12 @@ void Lexer::add_tokens(std::vector<Token> &vec) {
 Token Lexer::ppc_expand_object_like(Macro macro) {
     JCC_PROFILE();
 
-    std::string *id = curr().id.val;
-    PPC_DEBUG_PRINT(*id + " " + std::to_string(macro.content.size()));
+    Strand id = curr().id.val;
+    PPC_DEBUG_PRINT(id.value() + " " + std::to_string(macro.content.size()));
 
     Token tkn = internal_next();
     HideSet new_hide_set = curr().hide_set;
-    new_hide_set.insert(id);
+    new_hide_set.insert(id.value());
     std::vector<Token> tokens = ppc_subst(macro, {}, new_hide_set);
 
     add_tokens(tokens);
@@ -330,8 +330,8 @@ Token Lexer::ppc_expand_object_like(Macro macro) {
 Token Lexer::ppc_expand_function_like(Macro macro) {
     JCC_PROFILE();
 
-    std::string *id = curr().id.val;
-    PPC_DEBUG_PRINT(*id + "(...) " + std::to_string(macro.content.size()));
+    Strand id = curr().id.val;
+    PPC_DEBUG_PRINT(id.value() + "(...) " + std::to_string(macro.content.size()));
 
     internal_next();
     std::vector<std::vector<Token>> params = {};
@@ -364,7 +364,7 @@ Token Lexer::ppc_expand_function_like(Macro macro) {
     internal_next();
     auto view = tkn.hide_set | std::views::filter([&](auto e) { return close_paren.hide_set.contains(e); });
     HideSet new_hide_set(view.begin(), view.end());
-    new_hide_set.insert(id);
+    new_hide_set.insert(id.value());
     std::vector<Token> tokens = ppc_subst(macro, params, new_hide_set);
 
     add_tokens(tokens);
@@ -381,15 +381,15 @@ Token Lexer::ppc_expand() {
     PPC_DEBUG_PRINT(*curr().id.val);
 
     Token tkn = curr();
-    std::string *id = tkn.id.val;
+    Strand id = tkn.id.val;
 
-    if (tkn.hide_set.contains(id)) {
+    if (tkn.hide_set.contains(id.value())) {
         return tkn;
     }
 
-    if (m_macro_table.contains(*id)) {
+    if (m_macro_table.contains(id.value())) {
         // FIXME oops double lookup
-        Macro macro = m_macro_table[*id];
+        Macro macro = m_macro_table[id.value()];
 
         switch (macro.kind) {
         case MacroKind::none:
@@ -514,10 +514,10 @@ void Lexer::ppc_ifdef() {
     if (tkn.kind != TokenKind::_id)
         ice(false);
 
-    std::string *id = tkn.id.val;
-    bool cond = m_macro_table.contains(*id);
+    Strand id = tkn.id.val;
+    bool cond = m_macro_table.contains(id);
 
-    PPC_DEBUG_PRINT(*id + " " + std::to_string(cond));
+    PPC_DEBUG_PRINT(id.value() + " " + std::to_string(cond));
 
     ppc_internal_if(cond);
 }
@@ -539,11 +539,11 @@ void Lexer::ppc_undef() {
     if (curr().kind != TokenKind::_id)
         ice(false);
 
-    std::string *id = curr().id.val;
+    Strand id = curr().id.val;
 
-    PPC_DEBUG_PRINT(*id);
+    PPC_DEBUG_PRINT(id);
 
-    m_macro_table.erase(*id);
+    m_macro_table.erase(id.value());
     internal_next();
 }
 
@@ -564,10 +564,10 @@ void Lexer::ppc_ifndef() {
     if (tkn.kind != TokenKind::_id)
         ice(false);
 
-    std::string *id = tkn.id.val;
-    bool cond = !m_macro_table.contains(*id);
+    Strand id = tkn.id.val;
+    bool cond = !m_macro_table.contains(id.value());
 
-    PPC_DEBUG_PRINT(*id + " " + std::to_string(cond));
+    PPC_DEBUG_PRINT(id.value() + " " + std::to_string(cond));
 
     ppc_internal_if(cond);
 }
@@ -579,7 +579,7 @@ void Lexer::ppc_define() {
     if (tkn.kind != TokenKind::_id)
         ice(false);
 
-    std::string *id = tkn.id.val;
+    Strand id = tkn.id.val;
     Macro macro;
     macro.kind = MacroKind::object_like;
     macro.content = {};
@@ -601,13 +601,13 @@ void Lexer::ppc_define() {
         internal_next();
     }
 
-    std::string debug_str = *id + (macro.kind == MacroKind::object_like ? "" : "(...)");
+    std::string debug_str = id.value() + (macro.kind == MacroKind::object_like ? "" : "(...)");
     PPC_DEBUG_PRINT(debug_str);
 
     collect_until_newline(macro.content);
     internal_next();
 
-    m_macro_table[*id] = macro;
+    m_macro_table[id.value()] = macro;
 }
 
 void Lexer::ppc_pragma() {
