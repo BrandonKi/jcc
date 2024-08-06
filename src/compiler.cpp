@@ -121,17 +121,3 @@ int Compiler::compile(std::string filepath) {
 
     return this->compile_file(InputFile{filepath, read_file(filepath)});
 }
-
-// FIXME lazy, inefficient
-[[nodiscard]] std::string Compiler::read_file(const std::string &filepath) {
-    JCC_PROFILE();
-
-    std::ifstream file;
-    file.open(filepath);
-    if (!file)
-        println("failed to open file", RED);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-    return std::string(buffer.str());
-}

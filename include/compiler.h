@@ -24,9 +24,6 @@ public:
     int compile_file(InputFile);
     int compile_string(std::string text);
     int compile(std::string filepath);
-
-private:
-    std::string read_file(const std::string &);
 };
 
 } // namespace jcc

@@ -111,7 +111,7 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
         return result;
     }
 
-    // TODO/FIXME ppc can handle this
+    // FIXME these characters can appear in strings
     if (m_text[i] == '/' && m_text[i + 1] == '/') {
         while (m_text[i] != EOF && m_text[i] != '\n' && m_text[i] != '\r')
             ++i;
@@ -119,6 +119,22 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
         if (m_text[i] != EOF) {
             m_saw_newline = true;
             line += 1;
+            return this->internal_next_no_update(keep_newline);
+        }
+    }
+    if (m_text[i] == '/' && m_text[i + 1] == '*') {
+        while (m_text[i] != EOF && (m_text[i] != '*' || m_text[i+1] != '/')) {
+            ++i;
+            if(m_text[i] == '\n')
+                ++line;
+        }
+        ++i;
+        ++i;
+        // ++i;
+        // ++i;
+        if (m_text[i] != EOF) {
+            // m_saw_newline = true;
+            // line += 1;
             return this->internal_next_no_update(keep_newline);
         }
     }
@@ -243,8 +259,16 @@ Token Lexer::internal_next(bool keep_newline) {
     JCC_PROFILE();
 
     m_tokens.pop_back();
+
     if (m_tokens.empty())
         m_tokens.push_back(this->internal_next_no_update(keep_newline));
+
+    if(m_tokens.back().kind == TokenKind::_eof && !stash_stack.empty()) {
+        m_tokens.pop_back();
+        unstash();
+        return internal_next();
+    }
+
     return curr();
 }
 
@@ -272,7 +296,7 @@ void Lexer::discard_rest_of_line() {
     while (curr().kind != TokenKind::_newline) {
         internal_next(true);
     }
-    internal_next(true);
+    internal_next(false);
 }
 
 void Lexer::ppc_stringize(std::vector<Token> &tokens) {
@@ -463,6 +487,17 @@ void Lexer::continue_to_cond_inc() {
     }
 }
 
+std::string Lexer::collect_char_until(char c) {
+    JCC_PROFILE();
+
+    int start = i;
+    while (m_text[i] != c) {
+        ++i;
+    }
+
+    return m_text.substr(start, i-start);
+}
+
 void Lexer::ppc_internal_if(bool cond) {
     JCC_PROFILE();
     PPC_DEBUG_PRINT(std::to_string(cond));
@@ -504,7 +539,9 @@ void Lexer::ppc_else() {
 void Lexer::ppc_line() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+
+    discard_until_newline();
+    internal_next();
 }
 
 void Lexer::ppc_ifdef() {
@@ -621,7 +658,28 @@ void Lexer::ppc_pragma() {
 void Lexer::ppc_include() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+
+    Token tkn = internal_next();
+    if (tkn.kind != TokenKind::_less_than && tkn.kind != TokenKind::_double_quote)
+        ice(false);
+
+    if(tkn.kind == TokenKind::_less_than) {
+        std::string name = collect_char_until('>');
+        ++i;
+        std::string content = get_sys_include(name);
+        stash();
+        m_filename = name;
+        m_text = content;
+        i = 0;
+        m_saw_newline = true;
+        line = 1;
+        m_tokens = {}; // HACK
+        m_tokens.emplace_back(TokenKind::NONE);
+        m_cond_incs = {}; // FIXME
+    }
+
+    // discard_until_newline();
+    internal_next();
 }
 
 void Lexer::ppc_directive() {
@@ -793,6 +851,34 @@ Token Lexer::curr() {
     if (!m_tokens.empty())
         return m_tokens.back();
     return Token(TokenKind::_eof);
+}
+
+void Lexer::unstash() {
+    JCC_PROFILE();
+    StashState state = stash_stack.back();
+    stash_stack.pop_back();
+
+    m_filename = state.filename;
+    m_text = state.text;
+    m_tokens = state.tokens;
+    m_cond_incs = state.cond_incs; // FIXME
+    i = state.i;
+    line = state.line;
+    m_saw_newline = state.saw_newline;
+}
+
+void Lexer::stash() {
+    JCC_PROFILE();
+    StashState state;
+    state.filename = m_filename;
+    state.text = m_text;
+    state.tokens = m_tokens;
+    state.cond_incs = m_cond_incs; // FIXME
+    state.i = i;
+    state.line = line;
+    state.saw_newline = m_saw_newline;
+
+    stash_stack.push_back(state);
 }
 
 std::string Lexer::lexer__debug_token_to_string(Token token) {

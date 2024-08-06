@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <filesystem>
+
 namespace jcc {
 
 #define X(a, b, _) a = b,
@@ -48,6 +50,16 @@ struct Macro {
 
 // struct IfDirective {};
 
+struct StashState {
+    std::string filename;
+    std::string text;
+    std::vector<Token> tokens;
+    std::vector<bool> cond_incs; // FIXME
+    int i;
+    int line;
+    bool saw_newline;
+};
+
 class Lexer {
     std::string m_filename;
     std::string m_text;
@@ -56,6 +68,8 @@ class Lexer {
     int i;
     int line;
     bool m_saw_newline = true;
+
+    std::vector<StashState> stash_stack;
 
     // TODO intern
     std::unordered_map<std::string, Macro> m_macro_table;
@@ -66,16 +80,30 @@ class Lexer {
     // functionality which is currently used to find the linker
     std::vector<std::string> m_include_paths = {
         "C:/Program Files/Microsoft Visual "
-        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/include"
+        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/include",
 
         "C:/Program Files/Microsoft Visual "
-        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/atlmfc/include"
+        "Studio/2022/Community/VC/Tools/MSVC/14.37.32822/atlmfc/include",
 
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/ucrt"
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/shared"
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/um"
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/winrt"
-        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/cppwinrt"};
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/ucrt",
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/shared",
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/um",
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/winrt",
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22000.0/cppwinrt",
+    };
+
+    std::string get_sys_include(std::string name) {
+
+        std::string& path = m_include_paths[0];
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            if(entry.path().lexically_relative(path).string() == name) {
+                std::cout << read_file(entry.path().string());
+                return read_file(entry.path().string());
+            }
+        }
+
+        return "";
+    }
 
 public:
     Lexer();
@@ -104,6 +132,7 @@ public:
     Token ppc_expand();
 
     void continue_to_cond_inc();
+    std::string collect_char_until(char);
     void ppc_internal_if(bool);
     void ppc_if();
     void ppc_elif();
@@ -136,6 +165,9 @@ public:
     bool on(TokenKind);
     bool on(char);
     Token curr();
+
+    void unstash();
+    void stash();
 
     std::string lexer__debug_token_to_string(Token);
     void lexer__debug_dump();

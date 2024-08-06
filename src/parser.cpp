@@ -1075,6 +1075,8 @@ FileNode *Parser::parse_file() {
     while (m_lex.curr().kind != TokenKind::_eof) {
         if (is_start_of_type(m_lex.curr())) {
             file->functions.push_back(parse_function());
+        } else {
+            ice(false);
         }
     }
 

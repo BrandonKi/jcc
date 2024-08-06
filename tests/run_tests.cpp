@@ -1332,6 +1332,22 @@ int main() {
     return result == 1;
 }
 
+bool preproc_12() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#include <stdbool.h>
+
+int main() {
+    return true;
+}
+
+    )");
+
+    return result == 1;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1413,6 +1429,7 @@ int main(int argc, char *argv[]) {
     test(preproc_9);
     test(preproc_10);
     test(preproc_11);
+    test(preproc_12);
 
     print_report();
 }

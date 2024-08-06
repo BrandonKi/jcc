@@ -1,5 +1,8 @@
+#include <stdbool.h>
 
-int main() {}
+int main() {
+    return true;
+}
 
 
 // int main() {

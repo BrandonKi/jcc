@@ -95,6 +95,8 @@
         "codecvt": "cpp",
         "filesystem": "cpp",
         "source_location": "cpp",
-        "stacktrace": "cpp"
+        "stacktrace": "cpp",
+        "stdbool.h": "c",
+        "*.rh": "cpp"
     }
 }

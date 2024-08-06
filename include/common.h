@@ -118,6 +118,8 @@ struct InputFile {
     std::string text;
 };
 
+[[nodiscard]] std::string read_file(const std::string &);
+
 // Interned String
 struct Strand {
     Strand(): ptr{nullptr} {}
@@ -149,7 +151,7 @@ struct Strand {
 
     // template <typename T> Strand(T &&ref): view(std::forward<T>(ref)) {}
 
-    bool has_value() const { return !ptr->empty(); }
+    bool has_value() const { return !empty(); }
     bool empty() const { return !ptr || ptr->empty(); }
 
     friend std::ostream &operator<<(std::ostream &, const Strand &);

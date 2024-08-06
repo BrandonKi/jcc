@@ -1,5 +1,8 @@
 #include "common.h"
 
+#include <fstream>
+#include <sstream>
+
 static std::unordered_set<std::string> table;
 
 void jcc_ice_assert(const char *expr, std::stacktrace s, const char *message) {
@@ -9,6 +12,20 @@ void jcc_ice_assert(const char *expr, std::stacktrace s, const char *message) {
         std::cout << "ICE: " << expr << "\n\n";
     std::cout << "Stack Trace:\n" << s << '\n';
     std::exit(-1);
+}
+
+// FIXME lazy, inefficient
+[[nodiscard]] std::string read_file(const std::string &filepath) {
+    JCC_PROFILE();
+
+    std::ifstream file;
+    file.open(filepath);
+    if (!file)
+        println("failed to open file", RED);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    file.close();
+    return std::string(buffer.str());
 }
 
 std::string* Strand::intern(std::string str) {
