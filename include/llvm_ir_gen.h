@@ -32,6 +32,7 @@ public:
     llvm::Value *gen_str_lit_expr(StrLitExprNode *);
     llvm::Value *gen_num_lit_expr(NumLitExprNode *);
     llvm::Value *gen_id_expr(IdExprNode *);
+    llvm::Value *gen_lvalue_expr(ExprNode *);
     llvm::Value *gen_address_of(ExprNode *);
     llvm::Value *gen_unary_expr(UnaryExprNode *);
     llvm::Value *gen_assign(BinExprNode *);

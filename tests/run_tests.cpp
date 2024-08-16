@@ -1515,6 +1515,46 @@ int main() {
     return result == 15;
 }
 
+bool struct_6() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct Int {
+        int i;
+    };
+    struct Int integer;
+    struct Int *ptr = &integer;
+    (*ptr).i = 42;
+    return (*ptr).i;
+}
+
+    )");
+
+    return result == 42;
+}
+
+bool struct_7() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct Int {
+        int i;
+    };
+    struct Int integer;
+    struct Int *ptr = &integer;
+    ptr->i = 42;
+    return ptr->i;
+}
+
+    )");
+
+    return result == 42;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1604,6 +1644,9 @@ int main(int argc, char *argv[]) {
     test(struct_2);
     test(struct_3);
     test(struct_4);
+    test(struct_5);
+    test(struct_6);
+    test(struct_7);
 
     print_report();
 }

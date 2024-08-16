@@ -309,6 +309,7 @@ ExprNode *Parser::parse_postfix_expr() {
             ice(m_lex->curr().kind == TokenKind::_id);
             extra = IdExprNode::create(m_lex->curr().id.val);
             base = UnaryExprNode::create(UnaryOp::_deref, base);
+            m_lex->next();
             return BinExprNode::create(BinOp::_field, base, extra);
         case TokenKind::_inc: // FIXME behaves like prefix inc
             m_lex->next();

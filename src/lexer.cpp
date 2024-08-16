@@ -160,6 +160,11 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
             return result;
         }
 
+        if (m_text[i] == '-' && m_text[i + 1] == '>') {
+            i += 2;
+            result.kind = TokenKind::_arrow;
+            return result;
+        }
 
         if (m_text[i] == '<' && m_text[i + 1] == '=') {
             i += 2;

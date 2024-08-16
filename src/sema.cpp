@@ -196,10 +196,10 @@ void Sema::sema_id_expr(IdExprNode *id_expr) {
 
     id_expr->type = get_id_type(id_expr->val);
     
-    // if(!id_expr->type) {
-    //     std::cout << "Undefined Identifier: " << id_expr->val << "\n";
-    //     std::exit(-1); // TODO better error reporting
-    // }
+    if(!id_expr->type) {
+        std::cout << "Undefined Identifier: " << id_expr->val << "\n";
+        std::exit(-1); // TODO better error reporting
+    }
 }
 
 void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
@@ -277,14 +277,15 @@ void Sema::sema_bin_expr(BinExprNode *bin_expr) {
 
     sema_expr(bin_expr->lhs);
     if(bin_expr->op == BinOp::_field) {
-        std::cout << "TODO field sema\n";
         for(auto *field: bin_expr->lhs->type->fields) {
+            ice(bin_expr->rhs->kind == ExprKind::IdExpr);
             if(field->id == static_cast<IdExprNode*>(bin_expr->rhs)->val) {
                 bin_expr->type = field->type;
-                break;
+                return;
             }
         }
-        return;
+        std::cout << "No field named '" << static_cast<IdExprNode*>(bin_expr->rhs)->val << "'\n";
+        std::exit(-1); // FIXME error reporting
     }
     sema_expr(bin_expr->rhs);
 

@@ -94,11 +94,11 @@ class Lexer {
     };
 
     std::string get_sys_include(std::string name) {
-
+        // TODO cache
         for(auto &path: m_include_paths) {
             for (const auto& entry : std::filesystem::directory_iterator(path)) {
                 if(entry.path().lexically_relative(path).string() == name) {
-                    std::cout << read_file(entry.path().string());
+                    // std::cout << read_file(entry.path().string());
                     return read_file(entry.path().string());
                 }
             }

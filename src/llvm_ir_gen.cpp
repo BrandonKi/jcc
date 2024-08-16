@@ -1,5 +1,6 @@
 #include "llvm_ir_gen.h"
 #include "ast.h"
+
 // #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -10,6 +11,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Alignment.h"
+
 #include <memory>
 #include <vector>
 
@@ -105,9 +107,7 @@ llvm::Value *LLVMIRGen::gen_id_expr(IdExprNode *id_expr) {
 }
 
 // FIXME does not handle all valid cases
-// TODO possibly replace this with genLValue(), or something similar
-// it's a semi-common pattern, duplicated in genAssign
-llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
+llvm::Value *LLVMIRGen::gen_lvalue_expr(ExprNode *base_expr) {
     JCC_PROFILE();
 
     switch (base_expr->kind) {
@@ -120,11 +120,31 @@ llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
         auto expr = static_cast<UnaryExprNode *>(base_expr);
         return gen_expr(expr->base);
     }
+    case BinExpr: { // union/struct/array access
+        auto expr = static_cast<BinExprNode *>(base_expr);
+        ice(expr->op == BinOp::_field);
+        auto lvalue = gen_lvalue_expr(expr->lhs);
+        auto expr_rhs = static_cast<IdExprNode *>(expr->rhs);
+        int index = -1;
+        for(auto *field: expr->lhs->type->fields) {
+            ++index;
+            if(field->id == expr_rhs->val)
+                break;
+        }
+        ice(index != -1);
+        return m_builder->CreateStructGEP(to_llvm_type(expr->lhs->type), lvalue, index);
+    }
     default:
         ice(false);
     }
 
     return nullptr;
+}
+
+llvm::Value *LLVMIRGen::gen_address_of(ExprNode *base_expr) {
+    JCC_PROFILE();
+
+    return gen_lvalue_expr(base_expr);
 }
 
 // TODO finish
@@ -208,47 +228,14 @@ llvm::Value *LLVMIRGen::gen_unary_expr(UnaryExprNode *unary_expr) {
     return nullptr;
 }
 
-// TODO possibly replace this with genLValue(), or something similar
-// it's a semi-common pattern, duplicated in genAddressOf
 llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
     JCC_PROFILE();
 
+    llvm::Value *lhs = gen_lvalue_expr(bin_expr->lhs);
     llvm::Value *rhs = gen_expr(bin_expr->rhs);
 
-    switch (bin_expr->lhs->kind) {
-    case IdExpr: {
-        auto lhs = static_cast<IdExprNode *>(bin_expr->lhs);
-        auto &[decl, addr] = m_named_values[lhs->val];
-        m_builder->CreateAlignedStore(rhs, addr,
-                                      llvm::Align(bin_expr->rhs->type->align));
-        return rhs;
-    }
-    case UnaryExpr: {
-        auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
-        break;
-    }
-    case BinExpr: { // union/struct/array access
-        auto expr = static_cast<BinExprNode *>(bin_expr->lhs);
-        ice(expr->op == BinOp::_field);
-        auto expr_lhs = static_cast<IdExprNode *>(expr->lhs);
-        auto expr_rhs = static_cast<IdExprNode *>(expr->rhs);
-        int index = -1;
-        for(auto *field: expr_lhs->type->fields) {
-            ++index;
-            if(field->id == expr_rhs->val)
-                break;
-        }
-        ice(index != -1);
-        auto &[decl, addr] = m_named_values[expr_lhs->val];
-        auto calc_addr = m_builder->CreateStructGEP(to_llvm_type(expr_lhs->type), addr, index);
-        m_builder->CreateAlignedStore(rhs, calc_addr, llvm::Align(expr->type->align));
-        return rhs;
-    }
-    default:
-        ice(false);
-    }
-
-    return nullptr;
+    m_builder->CreateAlignedStore(rhs, lhs, llvm::Align(bin_expr->type->align));
+    return rhs;
 }
 
 llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
@@ -265,17 +252,10 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
         // TODO need to short circuit
         break;
     case BinOp::_field: {
-        int index = 0;
-        for(auto *field: bin_expr->lhs->type->fields) {
-            if(field->id == static_cast<IdExprNode*>(bin_expr->rhs)->val)
-                break;
-            ++index;
-        }
-        auto &[decl, addr] = m_named_values[static_cast<IdExprNode*>(bin_expr->lhs)->val];
-        auto calc_addr = m_builder->CreateStructGEP(to_llvm_type(bin_expr->lhs->type), addr, index);
-        calc_addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), calc_addr,
+        auto addr = gen_lvalue_expr(bin_expr);
+        addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), addr,
                                         llvm::Align(bin_expr->type->align));
-        return calc_addr;
+        return addr;
     }
     case BinOp::_assign:
         return gen_assign(bin_expr);
@@ -356,7 +336,7 @@ llvm::Value *LLVMIRGen::gen_cast_expr(UnaryExprNode *cast_expr) {
     CType *src = cast_expr->base->type;
     CType *dest = cast_expr->type;
 
-    // FIXME temporary, need to add size info to each type to make this easier
+    // FIXME temporary, need to use size info for each type
     if (src->is_int_type() && dest->is_int_type()) {
         val = m_builder->CreateSExtOrTrunc(val, to_llvm_type(dest));
     } else if (src->type == CTypeKind::Bool && dest->is_int_type()) {
