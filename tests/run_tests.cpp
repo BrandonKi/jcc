@@ -1348,6 +1348,173 @@ int main() {
     return result == 1;
 }
 
+bool preproc_13() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define TEST
+#if defined(TEST)
+#define X 10
+#else
+#define X 5
+#endif
+
+int main() {
+    return X;
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool preproc_14() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define TEST
+#if defined TEST && 42 != 42
+#define X 10
+#else
+#define X 5
+#endif
+
+int main() {
+    return X;
+}
+
+    )");
+
+    return result == 5;
+}
+
+bool preproc_15() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+#if RANDOM_ID
+    return 100;
+#else
+#if !RANDOM_ID
+    return 10;
+#else
+    return 1;
+#endif
+#endif
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool struct_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct IntPair {
+        int a;
+        int b;
+    };
+    struct IntPair s;
+    s.a = 5;
+    return 100;
+}
+
+    )");
+
+    return result == 100;
+}
+
+bool struct_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct IntPair {
+        int a;
+        int b;
+    };
+    struct IntPair s;
+    s.a = 5;
+    return s.a;
+}
+
+    )");
+
+    return result == 5;
+}
+
+bool struct_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct IntPair {
+        int a;
+        int b;
+    };
+    struct IntPair s;
+    s.a = 5;
+    s.b = 10;
+    return s.b;
+}
+
+    )");
+
+    return result == 10;
+}
+
+bool struct_4() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct IntPair {
+        int a;
+        int b;
+    };
+    struct IntPair s;
+    s.a = 5;
+    s.b = 10;
+    return s.a + s.b;
+}
+
+    )");
+
+    return result == 15;
+}
+
+bool struct_5() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    struct IntPair {
+        long long a;
+        int b;
+    };
+    struct IntPair s;
+    s.a = 5;
+    s.b = 10;
+    return s.a + s.b;
+}
+
+    )");
+
+    return result == 15;
+}
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1430,6 +1597,13 @@ int main(int argc, char *argv[]) {
     test(preproc_10);
     test(preproc_11);
     test(preproc_12);
+    test(preproc_13);
+    test(preproc_14);
+    test(preproc_15);
+    test(struct_1);
+    test(struct_2);
+    test(struct_3);
+    test(struct_4);
 
     print_report();
 }

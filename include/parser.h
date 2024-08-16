@@ -8,7 +8,7 @@
 namespace jcc {
 
 class Parser {
-    Lexer m_lex;
+    Lexer *m_lex;
 
     // TODO follow spec
     // std::unordered_map<std::string, > function_scope;
@@ -17,7 +17,7 @@ class Parser {
     // prototype_scope
 
     // TODO intern
-    std::unordered_map<std::string, CType> m_tags;
+    std::unordered_map<std::string, CType*> m_tags;
 
     void report_parse_error(Token);
 
@@ -48,7 +48,6 @@ class Parser {
     ExprNode *parse_conditional_expr();
     ExprNode *parse_assign_expr();
     ExprNode *parse_comma_expr();
-    ExprNode *parse_expr();
 
     std::vector<DeclNode *> parse_function_decl_args();
 
@@ -77,8 +76,10 @@ class Parser {
     FileNode *parse_top_level();
 
 public:
+    ExprNode *parse_expr(); // FIXME
+    
     Parser();
-    Parser(Lexer lex);
+    Parser(Lexer *lex);
 
     FileNode *parse_file();
 };

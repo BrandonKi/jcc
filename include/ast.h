@@ -45,33 +45,36 @@ enum CTypeKind : int {
 
 };
 
+struct DeclNode;
 // TODO this can be compressed
 class CType {
 public:
     CTypeKind type;
     CType *base;
+    Strand id;
+    std::vector<DeclNode*> fields;
     int align;
     int size;
     bool is_signed;
 
     CType()
-        : type{CTypeKind::None}, base{nullptr}, align{1}, size{1},
+        : type{CTypeKind::None}, base{nullptr}, id{}, align{1}, size{1},
           is_signed{true} {}
     CType(CTypeKind type)
-        : type{type}, base{nullptr}, align{1}, size{1}, is_signed{true} {}
+        : type{type}, base{nullptr}, id{}, align{1}, size{1}, is_signed{true} {}
     CType(CTypeKind type, CType *ptr)
-        : type{type}, base{ptr},
+        : type{type}, base{ptr}, id{},
           align{CType::getBuiltinType(CTypeKind::Pointer)->align},
           size{CType::getBuiltinType(CTypeKind::Pointer)->size},
           is_signed{true} {}
     CType(CTypeKind type, int align, int size)
-        : type{type}, base{nullptr}, align{align}, size{size}, is_signed{true} {
+        : type{type}, base{nullptr}, id{}, align{align}, size{size}, is_signed{true} {
     }
     CType(CTypeKind type, int align, int size, bool is_signed)
-        : type{type}, base{nullptr}, align{align}, size{size},
+        : type{type}, base{nullptr}, id{}, align{align}, size{size},
           is_signed{is_signed} {}
     CType(CTypeKind type, CType *ptr, int align, int size, bool is_signed)
-        : type{type}, base{ptr}, align{align}, size{size},
+        : type{type}, base{ptr}, id{}, align{align}, size{size},
           is_signed{is_signed} {}
 
     static CType *getBuiltinType(CTypeKind type, bool is_signed = true);
@@ -97,8 +100,8 @@ enum ExprKind {
     StrLitExpr,
     IdExpr,
     CallExpr,
-    PrimaryExpr,
-    PostfixExpr,
+    // PrimaryExpr,
+    // PostfixExpr,
     UnaryExpr,
     BinExpr,
     CondExpr,
@@ -239,6 +242,8 @@ enum class BinOp : char {
     _log_and,
 
     _log_or,
+
+    _field,
 
     _assign,
 

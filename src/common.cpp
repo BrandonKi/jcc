@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 
+using namespace jcc;
+
 static std::unordered_set<std::string> table;
 
 void jcc_ice_assert(const char *expr, std::stacktrace s, const char *message) {
@@ -13,6 +15,9 @@ void jcc_ice_assert(const char *expr, std::stacktrace s, const char *message) {
     std::cout << "Stack Trace:\n" << s << '\n';
     std::exit(-1);
 }
+
+namespace jcc {
+
 
 // FIXME lazy, inefficient
 [[nodiscard]] std::string read_file(const std::string &filepath) {
@@ -71,4 +76,6 @@ Strand& Strand::operator=(std::string str) {
 std::ostream &operator<<(std::ostream &out, const Strand &strand) {
     out << strand.value();
     return out;
+}
+
 }

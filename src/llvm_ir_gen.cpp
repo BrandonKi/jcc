@@ -28,6 +28,11 @@ LLVMIRGen::LLVMIRGen() {
 // TODO
 llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
     JCC_PROFILE();
+    if(type->id.has_value()) {
+        auto cached = llvm::StructType::getTypeByName(*m_context, type->id.value());
+        if(cached)
+            return cached;
+    }
 
     switch (type->type) {
     case Char:
@@ -49,7 +54,16 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
     case Pointer:
         return to_llvm_type(type->base)->getPointerTo();
     case Struct:
-    case Union:
+    case Union: {
+        std::vector<llvm::Type*> types;
+        for(auto *field: type->fields) {
+            types.push_back(to_llvm_type(field->type));
+        }
+        if(type->type == CTypeKind::Struct)
+            return llvm::StructType::create(*m_context, types, type->id.value());
+        ice(false);
+        // return llvm::UnionType::create(*m_context, types, type->id.value());
+    }
     case Array:
     case Function:
         ice(false);
@@ -211,6 +225,24 @@ llvm::Value *LLVMIRGen::gen_assign(BinExprNode *bin_expr) {
     }
     case UnaryExpr: {
         auto lhs = static_cast<UnaryExprNode *>(bin_expr->lhs);
+        break;
+    }
+    case BinExpr: { // union/struct/array access
+        auto expr = static_cast<BinExprNode *>(bin_expr->lhs);
+        ice(expr->op == BinOp::_field);
+        auto expr_lhs = static_cast<IdExprNode *>(expr->lhs);
+        auto expr_rhs = static_cast<IdExprNode *>(expr->rhs);
+        int index = -1;
+        for(auto *field: expr_lhs->type->fields) {
+            ++index;
+            if(field->id == expr_rhs->val)
+                break;
+        }
+        ice(index != -1);
+        auto &[decl, addr] = m_named_values[expr_lhs->val];
+        auto calc_addr = m_builder->CreateStructGEP(to_llvm_type(expr_lhs->type), addr, index);
+        m_builder->CreateAlignedStore(rhs, calc_addr, llvm::Align(expr->type->align));
+        return rhs;
     }
     default:
         ice(false);
@@ -232,6 +264,19 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     case BinOp::_log_or:
         // TODO need to short circuit
         break;
+    case BinOp::_field: {
+        int index = 0;
+        for(auto *field: bin_expr->lhs->type->fields) {
+            if(field->id == static_cast<IdExprNode*>(bin_expr->rhs)->val)
+                break;
+            ++index;
+        }
+        auto &[decl, addr] = m_named_values[static_cast<IdExprNode*>(bin_expr->lhs)->val];
+        auto calc_addr = m_builder->CreateStructGEP(to_llvm_type(bin_expr->lhs->type), addr, index);
+        calc_addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), calc_addr,
+                                        llvm::Align(bin_expr->type->align));
+        return calc_addr;
+    }
     case BinOp::_assign:
         return gen_assign(bin_expr);
     default:
@@ -293,6 +338,7 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
         return m_builder->CreateOr(lhs, rhs);
     case BinOp::_log_and:
     case BinOp::_log_or:
+    case BinOp::_field:
     case BinOp::_assign:
     default:
         ice(false);
@@ -374,17 +420,22 @@ llvm::Value *LLVMIRGen::gen_expr(ExprNode *expr) {
 llvm::Value *LLVMIRGen::gen_decl(DeclNode *decl) {
     JCC_PROFILE();
 
+    if(decl->id.empty() && (decl->type->type == CTypeKind::Struct || decl->type->type == CTypeKind::Union))
+        return nullptr;
+
     auto saved_ip = m_builder->saveIP();
     m_builder->SetInsertPointPastAllocas(m_builder->GetInsertBlock()->getParent());
     
-    auto alloca = m_builder->CreateAlloca(to_llvm_type(decl->type));
+    auto alloc = m_builder->CreateAlloca(to_llvm_type(decl->type));
 
     m_builder->restoreIP(saved_ip);
     if (decl->init)
-        m_builder->CreateAlignedStore(gen_expr(decl->init), alloca,
+        m_builder->CreateAlignedStore(gen_expr(decl->init), alloc,
                                       llvm::Align(decl->type->align), false);
-    m_named_values[decl->id] = {decl, alloca};
-    return alloca;
+    
+
+    m_named_values[decl->id] = {decl, alloc};
+    return alloc;
 }
 
 // FIXME rewrite, possibly use similar logic to switch

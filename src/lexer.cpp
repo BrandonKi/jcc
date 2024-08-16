@@ -1,7 +1,10 @@
 #include "lexer.h"
 
+#include <parser.h>
+
 #include <ranges>
 #include <algorithm>
+
 
 using namespace jcc;
 
@@ -84,7 +87,7 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
         return result;
     }
 
-    if (isdigit(m_text[i]) || m_text[i] == '.') {
+    if (isdigit(m_text[i])) {
         do {
             id += m_text[i];
             ++i;
@@ -146,6 +149,18 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
 
     // FIXME, lazy
     if (i + 1 < m_text.size()) {
+        if (m_text[i] == '&' && m_text[i + 1] == '&') {
+            i += 2;
+            result.kind = TokenKind::_log_and;
+            return result;
+        }
+        if (m_text[i] == '|' && m_text[i + 1] == '|') {
+            i += 2;
+            result.kind = TokenKind::_log_or;
+            return result;
+        }
+
+
         if (m_text[i] == '<' && m_text[i + 1] == '=') {
             i += 2;
             result.kind = TokenKind::_less_than_equal;
@@ -512,10 +527,49 @@ void Lexer::ppc_internal_if(bool cond) {
     continue_to_cond_inc();
 }
 
+int Lexer::ppc_const_expr() {
+    JCC_PROFILE();
+    PPC_DEBUG_PRINT("");
+
+    std::vector<Token> tokens;
+
+    Token tkn = internal_next(true);
+    while(tkn.kind != TokenKind::_newline) {
+        if(tkn.kind == TokenKind::_id) {
+            // FIXME intern
+            Token numlit{TokenKind::_num_lit, false, {}};
+            if(*tkn.id.val == "defined") {
+                tkn = internal_next(true);
+                bool parens = tkn.kind == TokenKind::_open_paren;
+                if(parens) tkn = internal_next(true);
+                ice(tkn.kind == TokenKind::_id);
+                bool cond = m_macro_table.contains(*tkn.id.val);
+                numlit.number.val = cond ? 1 : 0;
+                if(parens) {
+                    tkn = internal_next(true);
+                    ice(tkn.kind == TokenKind::_close_paren);
+                }
+            } else {
+                numlit.number.val = 0;
+            }
+            tokens.push_back(numlit);
+        } else {
+            tokens.push_back(tkn);
+        }
+        tkn = internal_next(true);
+    }
+    tokens.push_back(Token{TokenKind::_eof});
+    add_tokens(tokens);
+    auto *expr = m_parser->parse_expr();
+    return eval_const_expr(expr);
+}
+
 void Lexer::ppc_if() {
     JCC_PROFILE();
     PPC_DEBUG_PRINT("");
-    ice(false);
+    
+    bool cond = static_cast<bool>(ppc_const_expr());
+    ppc_internal_if(cond);
 }
 
 void Lexer::ppc_elif() {

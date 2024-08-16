@@ -43,6 +43,7 @@ void jcc_ice_assert(const char *expr, std::stacktrace s,
 #include "cprint.h"
 using namespace cprint;
 
+
 using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
@@ -54,6 +55,8 @@ using u64 = uint64_t;
 using f32 = float;
 using f64 = double;
 
+
+namespace jcc {
 // ------------------------------------
 // TODO this is all duplicated from JB
 // should be changed in the future
@@ -113,6 +116,10 @@ constexpr Arch host_arch = get_host_arch();
 // end of duplicated section
 // ----------------------------
 
+struct ExprNode;
+// TODO needs to be an arbitrary precision int I think?
+int eval_const_expr(ExprNode *);
+
 struct InputFile {
     std::string filepath;
     std::string text;
@@ -123,9 +130,9 @@ struct InputFile {
 // Interned String
 struct Strand {
     Strand(): ptr{nullptr} {}
-    Strand(const Strand &view): ptr{view.ptr} {}
-    Strand(Strand &view): ptr{view.ptr} {}
-    Strand(Strand &&view): ptr{view.ptr} {}
+    // Strand(const Strand &view): ptr{view.ptr} {}
+    // Strand(Strand &view): ptr{view.ptr} {}
+    // Strand(Strand &&view): ptr{view.ptr} {}
 
     Strand(const char *);
     Strand(std::string);
@@ -168,13 +175,6 @@ struct Strand {
     
     std::string* intern(std::string);
     std::string* intern(const char *);
-};
-
-template <>
-struct std::hash<Strand> {
-    size_t operator()(const Strand& s) const {
-        return (uintptr_t)s.ptr;
-    }
 };
 
 // template <size_t Capacity = 1000,
@@ -253,3 +253,13 @@ struct std::hash<Strand> {
 
 //     std::unordered_set<std::string_view, Hash, std::equal_to<>, ViewAllocator> table_;
 // };
+
+
+}
+
+template <>
+struct std::hash<jcc::Strand> {
+    size_t operator()(const jcc::Strand& s) const {
+        return (uintptr_t)s.ptr;
+    }
+};

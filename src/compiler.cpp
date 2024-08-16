@@ -30,8 +30,8 @@ int Compiler::compile_file(InputFile infile) {
     Platform::init();
 
     auto lexer = Lexer(InputFile{infile.filepath, infile.text});
+    m_parser = Parser(&lexer); // FIXME ownership
     // lexer.lexer__debug_dump();
-    m_parser = Parser(lexer);
     FileNode *file = m_parser.parse_file();
 
     Sema sema;

@@ -4,6 +4,106 @@
 
 using namespace jcc;
 
+int jcc::eval_const_expr(ExprNode *root) {
+    switch(root->kind) {
+    using enum ExprKind;
+    case NumLitExpr: {
+        auto *root_conv = static_cast<NumLitExprNode*>(root);
+        return root_conv->val;
+    }
+    case StrLitExpr:
+        ice(false, "string literal in constant expression");
+        return -1;
+    case IdExpr:
+        ice(false, "identifier in constant expression");
+        return -1;
+    case CallExpr:
+        ice(false, "function call in constant expression");
+        return -1;
+    case UnaryExpr: {
+        auto *root_conv = static_cast<UnaryExprNode*>(root);
+        switch(root_conv->op) {
+        case UnaryOp::_address:
+        case UnaryOp::_deref:
+            ice(false);
+        case UnaryOp::_add:
+            return +eval_const_expr(root_conv->base);
+        case UnaryOp::_sub:
+            return -eval_const_expr(root_conv->base);
+        case UnaryOp::_bit_not:
+            return ~eval_const_expr(root_conv->base);
+        case UnaryOp::_log_not:
+            return !eval_const_expr(root_conv->base);
+        case UnaryOp::_cast:
+            ice(false, "unimplemented");
+        default:
+            ice(false, "invalid unary op in constant expression");
+        }
+    }
+    case BinExpr: {
+        auto *root_conv = static_cast<BinExprNode*>(root);
+        auto lhs = eval_const_expr(root_conv->lhs);
+        auto rhs = eval_const_expr(root_conv->rhs);
+        switch(root_conv->op) {
+        case BinOp::_mul:
+            return lhs * rhs;
+        case BinOp::_div:
+            return lhs / rhs;
+        case BinOp::_mod:
+            return lhs % rhs;
+        case BinOp::_add:
+            return lhs + rhs;
+        case BinOp::_sub:
+            return lhs - rhs;
+        case BinOp::_bitshift_left:
+            return lhs << rhs;
+        case BinOp::_bitshift_right:
+            return lhs >> rhs;
+        case BinOp::_less_than:
+            return lhs < rhs;
+        case BinOp::_greater_than:
+            return lhs > rhs;
+        case BinOp::_less_than_equal:
+            return lhs <= rhs;
+        case BinOp::_greater_than_equal:
+            return lhs >= rhs;
+        case BinOp::_equal:
+            return lhs == rhs;
+        case BinOp::_not_equal:
+            return lhs != rhs;
+        case BinOp::_bit_and:
+            return lhs & rhs;
+        case BinOp::_xor:
+            return lhs ^ rhs;
+        case BinOp::_bit_or:
+            return lhs | rhs;
+        case BinOp::_log_and:
+            return lhs && rhs;
+        case BinOp::_log_or:
+            return lhs || rhs;
+        case BinOp::_field:
+            ice(false);
+        case BinOp::_assign:
+            return rhs; // FIXME ice?
+        case BinOp::_comma:
+            return rhs; // FIXME ice?
+        default:
+            ice(false, "invalid binary op in constant expression");
+        }
+    }
+    case CondExpr: {
+        auto *root_conv = static_cast<CondExprNode*>(root);
+        auto cond = eval_const_expr(root_conv->cond_expr);
+        if(cond)
+            return eval_const_expr(root_conv->true_branch);
+        return eval_const_expr(root_conv->false_branch);
+    }
+    default:
+        ice(false, "invalid node in constant expression");
+        return -1;
+    }
+}
+
 Sema::Sema() : type_tab{}, fn_tab{}, var_tab{}, current_fn{nullptr} {}
 
 // TODO intern
@@ -96,10 +196,10 @@ void Sema::sema_id_expr(IdExprNode *id_expr) {
 
     id_expr->type = get_id_type(id_expr->val);
     
-    if(!id_expr->type) {
-        std::cout << "Undefined Identifier: " << id_expr->val << "\n";
-        std::exit(-1); // TODO better error reporting
-    }
+    // if(!id_expr->type) {
+    //     std::cout << "Undefined Identifier: " << id_expr->val << "\n";
+    //     std::exit(-1); // TODO better error reporting
+    // }
 }
 
 void Sema::sema_unary_expr(UnaryExprNode *unary_expr) {
@@ -174,7 +274,18 @@ void Sema::sema_call_expr(CallExprNode *call_expr) {
 void Sema::sema_bin_expr(BinExprNode *bin_expr) {
     JCC_PROFILE();
 
+
     sema_expr(bin_expr->lhs);
+    if(bin_expr->op == BinOp::_field) {
+        std::cout << "TODO field sema\n";
+        for(auto *field: bin_expr->lhs->type->fields) {
+            if(field->id == static_cast<IdExprNode*>(bin_expr->rhs)->val) {
+                bin_expr->type = field->type;
+                break;
+            }
+        }
+        return;
+    }
     sema_expr(bin_expr->rhs);
 
     bool skip_lhs = false;
@@ -242,12 +353,6 @@ void Sema::sema_expr(ExprNode *expr) {
         break;
     case CallExpr:
         sema_call_expr(static_cast<CallExprNode *>(expr));
-        break;
-    case PrimaryExpr:
-        ice(false);
-        break;
-    case PostfixExpr:
-        ice(false);
         break;
     case UnaryExpr:
         sema_unary_expr(static_cast<UnaryExprNode *>(expr));

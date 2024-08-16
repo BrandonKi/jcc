@@ -60,6 +60,7 @@ struct StashState {
     bool saw_newline;
 };
 
+class Parser;
 class Lexer {
     std::string m_filename;
     std::string m_text;
@@ -94,11 +95,12 @@ class Lexer {
 
     std::string get_sys_include(std::string name) {
 
-        std::string& path = m_include_paths[0];
-        for (const auto& entry : std::filesystem::directory_iterator(path)) {
-            if(entry.path().lexically_relative(path).string() == name) {
-                std::cout << read_file(entry.path().string());
-                return read_file(entry.path().string());
+        for(auto &path: m_include_paths) {
+            for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                if(entry.path().lexically_relative(path).string() == name) {
+                    std::cout << read_file(entry.path().string());
+                    return read_file(entry.path().string());
+                }
             }
         }
 
@@ -106,6 +108,8 @@ class Lexer {
     }
 
 public:
+    Parser *m_parser;   // FIXME, circular
+
     Lexer();
     Lexer(std::string text);
     Lexer(InputFile);
@@ -134,6 +138,7 @@ public:
     void continue_to_cond_inc();
     std::string collect_char_until(char);
     void ppc_internal_if(bool);
+    int ppc_const_expr();
     void ppc_if();
     void ppc_elif();
     void ppc_else();

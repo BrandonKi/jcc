@@ -97,6 +97,15 @@
         "source_location": "cpp",
         "stacktrace": "cpp",
         "stdbool.h": "c",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "assert.h": "c",
+        "stddef.h": "c",
+        "corecrt.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "corecrt_malloc.h": "c",
+        "corecrt_wstdlib.h": "c",
+        "limits.h": "c",
+        "vcruntime.h": "c"
     }
 }
