@@ -22,6 +22,7 @@ using HideSet = std::unordered_set<std::string>;
 struct Token {
     TokenKind kind;
     bool start_of_line;
+    bool has_space;
 
     HideSet hide_set;
 
@@ -123,7 +124,8 @@ public:
     void collect_until_newline(std::vector<Token> &);
     void discard_rest_of_line();
 
-    void ppc_stringize(std::vector<Token> &);
+    Token ppc_stringize(std::vector<Token> &);
+    Token ppc_glue(std::vector<Token> &);
 
     std::vector<Token> ppc_subst(Macro, std::vector<std::vector<Token>>,
                                  HideSet);
@@ -207,7 +209,7 @@ static std::string str_rep(Token token) {
     } else if (token.kind == TokenKind::_num_lit) {
         return std::to_string(token.number.val);
     } else if (token.kind == TokenKind::_str_lit) {
-        return *token.str.val;
+        return '\"' + *token.str.val + '\"';
     } else if ((int)token.kind >= (int)TokenKind::_newline) {
         return std::string(1, (char)(token.kind));
     }

@@ -258,10 +258,10 @@ void Sema::sema_call_expr(CallExprNode *call_expr) {
     JCC_PROFILE();
 
     ice(call_expr->base->kind == ExprKind::IdExpr);
+    ice(fn_tab.contains(static_cast<IdExprNode *>(call_expr->base)->val));
     // sema_expr(call_expr->base);
     FunctionNode *callee =
         fn_tab[static_cast<IdExprNode *>(call_expr->base)->val];
-
     for (int i = 0; i < call_expr->args.size(); ++i) {
         sema_expr(call_expr->args[i]);
         call_expr->args[i] =

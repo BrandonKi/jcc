@@ -56,10 +56,12 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
     Token result = {};
     result.start_of_line = m_saw_newline;
     m_saw_newline = false;
+    result.has_space = false;
 
     std::string id = "";
 
     while (isspace(m_text[i])) {
+        result.has_space = true;
         if (m_text[i] == '\n') {
             m_saw_newline = true;
             line += 1;
@@ -319,8 +321,21 @@ void Lexer::discard_rest_of_line() {
     internal_next(false);
 }
 
-void Lexer::ppc_stringize(std::vector<Token> &tokens) {
+Token Lexer::ppc_glue(std::vector<Token> &tokens) {
+    return {};
+}
+
+Token Lexer::ppc_stringize(std::vector<Token> &tokens) {
     JCC_PROFILE();
+
+    auto *result = new std::string(); // TODO intern
+    for(auto &tkn: tokens) {
+        *result += str_rep(tkn);
+    }
+
+    auto tkn = Token(TokenKind::_str_lit);
+    tkn.str.val = result;
+    return tkn;
 }
 
 // https://www.spinellis.gr/blog/20060626/cpp.algo.pdf
@@ -329,10 +344,30 @@ void Lexer::ppc_stringize(std::vector<Token> &tokens) {
 std::vector<Token> Lexer::ppc_subst(Macro macro, std::vector<std::vector<Token>> params, HideSet hide_set) {
     std::vector<Token> tokens = {};
 
-    Token tkn;
+    Token tkn, next_tkn;
+    bool exists;
     for (int i = 0; i < macro.content.size(); ++i) {
         tkn = macro.content[i];
-        if (tkn.kind == TokenKind::_id && macro.params.contains(*tkn.id.val)) { // FIXME double lookup
+        exists = i+1 < macro.content.size();
+        if(exists)
+            next_tkn = macro.content[i+1];
+        if (tkn.kind == TokenKind::_hash && exists) {
+            ice(next_tkn.kind == TokenKind::_id);
+            tokens.push_back(ppc_stringize(params[macro.params[*next_tkn.id.val]]));
+            ++i;
+        }
+        else if (tkn.kind == TokenKind::_hash_hash && exists) {
+            ice(i != 0);
+            // tokens.push_back(ppc_glue(params[macro.params[*next_tkn.id.val]]));
+        }
+        else if (false) {
+
+        }
+        else if (exists && next_tkn.kind == TokenKind::_hash_hash) {
+            ice(i+2 != macro.content.size());
+            // tokens.push_back();
+        }
+        else if (tkn.kind == TokenKind::_id && macro.params.contains(*tkn.id.val)) { // FIXME double lookup
             tokens.append_range(params[macro.params[*tkn.id.val]]);
         } else {
             tokens.push_back(tkn);
@@ -680,8 +715,9 @@ void Lexer::ppc_define() {
     macro.kind = MacroKind::object_like;
     macro.content = {};
 
+    i64 old_i = i;
     tkn = internal_next(true);
-    if (tkn.kind == TokenKind::_open_paren) {
+    if (!tkn.has_space && tkn.kind == TokenKind::_open_paren) {
         macro.kind = MacroKind::function_like;
         macro.params = {};
 
@@ -946,6 +982,9 @@ std::string Lexer::lexer__debug_token_to_string(Token token) {
         extra = ", " + *curr().id.val;
     else if (token.kind == TokenKind::_num_lit)
         extra = ",  " + std::to_string(token.number.val);
+    else if (token.kind == TokenKind::_num_lit)
+        extra = ",  " + std::to_string(token.number.val);
+
     return str(token.kind) + extra;
 }
 

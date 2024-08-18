@@ -1412,6 +1412,40 @@ int main() {
     return result == 10;
 }
 
+bool preproc_16() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+extern int printf(char*);
+
+#define STRINGIFY(x) #x
+
+int main() {
+    return printf(STRINGIFY(hello));
+}
+
+    )");
+
+    return result == 5;
+}
+
+bool preproc_17() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#define SCHAR_MIN   (-128)
+
+int main() {
+    return SCHAR_MIN;
+}
+
+    )");
+
+    return result == -128;
+}
+
 bool struct_1() {
     jcc::Compiler c(co);
 
@@ -1640,6 +1674,8 @@ int main(int argc, char *argv[]) {
     test(preproc_13);
     test(preproc_14);
     test(preproc_15);
+    test(preproc_16);
+    test(preproc_17);
     test(struct_1);
     test(struct_2);
     test(struct_3);
