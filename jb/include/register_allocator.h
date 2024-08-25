@@ -27,6 +27,8 @@ private:
     std::map<Reg, Interval> active;
     i32 index;
 
+    RegisterManager mng_copy;
+
     void assign_to_interval(MCFunction *, Interval);
     void assign_to_interval(MCFunction *, Interval, Reg);
 

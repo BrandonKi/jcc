@@ -14,10 +14,10 @@ struct InterpValue {
         i16 v_i16;
         i32 v_i32;
         i64 v_i64;
-        u8 v_u8;
-        u16 v_u16;
-        u32 v_u32;
-        u64 v_u64;
+        // u8 v_u8;
+        // u16 v_u16;
+        // u32 v_u32;
+        // u64 v_u64;
         f32 v_f32;
         f64 v_f64;
         i64 v_ptr;

@@ -330,12 +330,27 @@ bool slot_i32() {
 
     auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
     auto ret_ptr = builder->slot(Type::i32);
-    builder->store(ret_ptr, IRConstantInt(100, 32, true));
-    auto ret = builder->load(ret_ptr, Type::i32);
+    builder->stack_store(ret_ptr, IRConstantInt(100, 32, true));
+    auto ret = builder->stack_load(ret_ptr, Type::i32);
     builder->ret(ret);
 
     auto result = run(ctx, builder);
     return result == 100;
+}
+
+bool slot_i64() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto ret_ptr = builder->slot(Type::i64);
+    builder->stack_store(ret_ptr, IRConstantInt(0xf0000000001, 64, true));
+    auto ret = builder->stack_load(ret_ptr, Type::i64);
+    // TODO trunc instruction, basically noop here
+    builder->ret(ret);
+
+    auto result = run(ctx, builder);
+    return result == 1;
 }
 
 bool branches_1() {
@@ -355,10 +370,11 @@ bool branches_1() {
     builder->ret(first_ret);
 
     builder->setInsertPoint(second);
-    auto second_ret = builder->iconst8(300);
+    auto second_ret = builder->iconst32(300);
     builder->ret(second_ret);
 
     auto result = run(ctx, builder);
+    std::cout << result;
     return result == 100;
 }
 
@@ -385,6 +401,61 @@ bool branches_2() {
     auto result = run(ctx, builder);
     return result == 300;
 }
+
+bool branches_3() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry");
+    auto *first = builder->newBB("first");
+    auto *second = builder->newBB("second");
+
+    builder->setInsertPoint(entry);
+    auto s = builder->slot(Type::i32);
+    builder->stack_store(s, builder->iconst8(1));
+    auto cond = builder->stack_load(s, Type::i32);
+    builder->brz(cond, first, second);
+
+    builder->setInsertPoint(first);
+    auto first_ret = builder->iconst8(100);
+    builder->ret(first_ret);
+
+    builder->setInsertPoint(second);
+    auto second_ret = builder->iconst32(300);
+    builder->ret(second_ret);
+
+    auto result = run(ctx, builder);
+    return result == 300;
+}
+
+bool branches_4() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry");
+    auto *first = builder->newBB("first");
+    auto *second = builder->newBB("second");
+
+    builder->setInsertPoint(entry);
+    auto s = builder->slot(Type::i32);
+    builder->stack_store(s, builder->iconst8(1));
+    auto cond = builder->stack_load(s, Type::i32);
+    builder->brnz(cond, first, second);
+
+    builder->setInsertPoint(first);
+    auto first_ret = builder->iconst8(100);
+    builder->ret(first_ret);
+
+    builder->setInsertPoint(second);
+    auto second_ret = builder->iconst32(300);
+    builder->ret(second_ret);
+
+    auto result = run(ctx, builder);
+    return result == 100;
+}
+
 
 bool phi_1() {
     Context ctx = create_context();
@@ -465,15 +536,18 @@ int main(int argc, char *argv[]) {
     // test(fdiv_imm);
     
     // test(call);
-    test(add);
+    // test(add);
     // test(add4);
 
     // test(slot_i32);
+    // test(slot_i64);
 
     // test(branches_1);
     // test(branches_2);
+    // test(branches_3);
+    // test(branches_4);
 
-    // test(phi_1);
+    test(phi_1);
     // test(phi_2);
 
     print_report();

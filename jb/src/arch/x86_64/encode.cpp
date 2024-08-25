@@ -29,6 +29,11 @@ void Encoder::encode_function(MCFunction *fn) {
         }
     }
 
+    // FIXME, remove relocs after
+    for(auto r: relocs) {
+        assert(labels.contains(r.label));
+        patch<4>(r.pos, -r.pos - 0x04 + labels[r.label]);
+    }
 }
 
 void Encoder::encode_inst(MCInst inst) {
@@ -57,10 +62,19 @@ void Encoder::encode_inst(MCInst inst) {
     case OpCode::idiv:
         idiv(inst.DEST, inst.SRC1);
         return;
+    case OpCode::cmp:
+        cmp(inst.DEST, inst.SRC1);
+        return;
 
     case OpCode::call:
         call(inst.DEST);
         return;
+    case OpCode::jz:
+        jz(inst.DEST);
+        break;
+    case OpCode::jnz:
+        jnz(inst.DEST);
+        break;
     case OpCode::jmp:
         jmp(inst.DEST);
         return;
@@ -195,6 +209,7 @@ void Encoder::emit_imm(MCValue imm, MCType mc_type) {
 }
 
 void Encoder::emit_rel32(i64 pos, MCValue lbl) {
+    // FIXME, should represent 32-bit disp
     assert(to_mc_type(lbl.type) == MCType::dword);
 
     if (labels.contains(lbl.label)) { // FIXME double lookup
@@ -259,7 +274,7 @@ void Encoder::mov_imm(MCValue dest_value, i64 imm) {
     auto rex_prefix = 0;
     i32 mc_size = 0;
     if(dest_value.is_mcreg()) {
-        get_rex_prefix_dest((MCReg)dest_value.reg);
+        rex_prefix = get_rex_prefix_dest((MCReg)dest_value.reg);
         // mc_size = size((M));
     }
 
@@ -733,14 +748,111 @@ void Encoder::idiv_reg_imm(MCValue dest_value, i64 imm) {
     }
 }
 
+void Encoder::cmp(MCValue lhs, MCValue rhs) {
+    assert(lhs.is_mcreg());
+
+    if(rhs.is_imm()) {
+        cmp_reg_imm(lhs, rhs.imm);
+        return;
+    }
+
+    MCReg dest = (MCReg)lhs.reg;
+    MCReg src = (MCReg)rhs.reg;
+    auto rex_prefix = get_rex_prefix(lhs, rhs);
+
+    switch (size(dest)) {
+    case 8:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x3a);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 16:
+        emit<byte>(0x66);
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x3b);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 32:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x3b);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 64:
+        emit<byte>(rex_w | rex_prefix);
+        emit<byte>(0x3b);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 128:
+    case 256:
+    default:
+        assert(false);
+    }
+}
+
+void Encoder::cmp_reg_imm(MCValue lhs, i64 imm) {
+    assert(lhs.is_mcreg());
+
+    MCReg dest = (MCReg)lhs.reg;
+    auto rex_prefix = get_rex_prefix_dest(dest);
+
+    switch (size(dest)) {
+    case 8:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x80);
+        emit<byte>(modrm_direct(7, dest));
+        emit<i8>(imm);
+        return;
+    case 16:
+        emit<byte>(0x66);
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x81);
+        emit<byte>(modrm_direct(7, dest));
+        emit<i32>(imm);
+        return;
+    case 32:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x81);
+        emit<byte>(modrm_direct(7, dest));
+        emit<i32>(imm);
+        return;
+    case 64:
+        emit<byte>(rex_w | rex_prefix);
+        emit<byte>(0x81);
+        emit<byte>(modrm_direct(7, dest));
+        emit<i32>(imm);
+        return;
+    case 128:
+    case 256:
+    default:
+        assert(false);
+    }
+}
+
 void Encoder::call(MCValue target) {
     emit<byte>(0xe8);
     emit<u32>(0x0);
     emit_rel32(buf.size() - 0x04, target);
 }
 
-void Encoder::jmp(MCValue target) {
 
+void Encoder::jz(MCValue target) {
+    emit<byte>(0x0f);
+    emit<byte>(0x84);
+    emit<u32>(0x0);
+    emit_rel32(buf.size() - 0x04, target);
+}
+
+void Encoder::jnz(MCValue target) {
+    emit<byte>(0x0f);
+    emit<byte>(0x85);
+    emit<u32>(0x0);
+    emit_rel32(buf.size() - 0x04, target);
+}
+
+void Encoder::jmp(MCValue target) {
+    emit<byte>(0xe9);
+    emit<u32>(0x0);
+    emit_rel32(buf.size() - 0x04, target);
 }
 
 void Encoder::ret() {

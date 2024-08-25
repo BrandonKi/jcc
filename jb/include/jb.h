@@ -296,7 +296,7 @@ struct IRInst {
     IRInst(IROp, IRValue, IRValue, IRValue);
     IRInst(IROp, i32, IRValue, IRValue);
     IRInst(IROp, BasicBlock *);
-    IRInst(IROp, IRValue, BasicBlock *);
+    IRInst(IROp, IRValue, BasicBlock *, BasicBlock *);
     IRInst(IROp, i32, Function *, std::vector<IRValue>);
     IRInst(IROp, IRValue, Function *, std::vector<IRValue>);
     IRInst(IROp, i32, std::vector<std::pair<BasicBlock *, IRValue>>);
@@ -390,7 +390,7 @@ inline bool is_ret(IROp op) {
 }
 
 inline bool is_mem_op(IROp op) {
-    return op == IROp::slot || op == IROp::store || op == IROp::load;
+    return op >= IROp::slot && op <= IROp::load;
 }
 
 inline bool has_dest(IROp op) {

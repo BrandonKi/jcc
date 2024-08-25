@@ -21,8 +21,15 @@ enum class GenericMCValueKind : i8 {
     mem,
 };
 
+enum State: i8 {
+    def,
+    use,
+    kill,
+};
+
 struct MCValue {
     i8 kind;
+    State state;
     Type type; // TODO MCType
     Reg hint;
     std::string label; // TODO use a pointer/view

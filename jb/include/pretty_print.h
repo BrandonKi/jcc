@@ -47,13 +47,11 @@ inline std::string str(Type type) {
 }
 
 inline std::string str(IRConstantInt imm_int) {
-    return std::to_string(imm_int.val) + "(" + std::to_string(imm_int.size) + ")";
-    ;
+    return std::to_string(imm_int.val) + ".i" + std::to_string(imm_int.size);
 }
 
 inline std::string str(IRConstantFloat imm_float) {
-    return std::to_string(imm_float.val) + "(" + std::to_string(imm_float.size) + ")";
-    ;
+    return std::to_string(imm_float.val) + ".f" + std::to_string(imm_float.size);
 }
 
 inline std::string str(IRValue irval) {
@@ -134,11 +132,10 @@ inline std::string str(IRInst irinst) {
     case IROp::eq:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::br:
-        return std::format("{} {}", op, str(irinst.src1));
+        return std::format("{} {}", op, str(irinst.dest));
     case IROp::brz:
-        return std::format("{} {}", op, str(irinst.src1), str(irinst.src2));
     case IROp::brnz:
-        return std::format("{} {}", op, str(irinst.src1), str(irinst.src2));
+        return std::format("{} {} {} {}", op, str(irinst.dest), str(irinst.src1), str(irinst.src2));
     case IROp::call: {
         assert(irinst.src1.lbl.kind == IRLabelKind::function);
         std::string args = "";
@@ -151,15 +148,17 @@ inline std::string str(IRInst irinst) {
 
     case IROp::slot:
         return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1.type));
+    case IROp::stack_store:
     case IROp::store:
         return std::format("{} {}, {}", op, str(irinst.src1), str(irinst.src2));
+    case IROp::stack_load:
     case IROp::load:
         return std::format("{} = {} {} {}", str(irinst.dest), op, str(irinst.src1), str(irinst.type));
 
     case IROp::phi: {
         std::string args = "";
         for (auto [bb, val] : irinst.values)
-            args += "[" + bb->id + "," + str(val) + "], ";
+            args += "[" + bb->id + ", " + str(val) + "], ";
         if (!args.empty())
             args = args.substr(0, args.size() - 2);
         return std::format("{} = {} {}", str(irinst.dest), op, args);

@@ -9,8 +9,10 @@
 
 namespace jb {
 
-// FIXME, gg, just make the passes dynamic...
+// FIXME, gg
+// redo all of this or just make the passes dynamic...
 // it's not worth the effort
+// also analysis passes can just be run directly
 
 template <typename Pass>
 auto run_analysis_pass(Function *fn) {

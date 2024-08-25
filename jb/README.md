@@ -2,15 +2,12 @@
 
 Optimizing compiler backend.
 
-Currently uses with a two-tiered graph-based static single assignment intermediate representation.
-
 WIP
 
 
+misc.
 
-<!-- misc. (unfinished and most likely outdated)stuff
-
-![High-Level flow chart](docs/flow_chart.png) -->
+![High-Level flow chart](docs/flow_chart.png)
 
 ### Resources
 

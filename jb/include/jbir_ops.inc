@@ -34,6 +34,8 @@ X(call)
 X(ret)
 
 X(slot)
+X(stack_store)
+X(stack_load)
 X(store)
 X(load)
 

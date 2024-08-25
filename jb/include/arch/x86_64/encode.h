@@ -130,8 +130,12 @@ private:
     void imul_reg_imm(MCValue, i64);
     void idiv(MCValue, MCValue);
     void idiv_reg_imm(MCValue, i64);
+    void cmp(MCValue, MCValue);
+    void cmp_reg_imm(MCValue, i64);
 
     void call(MCValue);
+    void jz(MCValue);
+    void jnz(MCValue);
     void jmp(MCValue);
     void ret();
 

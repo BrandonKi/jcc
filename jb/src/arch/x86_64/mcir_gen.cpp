@@ -14,6 +14,9 @@ using enum OpCode;
 // start of CallConv stuff
 #define STACK -1
 
+// FIXME temporary, for prolog/epilog to easily work
+bool MERGE_RETURNS = true;
+
 Reg jb::get_gpr_param(CallConv callconv, Reg num) {
     if (callconv == CallConv::win64) {
         switch (num) {
@@ -154,6 +157,7 @@ void MCIRGen::gen_prolog(MCFunction *mc_fn) {
     push_inst.DEST.reg = mc_fn->new_vreg();
     push_inst.DEST.hint = rbp;
     push_inst.DEST.is_fixed = true;
+    push_inst.DEST.state = State::def;
     prolog->insts.push_back(push_inst);
     get_vreg[rbp] = push_inst.DEST.reg;
     
@@ -203,17 +207,29 @@ MCFunction *MCIRGen::gen_function(Function *fn) {
 
     // int i = 1;
     // for(auto p : mc_fn->params) {
-    // 	get_gpr_param(mc_fn->callconv, i);
-    // 	i += 1;
+    //     get_gpr_param(mc_fn->callconv, i);
+    //     i += 1;
     // }
 
-    for (auto *block : fn->blocks)
+    for (auto *block : fn->blocks) {
+        mc_fn->blocks.push_back(new MCBasicBlock(block->id));
         for (auto ir_inst : block->insts)
             gen_inst(mc_fn, ir_inst);
+    }
 
-    // TODO temporary
-    // gen_prolog(mc_fn);
-    // gen_epilog(mc_fn);
+    if(MERGE_RETURNS) {
+        // TODO create exit block here
+        auto *exit_bb = new MCBasicBlock(mc_fn->id + "_exit");
+        mc_fn->blocks.push_back(exit_bb);
+
+        // TODO temporary
+        gen_prolog(mc_fn);
+        gen_epilog(mc_fn);
+
+        // MCInst ret_inst((i8)ret);
+        // ret_inst.DEST = mc_fn->ret;
+        // append_inst(mc_fn, ret_inst);
+    }
 
     return mc_fn;
 }
@@ -382,10 +398,54 @@ void MCIRGen::gen_branch(MCFunction *mc_fn, IRInst ir_inst) {
     auto src1 = ir_inst.src1;
     auto src2 = ir_inst.src2;
 
-    MCInst jmp_inst((i8)jmp);
-    jmp_inst.SRC1 = MCValue(src1);
+    switch(op) {
+    case IROp::br: {
+        MCInst jmp_inst((i8)jmp);
+        jmp_inst.DEST = MCValue((i8)MCValueKind::lbl, Type::i32); // FIXME, i32??
+        jmp_inst.DEST.label = dest.lbl.bb->id;
 
-    append_inst(mc_fn, jmp_inst);
+        append_inst(mc_fn, jmp_inst);
+        break;
+    }
+    case IROp::brz: {
+        MCInst cmp_inst((i8)cmp);
+        cmp_inst.DEST = MCValue(dest);
+        cmp_inst.SRC1 = MCValue((i8)MCValueKind::imm, Type::i8);
+        cmp_inst.SRC1.imm = 0;
+        append_inst(mc_fn, cmp_inst);
+
+        MCInst jz_inst((i8)jz);
+        jz_inst.DEST = MCValue((i8)MCValueKind::lbl, Type::i32); // FIXME, i32??
+        jz_inst.DEST.label = src1.lbl.bb->id;
+        append_inst(mc_fn, jz_inst);
+
+        MCInst jmp_inst((i8)jmp);
+        jmp_inst.DEST = MCValue((i8)MCValueKind::lbl, Type::i32); // FIXME, i32??
+        jmp_inst.DEST.label = src2.lbl.bb->id;
+        append_inst(mc_fn, jmp_inst);
+        break;
+    }
+    case IROp::brnz: {
+        MCInst cmp_inst((i8)cmp);
+        cmp_inst.DEST = MCValue(dest);
+        cmp_inst.SRC1 = MCValue((i8)MCValueKind::imm, Type::i8);
+        cmp_inst.SRC1.imm = 0;
+        append_inst(mc_fn, cmp_inst);
+
+        MCInst jnz_inst((i8)jnz);
+        jnz_inst.DEST = MCValue((i8)MCValueKind::lbl, Type::i32); // FIXME, i32??
+        jnz_inst.DEST.label = src1.lbl.bb->id;
+        append_inst(mc_fn, jnz_inst);
+
+        MCInst jmp_inst((i8)jmp);
+        jmp_inst.DEST = MCValue((i8)MCValueKind::lbl, Type::i32); // FIXME, i32??
+        jmp_inst.DEST.label = src2.lbl.bb->id;
+        append_inst(mc_fn, jmp_inst);
+        break;
+    }
+    default:
+        assert(false);
+    }
 }
 
 void MCIRGen::gen_call(MCFunction *mc_fn, IRInst ir_inst) {
@@ -441,9 +501,19 @@ void MCIRGen::gen_ret(MCFunction *mc_fn, IRInst ir_inst) {
         assert(false);
     }
 
-    // TODO temporary
-    gen_prolog(mc_fn);
-    gen_epilog(mc_fn);
+    if(MERGE_RETURNS) {
+        MCInst jmp_inst((i8)jmp);
+        MCValue label((i8)MCValueKind::lbl, Type::i32); // TODO i32??
+        label.label = mc_fn->id + "_exit";
+        jmp_inst.DEST = label;
+
+        append_inst(mc_fn, jmp_inst);
+    } else {
+        // TODO temporary
+        gen_prolog(mc_fn);
+        gen_epilog(mc_fn);
+    }
+
     // MCInst ret_inst((i8)ret);
     // ret_inst.DEST = mov_inst.DEST;
     // append_inst(mc_fn, ret_inst);
@@ -459,7 +529,8 @@ void MCIRGen::gen_mem_op(MCFunction *mc_fn, IRInst ir_inst) {
         map[ir_inst.dest.vreg] = mc_fn->stack_space;
         break;
     }
-    case IROp::store: {
+    case IROp::store:
+    case IROp::stack_store: {
         i64 offset = map[ir_inst.src1.vreg];
         MCInst store_inst((i8)mov);
         store_inst.DEST = MCValue((i8)MCValueKind::slot, Type::i32);
@@ -468,7 +539,8 @@ void MCIRGen::gen_mem_op(MCFunction *mc_fn, IRInst ir_inst) {
         append_inst(mc_fn, store_inst);
         break;
     }
-    case IROp::load: {
+    case IROp::load:
+    case IROp::stack_load: {
         i64 offset = map[ir_inst.src1.vreg];
         MCInst load_inst((i8)mov);
         load_inst.DEST = MCValue(ir_inst.dest);

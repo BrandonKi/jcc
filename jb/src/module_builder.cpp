@@ -86,8 +86,8 @@ IRValue ModuleBuilder::addInst(IROp op, BasicBlock *bb) {
     return inst.dest;
 }
 
-IRValue ModuleBuilder::addInst(IROp op, IRValue cond, BasicBlock *bb) {
-    IRInst inst = IRInst(op, cond, bb);
+IRValue ModuleBuilder::addInst(IROp op, IRValue cond, BasicBlock *bb1, BasicBlock *bb2) {
+    IRInst inst = IRInst(op, cond, bb1, bb2);
 
     insert_point->insts.push_back(inst);
     return inst.dest;
@@ -225,12 +225,12 @@ IRValue ModuleBuilder::br(BasicBlock *bb) {
     return addInst(IROp::br, bb);
 }
 
-IRValue ModuleBuilder::brz(IRValue cond, BasicBlock *bb) {
-    return addInst(IROp::brz, cond, bb);
+IRValue ModuleBuilder::brz(IRValue cond, BasicBlock *bb1, BasicBlock *bb2) {
+    return addInst(IROp::brz, cond, bb1, bb2);
 }
 
-IRValue ModuleBuilder::brnz(IRValue cond, BasicBlock *bb) {
-    return addInst(IROp::brz, cond, bb);
+IRValue ModuleBuilder::brnz(IRValue cond, BasicBlock *bb1, BasicBlock *bb2) {
+    return addInst(IROp::brnz, cond, bb1, bb2);
 }
 
 IRValue ModuleBuilder::call(Function *fn, std::vector<IRValue> params) {
@@ -243,6 +243,14 @@ IRValue ModuleBuilder::ret(IRValue src) {
 
 IRValue ModuleBuilder::slot(IRValue src) {
     return addInst(IROp::slot, src);
+}
+
+IRValue ModuleBuilder::stack_store(IRValue src1, IRValue src2) {
+    return addInst(IROp::stack_store, src1, src2);
+}
+
+IRValue ModuleBuilder::stack_load(IRValue src, Type type) {
+    return addInst(IROp::stack_load, src, type);
 }
 
 IRValue ModuleBuilder::store(IRValue src1, IRValue src2) {

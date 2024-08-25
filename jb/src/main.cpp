@@ -1,6 +1,5 @@
 // command-line driver
 
-#include "Common.h"
 #include "jb.h"
 #include "error_reporter.h"
 

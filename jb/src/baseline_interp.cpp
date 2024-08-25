@@ -193,10 +193,24 @@ InterpValue Interp::run_inst_br(IRInst inst) {
 }
 
 InterpValue Interp::run_inst_brz(IRInst inst) {
+    prev_bb = bb_ptr;
+    i_ptr = -1;
+    if(eval(inst.dest).v_i64 == 0) {
+        bb_ptr = inst.src1.lbl.bb;
+    } else {
+        bb_ptr = inst.src2.lbl.bb;
+    }
     return {};
 }
 
 InterpValue Interp::run_inst_brnz(IRInst inst) {
+    prev_bb = bb_ptr;
+    i_ptr = -1;
+    if(eval(inst.dest).v_i64 != 0) {
+        bb_ptr = inst.src1.lbl.bb;
+    } else {
+        bb_ptr = inst.src2.lbl.bb;
+    }
     return {};
 }
 
@@ -237,13 +251,27 @@ InterpValue Interp::run_inst_slot(IRInst inst) {
     return {};
 }
 
-InterpValue Interp::run_inst_store(IRInst inst) {
+InterpValue Interp::run_inst_stack_store(IRInst inst) {
     stack[vregs[inst.src1.vreg].v_ptr] = eval(inst.src2);
     return {};
 }
 
-InterpValue Interp::run_inst_load(IRInst inst) {
+InterpValue Interp::run_inst_stack_load(IRInst inst) {
     vregs[inst.dest.vreg] = stack[eval(inst.src1).v_ptr];
+    return {};
+}
+
+// FIXME, doesn't work
+InterpValue Interp::run_inst_store(IRInst inst) {
+    assert(false);
+    *((InterpValue*)vregs[inst.src1.vreg].v_ptr) = eval(inst.src2);
+    return {};
+}
+
+// FIXME, doesn't work
+InterpValue Interp::run_inst_load(IRInst inst) {
+    assert(false);
+    vregs[inst.dest.vreg] = *(InterpValue*)(eval(inst.src1).v_ptr);
     return {};
 }
 

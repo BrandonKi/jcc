@@ -18,7 +18,7 @@ public:
     IRValue addInst(IROp, IRValue, IRValue);
     IRValue addInst(IROp, IRValue);
     IRValue addInst(IROp, BasicBlock *);
-    IRValue addInst(IROp, IRValue, BasicBlock *);
+    IRValue addInst(IROp, IRValue, BasicBlock *, BasicBlock *);
     IRValue addInst(IROp, Function *, std::vector<IRValue>);
     IRValue addInst(IROp, std::vector<std::pair<BasicBlock *, IRValue>>);
 
@@ -57,12 +57,14 @@ public:
     IRValue eq(IRValue, IRValue);
 
     IRValue br(BasicBlock *bb);
-    IRValue brz(IRValue cond, BasicBlock *bb);
-    IRValue brnz(IRValue cond, BasicBlock *bb);
+    IRValue brz(IRValue cond, BasicBlock *bb1, BasicBlock *bb2);
+    IRValue brnz(IRValue cond, BasicBlock *bb1, BasicBlock *bb2);
     IRValue call(Function *, std::vector<IRValue>);
     IRValue ret(IRValue);
 
     IRValue slot(IRValue);
+    IRValue stack_store(IRValue, IRValue);
+    IRValue stack_load(IRValue, Type);
     IRValue store(IRValue, IRValue);
     IRValue load(IRValue, Type);
 

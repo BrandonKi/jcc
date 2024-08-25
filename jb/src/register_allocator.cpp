@@ -6,11 +6,16 @@ using namespace jb;
 #include <iostream>
 
 RegisterAllocator::RegisterAllocator(RegisterManager mng)
-    : mng{mng}, active{}, index{0} {}
+    : mng{mng}, active{}, index{0}, mng_copy{mng} {}
 
 void RegisterAllocator::alloc(MCModule *module) {
     for (auto *fn : module->functions) {
         alloc(fn);
+
+        // FIXME temporary
+        mng = mng_copy;
+        active = {};
+        index = 0;
     }
 }
 

@@ -3,11 +3,12 @@
 using namespace jb;
 using namespace jb::x86_64;
 
-MCValue::MCValue() : kind{-1}, type{Type::none}, hint{-1} {}
-MCValue::MCValue(i8 kind, Type type) : kind{kind}, type{type}, hint{-1} {}
-MCValue::MCValue(i8 kind, Type type, Reg reg) : kind{kind}, type{type}, hint{-1}, reg{reg} {}
-MCValue::MCValue(std::string label) : kind{(i8)MCValueKind::lbl}, type{}, hint{-1} {}
+MCValue::MCValue() : kind{-1}, state{State::use}, type{Type::none}, hint{-1} {}
+MCValue::MCValue(i8 kind, Type type) : kind{kind}, state{State::use}, type{type}, hint{-1} {}
+MCValue::MCValue(i8 kind, Type type, Reg reg) : kind{kind}, state{State::use}, type{type}, hint{-1}, reg{reg} {}
+MCValue::MCValue(std::string label) : kind{(i8)MCValueKind::lbl}, state{State::use}, type{}, hint{-1} {}
 MCValue::MCValue(IRValue ir_value) {
+    this->state = State::use;
     this->type = ir_value.type;
     this->hint = MCReg::none;
     switch (ir_value.kind) {
@@ -21,6 +22,10 @@ MCValue::MCValue(IRValue ir_value) {
     case IRValueKind::vreg:
         this->kind = (i8)MCValueKind::vreg;
         this->reg = (MCReg)ir_value.vreg;
+        break;
+    case IRValueKind::lbl:
+        this->kind = (i8)MCValueKind::lbl;
+        this->label = ir_value.lbl.bb->id;
         break;
     default:
         assert(false);

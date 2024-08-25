@@ -46,9 +46,9 @@ IRInst::IRInst(IROp op, i32 dest, IRValue src1,
 
 IRInst::IRInst(IROp op, IRValue dest, IRValue src1, IRValue src2) : op{op}, dest{dest}, src1{src1}, src2{src2} {}
 
-IRInst::IRInst(IROp op, BasicBlock *bb) : op{op}, dest{}, src1{bb}, src2{} {}
+IRInst::IRInst(IROp op, BasicBlock *bb) : op{op}, dest{bb}, src1{}, src2{} {}
 
-IRInst::IRInst(IROp op, IRValue cond, BasicBlock *bb) : op{op}, dest{}, src1{bb}, src2{cond} {}
+IRInst::IRInst(IROp op, IRValue cond, BasicBlock *bb1, BasicBlock *bb2) : op{op}, dest{cond}, src1{bb1}, src2{bb2} {}
 
 IRInst::IRInst(IROp op, i32 dest, Function *fn, std::vector<IRValue> params)
     : op{op}, dest{IRValueKind::vreg, fn->ret.type, dest}, src1{fn}, src2{}, params{params} {}

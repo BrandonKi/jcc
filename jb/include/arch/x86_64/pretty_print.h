@@ -365,6 +365,7 @@ inline std::string str(MCInst i) {
     case sub:
     case imul:
     case idiv:
+    case cmp:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
     // case add_reg_imm:
     //     return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);
@@ -378,8 +379,12 @@ inline std::string str(MCInst i) {
     // return ret_str;
     case call:
         return ret_str + str(i.DEST);
+    case jz:
+        return ret_str + str(i.DEST);
+    case jnz:
+        return ret_str + str(i.DEST);
     case jmp:
-        return ret_str;
+        return ret_str + str(i.DEST);
     case ret:
         return ret_str + str(i.DEST);
     case push:
@@ -430,7 +435,8 @@ inline void pretty_print(MCModule *mm) {
         fn_string += str(fn->ret) + ":" + str(fn->ret.type);
         std::cout << fn_string << "\n";
 
-        for (auto bb : fn->blocks) {
+        for (auto *bb: fn->blocks) {
+            std::cout << ntab_string.substr(0, ntab_string.size()-1) << bb->id << ":\n";
             for (auto inst : bb->insts) {
                 std::cout << ntab_string << str(inst) << "\n";
             }

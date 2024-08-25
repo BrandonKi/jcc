@@ -1,0 +1,49 @@
+#pragma once
+
+#include "ast.h"
+
+#include "jb.h"
+
+
+namespace jcc {
+
+class JBIRGen {
+public:
+    // std::unique_ptr<llvm::LLVMContext> m_context;
+    // std::unique_ptr<llvm::Module> m_module;
+    // std::unique_ptr<llvm::IRBuilder<>> m_builder;
+    // std::unordered_map<std::string, std::pair<DeclNode *, llvm::Value *>>
+    //     m_named_values;
+
+    JBIRGen();
+
+    // llvm::Type *to_llvm_type(CType *);
+
+    // llvm::Value *gen_str_lit_expr(StrLitExprNode *);
+    // llvm::Value *gen_num_lit_expr(NumLitExprNode *);
+    // llvm::Value *gen_id_expr(IdExprNode *);
+    // llvm::Value *gen_lvalue_expr(ExprNode *);
+    // llvm::Value *gen_address_of(ExprNode *);
+    // llvm::Value *gen_unary_expr(UnaryExprNode *);
+    // llvm::Value *gen_assign(BinExprNode *);
+    // llvm::Value *gen_bin_expr(BinExprNode *);
+    // llvm::Value *gen_cast_expr(UnaryExprNode *);
+    // llvm::Value *gen_call_expr(CallExprNode *);
+    // llvm::Value *gen_expr(ExprNode *);
+
+    // llvm::Value *gen_decl(DeclNode *);
+
+    // void gen_if_stmnt(IfStmntNode *);
+    // void gen_while_stmnt(WhileStmntNode *);
+    // void gen_do_stmnt(DoStmntNode *);
+    // void gen_for_stmnt(ForStmntNode *);
+    // void gen_compound_stmnt(CompoundStmntNode *);
+    // void gen_stmnt(StmntNode *);
+
+    // llvm::Function *gen_prototype(PrototypeNode *);
+    // llvm::Function *gen_function(FunctionNode *);
+
+    // void gen_file(FileNode *);
+};
+
+} // namespace jcc

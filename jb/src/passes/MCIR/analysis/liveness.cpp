@@ -57,7 +57,6 @@ std::vector<Interval> Liveness::run_pass(MCFunction* fn) {
 	}
 
 	for(auto* bb: fn->blocks) {
-		// TODO add intervals for bb params here
 		for(auto inst: bb->insts) {
 			++i;
 			
