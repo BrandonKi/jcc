@@ -515,11 +515,72 @@ bool phi_2() {
     return result == 300;
 }
 
+bool phi_3() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry");
+    auto *first = builder->newBB("first");
+    auto *second = builder->newBB("second");
+    auto *leave = builder->newBB("leave");
+
+    builder->setInsertPoint(entry);
+    builder->br(second);
+
+    builder->setInsertPoint(first);
+    auto first_ret_const = builder->iconst32(100);
+    auto first_ret = builder->id(first_ret_const);
+    builder->br(leave);
+
+    builder->setInsertPoint(second);
+    auto second_ret_const = builder->iconst32(300);
+    auto second_ret = builder->id(second_ret_const);
+    builder->br(leave);
+
+    builder->setInsertPoint(leave);
+    auto leave_ret = builder->phi({{first, first_ret}, {second, second_ret}});
+    builder->ret(leave_ret);
+
+    auto result = run(ctx, builder);
+    return result == 300;
+}
+
+bool phi_4() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry");
+    auto *then = builder->newBB("then");
+    auto *cont = builder->newBB("cont");
+
+    builder->setInsertPoint(entry);
+    auto x = builder->id(builder->iconst32(17));
+    auto y = builder->id(builder->iconst32(6));
+    auto z = builder->id(builder->iconst32(0));
+    auto cond = builder->lt(y, z);
+    builder->brz(cond, then, cont);
+
+    builder->setInsertPoint(then);
+    auto then_z = builder->iadd(x, y);
+    builder->br(cont);
+
+    builder->setInsertPoint(cont);
+    auto new_z = builder->phi({{entry, z}, {then, then_z}});
+    auto ret = builder->iadd(new_z, x);
+    builder->ret(ret);
+
+    auto result = run(ctx, builder);
+    return result == 40;
+}
+
+
 int main(int argc, char *argv[]) {
     // TODO take from args
-    // baseline_interp = true;
+    baseline_interp = true;
     // jit_compile = true;
-    aot_compile = true;
+    // aot_compile = true;
 
     // test(exit_success);
     // test(exit_fail);
@@ -547,8 +608,10 @@ int main(int argc, char *argv[]) {
     // test(branches_3);
     // test(branches_4);
 
-    test(phi_1);
+    // test(phi_1);
     // test(phi_2);
+    // test(phi_3);
+    test(phi_4);
 
     print_report();
 }

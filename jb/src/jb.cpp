@@ -32,7 +32,7 @@ IRValue Function::param(int index) {
 
 // start of BasicBlock impl
 
-BasicBlock::BasicBlock(std::string name) : id{name}, preds{}, params{}, insts{} {}
+BasicBlock::BasicBlock(std::string name) : id{name}, preds{}, params{}, insts{}, liveout{} {}
 
 // start of IRInst impl
 

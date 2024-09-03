@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <unordered_set>
 #include <cassert>
 #include <cstddef>
 #include <bit>
@@ -329,10 +330,43 @@ struct IRInst {
 struct BasicBlock {
     std::string id;
     std::vector<BasicBlock *> preds;
+    // FIXME: unused, leftover from bb params
     std::vector<IRValue> params;
+
     std::vector<IRInst> insts;
 
+    std::unordered_set<Reg> liveout = {};
+    // FIXME: these are just for convenience, they don't need to be kept around
+    std::unordered_set<Reg> livein = {};
+    std::unordered_set<Reg> defs = {};
+
     BasicBlock(std::string);
+
+    std::vector<BasicBlock*> update_control_flow() {
+        std::vector<BasicBlock*> successors = {};
+        // FIXME, is this instruction ever not the last instruction in the block?
+        for(auto i: insts) {
+            switch(i.op) {
+            case IROp::br:
+                successors.push_back(i.dest.lbl.bb);
+                break;
+            case IROp::brz:
+                successors.push_back(i.src1.lbl.bb);
+                successors.back()->preds.push_back(this);
+                successors.push_back(i.src2.lbl.bb);
+                break;
+            case IROp::brnz:
+                successors.push_back(i.src1.lbl.bb);
+                successors.back()->preds.push_back(this);
+                successors.push_back(i.src2.lbl.bb);
+                break;
+            default:
+                continue;
+            }
+            successors.back()->preds.push_back(this);
+        }
+        return successors;
+    }
 };
 
 // TODO add a linkage field
@@ -387,6 +421,10 @@ inline bool is_call(IROp op) {
 
 inline bool is_ret(IROp op) {
     return op == IROp::ret;
+}
+
+inline bool is_phi(IROp op) {
+    return op == IROp::phi;
 }
 
 inline bool is_mem_op(IROp op) {

@@ -264,3 +264,7 @@ IRValue ModuleBuilder::load(IRValue src, Type type) {
 IRValue ModuleBuilder::phi(std::vector<std::pair<BasicBlock *, IRValue>> values) {
     return addInst(IROp::phi, values);
 }
+
+IRValue ModuleBuilder::id(IRValue value) {
+    return addInst(IROp::id, value);
+}

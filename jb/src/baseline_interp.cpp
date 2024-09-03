@@ -187,7 +187,7 @@ InterpValue Interp::run_inst_eq(IRInst inst) {
 
 InterpValue Interp::run_inst_br(IRInst inst) {
     prev_bb = bb_ptr;
-    bb_ptr = inst.src1.lbl.bb;
+    bb_ptr = inst.dest.lbl.bb;
     i_ptr = -1;
     return {};
 }
@@ -282,5 +282,11 @@ InterpValue Interp::run_inst_phi(IRInst inst) {
             break;
         }
     }
+    return {};
+}
+
+InterpValue Interp::run_inst_id(IRInst inst) {
+    // assert(false);
+    vregs[inst.dest.vreg] = eval(inst.src1);
     return {};
 }

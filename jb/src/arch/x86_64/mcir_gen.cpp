@@ -153,26 +153,37 @@ MCModule *MCIRGen::gen_module() {
 void MCIRGen::gen_prolog(MCFunction *mc_fn) {
     MCBasicBlock *prolog = new MCBasicBlock("prolog");
 
-    MCInst push_inst((i8)push, MCValue((i8)MCValueKind::vreg, Type::ptr));
-    push_inst.DEST.reg = mc_fn->new_vreg();
-    push_inst.DEST.hint = rbp;
-    push_inst.DEST.is_fixed = true;
-    push_inst.DEST.state = State::def;
-    prolog->insts.push_back(push_inst);
-    get_vreg[rbp] = push_inst.DEST.reg;
-    
-    MCInst mov_inst((i8)mov, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::vreg, Type::ptr));
-    mov_inst.DEST.reg = get_vreg[rbp];
-    mov_inst.SRC1.reg = mc_fn->new_vreg();
-    mov_inst.SRC1.hint = rsp;
-    mov_inst.SRC1.is_fixed = true;
-    prolog->insts.push_back(mov_inst);
-    get_vreg[rsp] = mov_inst.SRC1.reg;
+    if (false && get_host_os() == OS::windows) {
+        MCInst sub_inst((i8)sub, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+        sub_inst.DEST.reg = mc_fn->new_vreg();
+        sub_inst.SRC1.imm = 40 + mc_fn->stack_space;
+        sub_inst.DEST.hint = rsp;
+        sub_inst.DEST.is_fixed = true;
+        sub_inst.DEST.state = State::def;
+        prolog->insts.push_back(sub_inst);
+        get_vreg[rsp] = sub_inst.DEST.reg;
+    } else if(true || get_host_os() == OS::linux) {
+        MCInst push_inst((i8)push, MCValue((i8)MCValueKind::vreg, Type::ptr));
+        push_inst.DEST.reg = mc_fn->new_vreg();
+        push_inst.DEST.hint = rbp;
+        push_inst.DEST.is_fixed = true;
+        push_inst.DEST.state = State::def;
+        prolog->insts.push_back(push_inst);
+        get_vreg[rbp] = push_inst.DEST.reg;
+        
+        MCInst mov_inst((i8)mov, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::vreg, Type::ptr));
+        mov_inst.DEST.reg = get_vreg[rbp];
+        mov_inst.SRC1.reg = mc_fn->new_vreg();
+        mov_inst.SRC1.hint = rsp;
+        mov_inst.SRC1.is_fixed = true;
+        prolog->insts.push_back(mov_inst);
+        get_vreg[rsp] = mov_inst.SRC1.reg;
 
-    MCInst sub_inst((i8)sub, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
-    sub_inst.DEST.reg = get_vreg[rsp];
-    sub_inst.SRC1.imm = mc_fn->stack_space;
-    prolog->insts.push_back(sub_inst);
+        MCInst sub_inst((i8)sub, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+        sub_inst.DEST.reg = get_vreg[rsp];
+        sub_inst.SRC1.imm = mc_fn->stack_space;
+        prolog->insts.push_back(sub_inst);
+    }
 
     mc_fn->blocks.insert(mc_fn->blocks.begin(), prolog);
 }
@@ -181,23 +192,27 @@ void MCIRGen::gen_prolog(MCFunction *mc_fn) {
 void MCIRGen::gen_epilog(MCFunction *mc_fn) {
     // MCBasicBlock *epilog = new MCBasicBlock("epilog");
 
-    MCInst add_inst((i8)add, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
-    add_inst.DEST.reg = get_vreg[rsp];
-    add_inst.SRC1.imm = mc_fn->stack_space;
-    // epilog->insts.push_back(add_inst);
-    append_inst(mc_fn, add_inst);
+    if(false && get_host_os() == OS::windows) {
+        MCInst add_inst((i8)add, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+        add_inst.DEST.reg = get_vreg[rsp];
+        add_inst.SRC1.imm = 40 + mc_fn->stack_space;
+        append_inst(mc_fn, add_inst);
+    } else if(true || get_host_os() == OS::linux) {
+        MCInst add_inst((i8)add, MCValue((i8)MCValueKind::vreg, Type::ptr), MCValue((i8)MCValueKind::imm, Type::i64));
+        add_inst.DEST.reg = get_vreg[rsp];
+        add_inst.SRC1.imm = mc_fn->stack_space;
+        append_inst(mc_fn, add_inst);
 
-    MCInst pop_inst((i8)pop, MCValue((i8)MCValueKind::vreg, Type::ptr));
-    pop_inst.DEST.reg = get_vreg[rbp];
-    // epilog->insts.push_back(pop_inst);
-    append_inst(mc_fn, pop_inst);
+        MCInst pop_inst((i8)pop, MCValue((i8)MCValueKind::vreg, Type::ptr));
+        pop_inst.DEST.reg = get_vreg[rbp];
+        append_inst(mc_fn, pop_inst);
+    }
 
-    MCInst ret_inst((i8)ret);
-    ret_inst.DEST = mc_fn->ret;
-    ret_inst.DEST.hint = rax;
-    ret_inst.DEST.is_fixed = true;
-    // epilog->insts.push_back(ret_inst);
-    append_inst(mc_fn, ret_inst);
+        MCInst ret_inst((i8)ret);
+        ret_inst.DEST = mc_fn->ret;
+        ret_inst.DEST.hint = rax;
+        ret_inst.DEST.is_fixed = true;
+        append_inst(mc_fn, ret_inst);
 
     // mc_fn->blocks.push_back(epilog);
 }

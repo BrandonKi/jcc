@@ -19,10 +19,16 @@ add_library(jb_lib OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/src/register_manager.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/register_allocator.cpp
 
-# Analysis stuff
+# JBIR Analysis stuff
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/liveness.cpp
+
+# JBIR Optimization stuff
+    # ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/  
+
+# MCIR Analysis stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/liveness.cpp
 
-# Optimization stuff
+# MCIR Optimization stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/opt/register_coalescing.cpp  
 
 # Object File stuff

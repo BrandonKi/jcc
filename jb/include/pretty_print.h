@@ -46,12 +46,14 @@ inline std::string str(Type type) {
     }
 }
 
+// FIXME, size should not need abs
 inline std::string str(IRConstantInt imm_int) {
-    return std::to_string(imm_int.val) + ".i" + std::to_string(imm_int.size);
+    return std::to_string(imm_int.val) + ".i" + std::to_string(std::abs(imm_int.size));
 }
 
+// FIXME, size should not need abs
 inline std::string str(IRConstantFloat imm_float) {
-    return std::to_string(imm_float.val) + ".f" + std::to_string(imm_float.size);
+    return std::to_string(imm_float.val) + ".f" + std::to_string(std::abs(imm_float.size));
 }
 
 inline std::string str(IRValue irval) {
@@ -140,8 +142,10 @@ inline std::string str(IRInst irinst) {
         assert(irinst.src1.lbl.kind == IRLabelKind::function);
         std::string args = "";
         for (auto &param : irinst.params)
-            args += str(param) + " ";
-        return std::format("{} = {} {} {}", str(irinst.dest), op, str(irinst.src1), args);
+            args += str(param) + ", ";
+        if(args.size() >= 2)
+            args = args.substr(0, args.size()-2);
+        return std::format("{} = {} {} ({})", str(irinst.dest), op, str(irinst.src1), args);
     }
     case IROp::ret:
         return std::format("{} {}", op, str(irinst.src1));
@@ -162,6 +166,9 @@ inline std::string str(IRInst irinst) {
         if (!args.empty())
             args = args.substr(0, args.size() - 2);
         return std::format("{} = {} {}", str(irinst.dest), op, args);
+    }
+    case IROp::id: {
+        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
     }
     default:
         assert(false);

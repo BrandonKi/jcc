@@ -69,6 +69,8 @@ public:
     IRValue load(IRValue, Type);
 
     IRValue phi(std::vector<std::pair<BasicBlock *, IRValue>>);
+    
+    IRValue id(IRValue);
 
     Module *module;
     Function *function;

@@ -20,7 +20,7 @@ void RegisterAllocator::alloc(MCModule *module) {
 }
 
 void RegisterAllocator::alloc(MCFunction *function) {
-    auto intervals = run_analysis_pass<Liveness>(function);
+    auto intervals = run_analysis_pass<LivenessRange>(function);
 
     i32 arg_num = 0;
     for (auto &i : intervals) {

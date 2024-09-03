@@ -23,9 +23,16 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
     return new ModuleBuilder(std::move(name));
 }
 
+// FIXME temporary, need pass manager
+#include "passes/JBIR/analysis/liveness.h"
+
 // TODO move this into a Compiler class/file
 // there will be too much logic here in the future
 BinaryFile *Context::compile(ModuleBuilder *builder) {
+    // FIXME temporary
+    for(auto *f: builder->module->functions)
+        Liveness::run_pass(f);
+
     //	auto bin_file = new BinaryFile {builder->module->name};
     BinaryFile *bin_file;
     //	std::vector<byte> bin;
@@ -106,6 +113,10 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
 
 Interp *Context::new_baseline_interp(ModuleBuilder *builder, CompileOptions options) {
     pretty_print(builder->module);
+
+    // FIXME temporary
+    for(auto *f: builder->module->functions)
+        Liveness::run_pass(f);
 
     Interp *interp = new Interp(options, builder->module);
     return interp;

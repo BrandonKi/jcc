@@ -361,8 +361,13 @@ void Encoder::mov_mem(MCValue dest_value, i32 offset) {
         assert(false);
     }
 
-    emit<byte>(modrm_disp8(id((MCReg)dest_value.reg), rbp));
-    emit<i8>((i8)-offset);
+    if(false && get_host_os() == OS::windows) {
+        emit<byte>(modrm_disp8(id((MCReg)dest_value.reg), rsp));
+        emit<i8>((i8)offset);
+    } else if(true || get_host_os() == OS::linux) {
+        emit<byte>(modrm_disp8(id((MCReg)dest_value.reg), rbp));
+        emit<i8>((i8)-offset);
+    }
 }
 
 static byte get_cmov_opcode(Condition cond) {
