@@ -1589,6 +1589,35 @@ int main() {
     return result == 42;
 }
 
+bool general_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+#include <stdbool.h>
+
+extern int printf(char*);
+
+bool isPerfect(int num) {
+    int sum = 0;
+    for (int i = 1; i < num; i++) {
+        if (num % i == 0) {
+            sum += i;
+        }
+    }
+    return sum == num;
+}
+
+int main() {
+    return isPerfect(28);
+}
+
+    )");
+
+    return result == 1;
+}
+
+
 int main(int argc, char *argv[]) {
     test(exit_success);
     test(exit_fail);
@@ -1683,6 +1712,7 @@ int main(int argc, char *argv[]) {
     test(struct_5);
     test(struct_6);
     test(struct_7);
+    test(general_1);
 
     print_report();
 }

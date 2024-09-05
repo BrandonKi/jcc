@@ -264,6 +264,10 @@ void Sema::sema_call_expr(CallExprNode *call_expr) {
         fn_tab[static_cast<IdExprNode *>(call_expr->base)->val];
     for (int i = 0; i < call_expr->args.size(); ++i) {
         sema_expr(call_expr->args[i]);
+        if(callee->proto->args.size() <= i) {
+            std::cout << "TODO Implement varargs properly!\n";
+            break; // TODO most likely varargs
+        }
         call_expr->args[i] =
             maybe_insert_cast(call_expr->args[i], callee->proto->args[i]->type);
     }
