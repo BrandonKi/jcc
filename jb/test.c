@@ -1,12 +1,9 @@
 
-int zero() {
-	return 0;
-}
-
-int one() {
-	return 1;
-}
-
 int main() {
-	return one();
+    int x = 17;
+    int y = 6;
+    int z = 0;
+    if(y < x)
+        z = x + 3;
+    return z + x;
 }

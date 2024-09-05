@@ -1,3 +1,6 @@
+# llvm IR
+*.ll
+
 # Emacs stuff
 *~
 \#*
