@@ -23,7 +23,7 @@ add_library(jb_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/liveness.cpp
 
 # JBIR Optimization stuff
-    # ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/  
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/mem2reg.cpp
 
 # MCIR Analysis stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/liveness.cpp

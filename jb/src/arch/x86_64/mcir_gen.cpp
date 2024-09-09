@@ -228,8 +228,8 @@ MCFunction *MCIRGen::gen_function(Function *fn) {
 
     for (auto *block : fn->blocks) {
         mc_fn->blocks.push_back(new MCBasicBlock(block->id));
-        for (auto ir_inst : block->insts)
-            gen_inst(mc_fn, ir_inst);
+        for (auto *ir_inst: block->insts)
+            gen_inst(mc_fn, *ir_inst);
     }
 
     if(MERGE_RETURNS) {
@@ -250,9 +250,9 @@ MCFunction *MCIRGen::gen_function(Function *fn) {
 }
 
 void MCIRGen::gen_inst(MCFunction *mc_fn, IRInst ir_inst) {
-    // if (is_imm(ir_inst.op))
-    //     gen_imm(mc_fn, ir_inst);
-    // else if (is_mov(ir_inst.op))
+    if(ir_inst.op == IROp::noop)
+        return;
+
     if (is_mov(ir_inst.op))
         gen_mov(mc_fn, ir_inst);
     else if (is_bin(ir_inst.op))

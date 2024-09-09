@@ -47,69 +47,69 @@ void ModuleBuilder::setInsertPoint(BasicBlock *bb) {
 }
 
 IRValue ModuleBuilder::addInst(IROp op, IRValue src1, Type type) {
-    IRInst inst;
+    IRInst *inst;
     if (has_dest(op))
-        inst = IRInst(op, next_ssa(), src1, {});
+        inst = new IRInst(op, next_ssa(), src1, {});
     else
-        inst = IRInst(op, {}, src1, {});
-    inst.type = type;
+        inst = new IRInst(op, {}, src1, {});
+    inst->type = type;
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, IRValue src1, IRValue src2) {
-    IRInst inst;
+    IRInst *inst;
     if (has_dest(op))
-        inst = IRInst(op, next_ssa(), src1, src2);
+        inst = new IRInst(op, next_ssa(), src1, src2);
     else
-        inst = IRInst(op, {}, src1, src2);
+        inst = new IRInst(op, {}, src1, src2);
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, IRValue src) {
-    IRInst inst;
+    IRInst *inst;
     if (has_dest(op))
-        inst = IRInst(op, next_ssa(), src, {});
+        inst = new IRInst(op, next_ssa(), src, {});
     else
-        inst = IRInst(op, {}, src, {});
+        inst = new IRInst(op, {}, src, {});
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, BasicBlock *bb) {
-    IRInst inst = IRInst(op, bb);
+    IRInst *inst = new IRInst(op, bb);
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, IRValue cond, BasicBlock *bb1, BasicBlock *bb2) {
-    IRInst inst = IRInst(op, cond, bb1, bb2);
+    IRInst *inst = new IRInst(op, cond, bb1, bb2);
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, Function *fn, std::vector<IRValue> params) {
-    IRInst inst;
+    IRInst *inst;
     if (fn->ret.kind != IRValueKind::none)
-        inst = IRInst(op, next_ssa(), fn, params);
+        inst = new IRInst(op, next_ssa(), fn, params);
     else
-        inst = IRInst(op, {}, fn, params);
+        inst = new IRInst(op, {}, fn, params);
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 IRValue ModuleBuilder::addInst(IROp op, std::vector<std::pair<BasicBlock *, IRValue>> values) {
-    IRInst inst;
-    inst = IRInst(op, next_ssa(), values);
+    IRInst *inst;
+    inst = new IRInst(op, next_ssa(), values);
 
     insert_point->insts.push_back(inst);
-    return inst.dest;
+    return inst->dest;
 }
 
 i32 ModuleBuilder::next_ssa() {

@@ -31,7 +31,7 @@ InterpValue Interp::run_fn(Function *fn, std::vector<InterpValue> params) {
     bb_ptr = fn->blocks[0];
     i_ptr = 0;
     while (fn_ret.type == Type::none) {
-        IRInst inst = bb_ptr->insts[i_ptr];
+        IRInst inst = *bb_ptr->insts[i_ptr];
         switch ((IROp)inst.op) {
 #define X(o)                                                                                                           \
     case IROp::o:                                                                                                      \
@@ -71,6 +71,10 @@ InterpValue Interp::eval(IRValue val) {
 
 InterpValue Interp::run_inst_none(IRInst inst) {
     assert(false);
+    return {};
+}
+
+InterpValue Interp::run_inst_noop(IRInst inst) {
     return {};
 }
 

@@ -2,6 +2,8 @@
 
 X(none)
 
+X(noop)
+
 X(mov)
 
 X(zx)

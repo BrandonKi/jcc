@@ -24,8 +24,8 @@ static std::unordered_set<Reg> PhiUses(BasicBlock *b, BasicBlock *filter=nullptr
     std::unordered_set<Reg> phi_uses = {};
 
     int i = 0;
-    while(i < b->insts.size() && is_phi(b->insts[i].op)) {
-        auto inst = b->insts[i];
+    while(i < b->insts.size() && is_phi(b->insts[i]->op)) {
+        auto inst = *b->insts[i];
         for(auto r: inst.values) {
             if(filter && r.first==filter)
                 phi_uses.insert(r.second.vreg);
@@ -40,8 +40,8 @@ static std::unordered_set<Reg> PhiDefs(BasicBlock *b) {
     std::unordered_set<Reg> phi_defs = {};
 
     int i = 0;
-    while(i < b->insts.size() && is_phi(b->insts[i].op)) {
-        phi_defs.insert(b->insts[i].dest.vreg);
+    while(i < b->insts.size() && is_phi(b->insts[i]->op)) {
+        phi_defs.insert(b->insts[i]->dest.vreg);
         ++i;
     }
 
@@ -63,7 +63,7 @@ static void compute_livesets(BasicBlock *b, BasicBlock *succ) {
     }
 
     for(int ii = b->insts.size()-1; ii >= 0; --ii) {
-        auto i = b->insts[ii];
+        auto i = *b->insts[ii];
         if(i.dest_is_vreg()) {
             b->livein.erase(i.dest.vreg);
         }

@@ -25,14 +25,22 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 
 // FIXME temporary, need pass manager
 #include "passes/JBIR/analysis/liveness.h"
+#include "passes/JBIR/opt/mem2reg.h"
+
+static void run_passes(ModuleBuilder *builder) {
+    for(auto *f: builder->module->functions) {
+        for(auto *b: f->blocks) {
+            b->update_control_flow();
+        }
+        // Liveness::run_pass(f);
+        Mem2Reg::run_pass(f);
+    }
+}
 
 // TODO move this into a Compiler class/file
 // there will be too much logic here in the future
 BinaryFile *Context::compile(ModuleBuilder *builder) {
-    // FIXME temporary
-    for(auto *f: builder->module->functions)
-        Liveness::run_pass(f);
-
+    run_passes(builder);
     //	auto bin_file = new BinaryFile {builder->module->name};
     BinaryFile *bin_file;
     //	std::vector<byte> bin;
@@ -113,10 +121,8 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
 
 Interp *Context::new_baseline_interp(ModuleBuilder *builder, CompileOptions options) {
     pretty_print(builder->module);
-
-    // FIXME temporary
-    for(auto *f: builder->module->functions)
-        Liveness::run_pass(f);
+    run_passes(builder);
+    pretty_print(builder->module);
 
     Interp *interp = new Interp(options, builder->module);
     return interp;

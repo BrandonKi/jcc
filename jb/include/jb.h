@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <cassert>
 #include <cstddef>
 #include <bit>
@@ -333,7 +334,7 @@ struct BasicBlock {
     // FIXME: unused, leftover from bb params
     std::vector<IRValue> params;
 
-    std::vector<IRInst> insts;
+    std::vector<IRInst *> insts;
 
     std::unordered_set<Reg> liveout = {};
     // FIXME: these are just for convenience, they don't need to be kept around
@@ -345,7 +346,8 @@ struct BasicBlock {
     std::vector<BasicBlock*> update_control_flow() {
         std::vector<BasicBlock*> successors = {};
         // FIXME, is this instruction ever not the last instruction in the block?
-        for(auto i: insts) {
+        for(auto *ip: insts) {
+            auto i = *ip;
             switch(i.op) {
             case IROp::br:
                 successors.push_back(i.dest.lbl.bb);
@@ -366,6 +368,17 @@ struct BasicBlock {
             successors.back()->preds.push_back(this);
         }
         return successors;
+    }
+
+    auto for_each(IROp op, auto fn) {
+        for(auto *inst: insts) {
+            if(inst->op == op) {
+                auto res = fn(inst);
+                if(res != nullptr)
+                    return res;
+            }
+        }
+        return (IRInst*)nullptr;
     }
 };
 

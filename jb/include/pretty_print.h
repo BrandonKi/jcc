@@ -95,6 +95,8 @@ inline std::string str(IRInst irinst) {
     switch (irinst.op) {
     case IROp::none:
         return std::format("{}", op);
+    case IROp::noop:
+        return std::format("{}", op);
     case IROp::mov:
         return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::zx:
@@ -223,8 +225,8 @@ inline void pretty_print(Module *module) {
             // }
             std::cout << btab_string << bb_string << ":\n";
 
-            for (auto inst : block->insts) {
-                std::cout << ntab_string << str(inst) << "\n";
+            for (auto *inst: block->insts) {
+                std::cout << ntab_string << str(*inst) << "\n";
             }
         }
     }
