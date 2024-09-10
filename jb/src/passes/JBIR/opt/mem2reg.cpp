@@ -5,86 +5,8 @@
 
 using namespace jb;
 
-// enum NodeOp: i8 {
-//     init,
-//     def,
-//     use,
-// };
-
-// std::string str(NodeOp n) {
-//     switch(n) {
-//     case NodeOp::init:
-//         return "init";
-//     case NodeOp::def:
-//         return "def";
-//     case NodeOp::use:
-//         return "use";
-//     default:
-//         assert(false);
-//     }
-//     return "";
-// }
-
-// struct MemNode {
-//     NodeOp op;
-//     IRInst& inst;
-//     BasicBlock *parent;
-//     // MemNode *bwd, *fwd;
-// };
-
-// static void debug_print_slot_chains(std::unordered_map<Reg, std::vector<MemNode>> slots) {
-//     for(auto s: slots) {
-//         std::cout << "Reg %" << s.first << ":\n";
-//         for(auto m: s.second) {
-//             std::cout << str(m.op) << " [" << m.parent->id << "]\n";
-//         }
-//     }
-// }
-
-// std::unordered_map<Reg, std::vector<MemNode>> build_slot_chains(Function *function) {
-//     std::unordered_map<Reg, std::vector<MemNode>> slots = {};
-
-//     for(auto *b: function->blocks) {
-//         for(auto *ip: b->insts) {
-//             auto i = *ip;
-//             switch(i.op) {
-//             case IROp::slot: {
-//                 assert(i.dest_is_vreg());
-//                 slots.emplace(i.dest.vreg, std::vector{MemNode{NodeOp::init, i, b}});
-//                 break;
-//             }
-//             case IROp::stack_store: {
-//                 assert(i.src1_is_vreg());
-//                 slots[i.src1.vreg].push_back(MemNode{NodeOp::def, i, b});
-//                 break;
-//             }
-//             case IROp::stack_load: {
-//                 assert(i.src1_is_vreg());
-//                 slots[i.src1.vreg].push_back(MemNode{NodeOp::use, i, b});
-//                 break;
-//             }
-//             default:
-//                 if(i.src1_is_vreg() && slots.contains(i.src1.vreg))
-//                     slots.erase(i.src1.vreg);
-//                 if(i.src2_is_vreg() && slots.contains(i.src2.vreg))
-//                     slots.erase(i.src2.vreg);
-//                 break;
-//             }
-//         }
-//     }
-
-//     return slots;
-// }
-
-// static void debug_print_chains(std::unordered_map<IRInst*, std::vector<IRInst*>> chains) {
-//     for(auto &[def, uses]: chains) {
-//         std::cout << str(*def) << "\n--------------------\n";
-//         for(auto use: uses) {
-//             std::cout << str(*use) << "\n";
-//         }
-//         std::cout << "\n\n";
-//     }
-// }
+// TODO use command line flag
+constexpr auto MEM2REG_DEBUG = false;
 
 static std::vector<std::pair<BasicBlock*, IRInst *>> find_stack_stores(BasicBlock *b, Reg reg) {
     std::vector<std::pair<BasicBlock*, IRInst *>> stores = {};
@@ -108,22 +30,22 @@ static std::vector<std::pair<BasicBlock*, IRInst *>> find_stack_stores(BasicBloc
 }
 
 static void debug_print_loads(std::unordered_map<IRInst*, std::vector<std::pair<BasicBlock*, IRInst *>>> loads) {
-    for(auto &[use, defs]: loads) {
-        std::cout << str(*use) << "\n--------------------\n";
-        for(auto &[bb, def]: defs) {
-            std::cout << bb->id << ":" << str(*def) << "\n";
+    if(MEM2REG_DEBUG) {
+        for(auto &[use, defs]: loads) {
+            std::cout << str(*use) << "\n--------------------\n";
+            for(auto &[bb, def]: defs) {
+                std::cout << bb->id << ":" << str(*def) << "\n";
+            }
+            std::cout << "\n\n";
         }
-        std::cout << "\n\n";
     }
 }
 
-// static void insert_phis(Function *function, std::unordered_map<Reg, std::vector<MemNode>>& slots) {
-// TODO if any operations use the stack slot pointer
-// then bail out, it cannot be converted to a vreg without extra analysis
 static void insert_phis(Function *function) {
     std::unordered_map<IRInst*, IRInst *> local_loads = {};
     std::unordered_map<IRInst*, std::vector<std::pair<BasicBlock*, IRInst *>>> loads = {};
     std::unordered_map<Reg, IRInst*> local_stores = {};
+    std::unordered_set<Reg> invalid = {};
 
     for(auto *b: function->blocks) {
         for(auto *i: b->insts) {
@@ -145,6 +67,18 @@ static void insert_phis(Function *function) {
                 else
                     assert(false);
             }
+            else if(is_phi(i->op)) {
+                for (auto &&[b, v] : i->values) {
+                    if(v.kind == IRValueKind::vreg)
+                        invalid.insert(v.vreg);
+                }  
+            }
+            else {
+                if(i->src1_is_vreg())
+                    invalid.insert(i->src1.vreg);
+                if(i->src2_is_vreg())
+                    invalid.insert(i->src2.vreg);
+            }
         }
         local_stores = {};
     }
@@ -154,6 +88,9 @@ static void insert_phis(Function *function) {
 
     int it = 1000; // FIXME, proper naming
     for(auto &[use, def]: local_loads) {
+        if(invalid.contains(def->src1.vreg))
+            continue;
+            
         dead_slots.insert(def->src1.vreg);
 
         // stich use and def together
@@ -166,6 +103,9 @@ static void insert_phis(Function *function) {
 
     for(auto &[use, defs]: loads) {
         for(auto &[bb, def]: defs) {
+            if(invalid.contains(def->src1.vreg))
+                continue;
+
             // replace def
             if(def->op == IROp::stack_store) {
                 dead_slots.insert(def->src1.vreg);
@@ -193,12 +133,6 @@ static void insert_phis(Function *function) {
 }
 
 void Mem2Reg::run_pass(Function *function) {
-    // FIXME ignores phis, oops!
-    // auto slots = build_slot_chains(function);
-    
-    // debug_print_slot_chains(slots);
-
-    // insert_phis(function, slots);
     insert_phis(function);
 }
 

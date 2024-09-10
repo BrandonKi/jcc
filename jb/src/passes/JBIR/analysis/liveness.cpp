@@ -7,18 +7,7 @@
 using namespace jb;
 
 // TODO use command line flag
-constexpr auto LIVENESS_DEBUG = true;
-
-// static void Init(BasicBlock *b) {
-//     for(auto i: b->insts) {
-//         if(i.src1_is_vreg() && !b->defs.contains(i.src1.vreg))
-//             b->livein.insert(i.src1.vreg);
-//         if(i.src2_is_vreg() && !b->defs.contains(i.src2.vreg))
-//             b->livein.insert(i.src2.vreg);
-//         if(i.dest_is_vreg())
-//             b->defs.insert(i.dest.vreg);
-//     }
-// }
+constexpr auto LIVENESS_DEBUG = false;
 
 static std::unordered_set<Reg> PhiUses(BasicBlock *b, BasicBlock *filter=nullptr) {
     std::unordered_set<Reg> phi_uses = {};
