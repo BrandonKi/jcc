@@ -20,7 +20,7 @@ void RegisterAllocator::alloc(MCModule *module) {
 }
 
 void RegisterAllocator::alloc(MCFunction *function) {
-    auto intervals = run_analysis_pass<LivenessRange>(function);
+    auto intervals = run_analysis_pass<LiveRange>(function);
 
     i32 arg_num = 0;
     for (auto &i : intervals) {
@@ -66,7 +66,7 @@ void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval, Re
     // start at 1 because 0 means it's a fn param
     i32 i = 1;
     for (auto *bb : fn->blocks) {
-        for (auto inst: bb->insts) {
+        for (auto &inst: bb->insts) {
             if (i >= interval.start && i <= interval.end) {
                 if (inst.DEST.is_vreg()) {  // FIXME duplication
                     auto num = inst.DEST.reg;

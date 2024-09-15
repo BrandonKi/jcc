@@ -26,6 +26,7 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 // FIXME temporary, need pass manager
 #include "passes/JBIR/analysis/liveness.h"
 #include "passes/JBIR/opt/mem2reg.h"
+#include "passes/JBIR/opt/phi_elim.h"
 
 static void run_passes(ModuleBuilder *builder) {
     for(auto *f: builder->module->functions) {
@@ -33,7 +34,8 @@ static void run_passes(ModuleBuilder *builder) {
             b->update_control_flow();
         }
         // Liveness::run_pass(f);
-        Mem2Reg::run_pass(f);
+        // Mem2Reg::run_pass(f);
+        PhiElim::run_pass(f);
     }
 }
 

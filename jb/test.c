@@ -6,6 +6,10 @@ int f(int a, int b) {
     } else {
         c = b;
     }
+
+    if(a == 0) {
+        c = 999;
+    } 
     return c;
 }
 

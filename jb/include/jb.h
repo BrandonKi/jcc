@@ -417,7 +417,7 @@ struct CompileOptions {
 };
 
 inline bool is_mov(IROp op) {
-    return op == IROp::mov;
+    return op == IROp::mov || op == IROp::id;
 }
 
 inline bool is_bin(IROp op) {

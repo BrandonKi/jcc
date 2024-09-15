@@ -518,7 +518,8 @@ bool branches_6() {
     builder->setInsertPoint(entry);
     auto s = builder->slot(Type::i32);
     builder->stack_store(s, builder->iconst8(100));
-    builder->brnz(builder->iconst32(1), first, second);
+    auto cond = builder->id(builder->iconst32(1));
+    builder->brnz(cond, first, second);
 
     builder->setInsertPoint(first);
     builder->br(last);
@@ -705,9 +706,9 @@ bool phi_4() {
 
 int main(int argc, char *argv[]) {
     // TODO take from args
-    baseline_interp = true;
+    // baseline_interp = true;
     // jit_compile = true;
-    // aot_compile = true;
+    aot_compile = true;
 
     // test(exit_success);
     // test(exit_fail);

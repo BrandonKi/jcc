@@ -296,7 +296,12 @@ void MCIRGen::gen_imm(MCFunction *mc_fn, IRInst ir_inst) {}
 // }
 
 void MCIRGen::gen_mov(MCFunction *mc_fn, IRInst ir_inst) {
-    assert(false);
+    auto op = ir_inst.op;
+    auto dest = ir_inst.dest;
+    auto src1 = ir_inst.src1;
+
+    MCInst mov_inst((i8)mov, MCValue(dest), MCValue(src1));
+    append_inst(mc_fn, mov_inst);
 }
 
 static i8 convert_bin_op(IROp op) {

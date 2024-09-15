@@ -8,7 +8,7 @@
 #include "arch/generic_mcir.h"
 
 #include "pass_manager.h"
-#include "MCIR/analysis/liveness.h"
+#include "MCIR/analysis/live_range.h"
 
 #include <map>
 

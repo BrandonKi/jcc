@@ -30,7 +30,7 @@ struct Interval {
     bool is_fixed() { return fixed; }
 };
 
-struct LivenessRange {
+struct LiveRange {
     static std::vector<Interval> run_pass(MCFunction *);
     static std::vector<Interval> run_pass(MCModule *);
 };

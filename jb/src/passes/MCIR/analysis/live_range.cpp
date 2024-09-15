@@ -1,4 +1,4 @@
-#include "MCIR/analysis/liveness.h"
+#include "MCIR/analysis/live_range.h"
 
 #include <map>
 #include <utility>
@@ -38,7 +38,7 @@ using namespace jb;
 
 using enum IntervalType;
 
-std::vector<Interval> LivenessRange::run_pass(MCFunction* fn) {
+std::vector<Interval> LiveRange::run_pass(MCFunction* fn) {
 	std::map<i32, i32> result;
 	std::vector<Interval> vec_result;
 
@@ -97,6 +97,6 @@ std::vector<Interval> LivenessRange::run_pass(MCFunction* fn) {
 
 // TODO should probably return a map of Function names to Interval sets
 // or something along those lines
-std::vector<Interval> LivenessRange::run_pass(MCModule* mod) {
+std::vector<Interval> LiveRange::run_pass(MCModule* mod) {
 	return {};
 }

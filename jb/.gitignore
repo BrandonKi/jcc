@@ -1,6 +1,10 @@
 # llvm IR
 *.ll
 
+# Graphviz
+*.dot
+*.svg
+
 # Emacs stuff
 *~
 \#*

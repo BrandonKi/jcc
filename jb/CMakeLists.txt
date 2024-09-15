@@ -24,12 +24,13 @@ add_library(jb_lib OBJECT
 
 # JBIR Optimization stuff
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/mem2reg.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/phi_elim.cpp
 
 # MCIR Analysis stuff
-	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/liveness.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/live_range.cpp
 
 # MCIR Optimization stuff
-	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/opt/register_coalescing.cpp  
+	# ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/opt/ 
 
 # Object File stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/link/coff.cpp
