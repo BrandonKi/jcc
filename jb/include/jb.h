@@ -331,6 +331,7 @@ struct IRInst {
 struct BasicBlock {
     std::string id;
     std::vector<BasicBlock *> preds;
+    std::vector<BasicBlock*> succ = {};
     // FIXME: unused, leftover from bb params
     std::vector<IRValue> params;
 
@@ -344,30 +345,29 @@ struct BasicBlock {
     BasicBlock(std::string);
 
     std::vector<BasicBlock*> update_control_flow() {
-        std::vector<BasicBlock*> successors = {};
         // FIXME, is this instruction ever not the last instruction in the block?
         for(auto *ip: insts) {
             auto i = *ip;
             switch(i.op) {
             case IROp::br:
-                successors.push_back(i.dest.lbl.bb);
+                succ.push_back(i.dest.lbl.bb);
                 break;
             case IROp::brz:
-                successors.push_back(i.src1.lbl.bb);
-                successors.back()->preds.push_back(this);
-                successors.push_back(i.src2.lbl.bb);
+                succ.push_back(i.src1.lbl.bb);
+                succ.back()->preds.push_back(this);
+                succ.push_back(i.src2.lbl.bb);
                 break;
             case IROp::brnz:
-                successors.push_back(i.src1.lbl.bb);
-                successors.back()->preds.push_back(this);
-                successors.push_back(i.src2.lbl.bb);
+                succ.push_back(i.src1.lbl.bb);
+                succ.back()->preds.push_back(this);
+                succ.push_back(i.src2.lbl.bb);
                 break;
             default:
                 continue;
             }
-            successors.back()->preds.push_back(this);
+            succ.back()->preds.push_back(this);
         }
-        return successors;
+        return succ;
     }
 
     auto for_each(IROp op, auto fn) {

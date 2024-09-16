@@ -25,23 +25,29 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 
 // FIXME temporary, need pass manager
 #include "passes/JBIR/analysis/liveness.h"
+#include "passes/JBIR/analysis/create_cfg.h"
+#include "passes/JBIR/analysis/cfg_viz.h"
 #include "passes/JBIR/opt/mem2reg.h"
 #include "passes/JBIR/opt/phi_elim.h"
 
 static void run_passes(ModuleBuilder *builder) {
     for(auto *f: builder->module->functions) {
-        for(auto *b: f->blocks) {
-            b->update_control_flow();
-        }
+        // FIXME make passes for 
+        // * printing
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
         // Liveness::run_pass(f);
-        // Mem2Reg::run_pass(f);
-        PhiElim::run_pass(f);
+        Mem2Reg::run_pass(f);
+        CFGViz::run_pass(f);
+        // PhiElim::run_pass(f);
+        CFGViz::run_pass(f);
     }
 }
 
 // TODO move this into a Compiler class/file
 // there will be too much logic here in the future
 BinaryFile *Context::compile(ModuleBuilder *builder) {
+    pretty_print(builder->module);
     run_passes(builder);
     //	auto bin_file = new BinaryFile {builder->module->name};
     BinaryFile *bin_file;

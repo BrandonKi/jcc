@@ -20,7 +20,9 @@ add_library(jb_lib OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/src/register_allocator.cpp
 
 # JBIR Analysis stuff
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/create_cfg.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/liveness.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/cfg_viz.cpp
 
 # JBIR Optimization stuff
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/mem2reg.cpp

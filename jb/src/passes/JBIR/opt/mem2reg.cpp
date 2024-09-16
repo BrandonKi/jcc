@@ -32,9 +32,9 @@ static std::vector<std::pair<BasicBlock*, IRInst *>> find_stack_stores(BasicBloc
 static void debug_print_loads(std::unordered_map<IRInst*, std::vector<std::pair<BasicBlock*, IRInst *>>> loads) {
     if(MEM2REG_DEBUG) {
         for(auto &[use, defs]: loads) {
-            std::cout << str(*use) << "\n--------------------\n";
+            std::cout << str(use) << "\n--------------------\n";
             for(auto &[bb, def]: defs) {
-                std::cout << bb->id << ":" << str(*def) << "\n";
+                std::cout << bb->id << ":" << str(def) << "\n";
             }
             std::cout << "\n\n";
         }

@@ -71,12 +71,6 @@ static void compute_livesets(BasicBlock *b, BasicBlock *succ) {
 }
 
 void Liveness::run_pass(Function* fn) {
-    for(auto *b: fn->blocks) {
-        // Init(b);
-        // FIXME: should be done earlier
-        b->update_control_flow();
-    }
-
     compute_livesets(fn->blocks[fn->blocks.size()-1], nullptr);
 
     if(LIVENESS_DEBUG) {

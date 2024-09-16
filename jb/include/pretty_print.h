@@ -90,87 +90,70 @@ inline std::string str(IROp op) {
     }
 }
 
-inline std::string str(IRInst irinst) {
-    auto op = str(irinst.op);
-    switch (irinst.op) {
+inline std::string str(IRInst *irinst) {
+    auto op = str(irinst->op);
+    switch (irinst->op) {
     case IROp::none:
         return std::format("{}", op);
     case IROp::noop:
         return std::format("{}", op);
     case IROp::mov:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
+        return std::format("{} = {} {}", str(irinst->dest), op, str(irinst->src1));
     case IROp::zx:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::sx:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::f2i:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::i2f:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::iadd:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::isub:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::imul:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::idiv:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::imod:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::fadd:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::fsub:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::fmul:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::fdiv:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::lt:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::lte:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::gt:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::gte:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
     case IROp::eq:
-        return std::format("{} = {} {}, {}", str(irinst.dest), op, str(irinst.src1), str(irinst.src2));
+        return std::format("{} = {} {}, {}", str(irinst->dest), op, str(irinst->src1), str(irinst->src2));
     case IROp::br:
-        return std::format("{} {}", op, str(irinst.dest));
+        return std::format("{} {}", op, str(irinst->dest));
     case IROp::brz:
     case IROp::brnz:
-        return std::format("{} {} {} {}", op, str(irinst.dest), str(irinst.src1), str(irinst.src2));
+        return std::format("{} {} {} {}", op, str(irinst->dest), str(irinst->src1), str(irinst->src2));
     case IROp::call: {
-        assert(irinst.src1.lbl.kind == IRLabelKind::function);
+        assert(irinst->src1.lbl.kind == IRLabelKind::function);
         std::string args = "";
-        for (auto &param : irinst.params)
+        for (auto &param : irinst->params)
             args += str(param) + ", ";
         if(args.size() >= 2)
             args = args.substr(0, args.size()-2);
-        return std::format("{} = {} {} ({})", str(irinst.dest), op, str(irinst.src1), args);
+        return std::format("{} = {} {} ({})", str(irinst->dest), op, str(irinst->src1), args);
     }
     case IROp::ret:
-        return std::format("{} {}", op, str(irinst.src1));
+        return std::format("{} {}", op, str(irinst->src1));
 
     case IROp::slot:
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1.type));
+        return std::format("{} = {} {}", str(irinst->dest), op, str(irinst->src1.type));
     case IROp::stack_store:
     case IROp::store:
-        return std::format("{} {}, {}", op, str(irinst.src1), str(irinst.src2));
+        return std::format("{} {}, {}", op, str(irinst->src1), str(irinst->src2));
     case IROp::stack_load:
     case IROp::load:
-        return std::format("{} = {} {} {}", str(irinst.dest), op, str(irinst.src1), str(irinst.type));
+        return std::format("{} = {} {} {}", str(irinst->dest), op, str(irinst->src1), str(irinst->type));
 
     case IROp::phi: {
         std::string args = "";
-        for (auto [bb, val] : irinst.values)
+        for (auto [bb, val] : irinst->values)
             args += "[" + bb->id + ", " + str(val) + "], ";
         if (!args.empty())
             args = args.substr(0, args.size() - 2);
-        return std::format("{} = {} {}", str(irinst.dest), op, args);
+        return std::format("{} = {} {}", str(irinst->dest), op, args);
     }
     case IROp::id: {
-        return std::format("{} = {} {}", str(irinst.dest), op, str(irinst.src1));
+        return std::format("{} = {} {}", str(irinst->dest), op, str(irinst->src1));
     }
     default:
         assert(false);
@@ -226,7 +209,7 @@ inline void pretty_print(Module *module) {
             std::cout << btab_string << bb_string << ":\n";
 
             for (auto *inst: block->insts) {
-                std::cout << ntab_string << str(*inst) << "\n";
+                std::cout << ntab_string << str(inst) << "\n";
             }
         }
     }
