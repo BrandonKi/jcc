@@ -324,6 +324,7 @@ static i8 convert_bin_op(IROp op) {
         assert(false);
 
     case IROp::lt:
+        return (i8)sub;
     case IROp::lte:
     case IROp::gt:
     case IROp::gte:

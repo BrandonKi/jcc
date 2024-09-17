@@ -751,11 +751,42 @@ bool phi_5() {
     return result == 42;
 }
 
+bool phi_6() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+
+    builder->setInsertPoint(b1);
+    auto x1 = builder->id(builder->iconst32(0));
+    builder->br(b2);
+
+    builder->setInsertPoint(b2);
+    auto x2 = builder->phi({{b1, x1}});
+    auto x3 = builder->iadd(x2, builder->iconst8(1));
+    auto phi2 = builder->insts().end()[-2];
+    phi2->values.push_back({b2, x3});
+    auto max = builder->id(builder->iconst32(5));
+    auto cond = builder->lt(x2, max);
+    // builder->brz(cond, b3, b2);
+    builder->brnz(cond, b2, b3);
+
+    builder->setInsertPoint(b3);
+    builder->ret(x2);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 5;
+}
+
 int main(int argc, char *argv[]) {
     // TODO take from args
-    // baseline_interp = true;
+    baseline_interp = true;
     // jit_compile = true;
-    aot_compile = true;
+    // aot_compile = true;
 
     // test(exit_success);
     // test(exit_fail);
@@ -792,7 +823,8 @@ int main(int argc, char *argv[]) {
     // test(phi_2);
     // test(phi_3);
     // test(phi_4);
-    test(phi_5);
+    // test(phi_5);
+    test(phi_6);
 
 
     print_report();
