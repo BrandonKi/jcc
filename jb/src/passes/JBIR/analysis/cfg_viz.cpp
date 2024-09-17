@@ -12,7 +12,8 @@ static std::string name(BasicBlock *b) {
     return "BB_" + b->id;
 }
 
-static void visit_block(std::ofstream &out, BasicBlock *b) {
+static void visit_block(std::fstream &out, BasicBlock *b, std::unordered_set<BasicBlock*> &&visited) {
+    visited.insert(b);
     out << "\t" << name(b) << " [shape=record,label=\"{" << b->id << ":\\l| ";
     for(auto *i: b->insts) {
         std::string stri = str(i);
@@ -21,17 +22,20 @@ static void visit_block(std::ofstream &out, BasicBlock *b) {
     out << "}\"];\n";
     for(auto *s: b->succ) {
         out << "\t" << name(b) << " -> " << name(s) << ";\n";
-        visit_block(out, s);
+        if(!visited.contains(s)) {
+            visit_block(out, s, std::move(visited));
+        }
     }
 }
 
 void CFGViz::run_pass(Function* function) {
     static int count = 0;
     std::string filename = "temp_files/"+function->id+std::to_string(count++)+".dot";
-    std::ofstream out(filename);
+    std::fstream out;
+    out = std::fstream(filename, std::ios::out | std::ios::trunc);
     
     out << "digraph {\n";
-    visit_block(out, function->blocks[0]);
+    visit_block(out, function->blocks[0], {});
     out << "}";
     out.close();
     
