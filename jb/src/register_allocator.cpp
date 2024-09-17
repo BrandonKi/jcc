@@ -61,7 +61,8 @@ void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval) {
 void RegisterAllocator::assign_to_interval(MCFunction *fn, Interval interval, Reg reg) {
     // add to active map
     active[reg] = interval;
-    std::cout << "assigning a register: " << reg << "\n";
+    std::cout << '[' << interval.start << ',' << interval.end << "] ";
+    std::cout << "assigning a register: " << interval.reg << "->" << reg << "\n";
 
     // start at 1 because 0 means it's a fn param
     i32 i = 1;

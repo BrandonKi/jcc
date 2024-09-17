@@ -295,6 +295,7 @@ struct IRInst {
 
     IRInst();
     IRInst(IROp, IRValue);
+    IRInst(IROp, IRValue, IRValue);
     IRInst(IROp, IRValue, IRValue, IRValue);
     IRInst(IROp, i32, IRValue, IRValue);
     IRInst(IROp, BasicBlock *);
@@ -373,7 +374,7 @@ struct BasicBlock {
     auto for_each(IROp op, auto fn) {
         for(auto *inst: insts) {
             if(inst->op == op) {
-                auto res = fn(inst);
+                auto res = (IRInst*)fn(inst);
                 if(res != nullptr)
                     return res;
             }

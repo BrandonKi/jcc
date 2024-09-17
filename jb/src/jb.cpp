@@ -44,6 +44,8 @@ IRInst::IRInst(IROp op, i32 dest, IRValue src1,
                IRValue src2) // HACK fix the dest types
     : op{op}, dest{IRValueKind::vreg, std::max(src1.type, src2.type), dest}, src1{src1}, src2{src2} {}
 
+IRInst::IRInst(IROp op, IRValue dest, IRValue src1) : op{op}, dest{dest}, src1{src1}, src2{} {}
+
 IRInst::IRInst(IROp op, IRValue dest, IRValue src1, IRValue src2) : op{op}, dest{dest}, src1{src1}, src2{src2} {}
 
 IRInst::IRInst(IROp op, BasicBlock *bb) : op{op}, dest{bb}, src1{}, src2{} {}

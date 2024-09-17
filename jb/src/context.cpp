@@ -37,9 +37,9 @@ static void run_passes(ModuleBuilder *builder) {
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
         // Liveness::run_pass(f);
-        Mem2Reg::run_pass(f);
-        CFGViz::run_pass(f);
-        // PhiElim::run_pass(f);
+        // Mem2Reg::run_pass(f);
+        // CFGViz::run_pass(f);
+        PhiElim::run_pass(f);
         CFGViz::run_pass(f);
     }
 }

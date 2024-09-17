@@ -14,6 +14,8 @@ public:
     BasicBlock *newBB(std::string);
     void setInsertPoint(BasicBlock *);
 
+    std::vector<IRInst*>& insts();
+
     IRValue addInst(IROp, IRValue, Type);
     IRValue addInst(IROp, IRValue, IRValue);
     IRValue addInst(IROp, IRValue);

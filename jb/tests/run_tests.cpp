@@ -703,6 +703,53 @@ bool phi_4() {
     return result == 40;
 }
 
+bool phi_5() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *b0 = builder->newBB("b0");
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+    auto *b4 = builder->newBB("b4");
+
+    builder->setInsertPoint(b0);
+    auto a = builder->id(builder->iconst32(34));
+    auto b = builder->id(builder->iconst32(8));
+    builder->br(b1);
+
+    builder->setInsertPoint(b1);
+    auto x = builder->phi({{b0, a}});
+    auto y = builder->phi({{b0, b}});
+    auto phi1 = builder->insts().end()[-2];
+    phi1->values.push_back({b3, y});
+    auto phi2 = builder->insts().end()[-1];
+    phi2->values.push_back({b3, x});
+
+    auto sum1 = builder->iadd(x, y);
+    auto cond1 = builder->id(builder->iconst32(0));
+    builder->brz(cond1, b2, b3);
+
+    builder->setInsertPoint(b2);
+    auto new_x = builder->phi({{b1, y}, {b3, builder->iconst32(100)}});
+    auto new_y = builder->phi({{b1, x}, {b3, builder->iconst32(200)}});
+    auto sum2 = builder->iadd(new_x, new_y);
+    auto cond2 = builder->id(builder->iconst32(0));
+    builder->brz(cond2, b3, b1);
+
+    builder->setInsertPoint(b3);
+    auto ret = builder->phi({{b1, sum1}, {b2, sum2}});
+    auto cond3 = builder->id(builder->iconst32(0));
+    builder->brz(cond3, b4, b2);
+
+    builder->setInsertPoint(b4);
+    builder->ret(ret);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 42;
+}
 
 int main(int argc, char *argv[]) {
     // TODO take from args
@@ -737,7 +784,7 @@ int main(int argc, char *argv[]) {
     // test(branches_3);
     // test(branches_4);
     // test(branches_5);
-    test(branches_6);
+    // test(branches_6);
     // test(branches_7);
     // test(branches_8);
 
@@ -745,6 +792,7 @@ int main(int argc, char *argv[]) {
     // test(phi_2);
     // test(phi_3);
     // test(phi_4);
+    test(phi_5);
 
 
     print_report();

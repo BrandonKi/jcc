@@ -46,6 +46,10 @@ void ModuleBuilder::setInsertPoint(BasicBlock *bb) {
     insert_point = bb;
 }
 
+std::vector<IRInst*>& ModuleBuilder::insts() {
+    return insert_point->insts;
+}
+
 IRValue ModuleBuilder::addInst(IROp op, IRValue src1, Type type) {
     IRInst *inst;
     if (has_dest(op))
