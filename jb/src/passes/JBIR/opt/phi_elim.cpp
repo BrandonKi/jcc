@@ -19,9 +19,12 @@ static BasicBlock *maybe_split_crit_edge(Function *fn, BasicBlock *src, BasicBlo
             term->src1.lbl.bb = mid;
         if(term->has_src2() && term->src2.lbl.bb == dest)
             term->src2.lbl.bb = mid;
+
         // is there a better way to fix up the cfg?
         src->succ.push_back(mid);
+        std::erase_if(src->succ, [=](auto *p){ return p == dest; });
         dest->preds.push_back(mid);
+        std::erase_if(dest->preds, [=](auto *p){ return p == src; });
         mid->preds.push_back(src);
         mid->insts.push_back(new IRInst(IROp::br, dest));
         mid->succ.push_back(dest);
@@ -49,7 +52,8 @@ static void visit_block(Function *fn, BasicBlock *b, std::unordered_set<BasicBlo
         return nullptr;
     });
 
-    for(auto *s: b->succ) {
+    for(int i = 0; i < b->succ.size(); ++i) {
+        auto *s = b->succ[i];
         if(!visited.contains(s)) {
             visit_block(fn, s, std::move(visited));
         }
