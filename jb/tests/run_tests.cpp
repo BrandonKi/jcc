@@ -782,11 +782,37 @@ bool phi_6() {
     return result == 5;
 }
 
+bool dce_1() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+
+    builder->setInsertPoint(b1);
+    auto x1 = builder->id(builder->iconst32(42));
+    builder->br(b3);
+
+    builder->setInsertPoint(b2);
+    builder->br(b3);
+
+    builder->setInsertPoint(b3);
+    auto x2 = builder->phi({{b1, x1}, {b2, builder->iconst8(-10)}});
+    builder->ret(x2);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 42;
+}
+
+
 int main(int argc, char *argv[]) {
     // TODO take from args
-    baseline_interp = true;
+    // baseline_interp = true;
     // jit_compile = true;
-    // aot_compile = true;
+    aot_compile = true;
 
     // test(exit_success);
     // test(exit_fail);
@@ -824,7 +850,9 @@ int main(int argc, char *argv[]) {
     // test(phi_3);
     // test(phi_4);
     // test(phi_5);
-    test(phi_6);
+    // test(phi_6);
+
+    test(dce_1);
 
 
     print_report();
