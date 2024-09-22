@@ -28,6 +28,7 @@ add_library(jb_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/mem2reg.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/phi_elim.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/dce.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/sscp.cpp
 
 # MCIR Analysis stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/live_range.cpp

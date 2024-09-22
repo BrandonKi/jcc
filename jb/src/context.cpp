@@ -30,21 +30,31 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 #include "passes/JBIR/opt/mem2reg.h"
 #include "passes/JBIR/opt/phi_elim.h"
 #include "passes/JBIR/opt/dce.h"
+#include "passes/JBIR/opt/sscp.h"
 
 static void run_passes(ModuleBuilder *builder) {
     for(auto *f: builder->module->functions) {
         // FIXME make passes for 
         // * printing
+
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
+
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
         DCE::run_pass(f);
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
+
         // Liveness::run_pass(f);
+
         // Mem2Reg::run_pass(f);
         // CFGViz::run_pass(f);
-        PhiElim::run_pass(f);
-        CFGViz::run_pass(f);
+        
+        // PhiElim::run_pass(f);
+        // CFGViz::run_pass(f);
     }
 }
 

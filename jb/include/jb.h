@@ -305,27 +305,27 @@ struct IRInst {
     IRInst(IROp, i32, std::vector<std::pair<BasicBlock *, IRValue>>);
     // TODO move these into a different file
     bool has_dest() {
-        return dest.kind != IRValueKind::none;
+        return op != IROp::noop && dest.kind != IRValueKind::none;
     }
 
     bool has_src1() {
-        return src1.kind != IRValueKind::none;
+        return op != IROp::noop && src1.kind != IRValueKind::none;
     }
 
     bool has_src2() {
-        return src2.kind != IRValueKind::none;
+        return op != IROp::noop && src2.kind != IRValueKind::none;
     }
 
     bool dest_is_vreg() {
-        return dest.kind == IRValueKind::vreg;
+        return op != IROp::noop && dest.kind == IRValueKind::vreg;
     }
 
     bool src1_is_vreg() {
-        return src1.kind == IRValueKind::vreg;
+        return op != IROp::noop && src1.kind == IRValueKind::vreg;
     }
 
     bool src2_is_vreg() {
-        return src2.kind == IRValueKind::vreg;
+        return op != IROp::noop && src2.kind == IRValueKind::vreg;
     }
 };
 
@@ -394,6 +394,25 @@ struct Function {
     Function(std::string, std::vector<Type>, Type, CallConv);
 
     IRValue param(int);
+
+    std::vector<Reg> get_ssa_names() {
+        std::vector<Reg> result;
+
+        for(auto p: params) {
+            if(p.kind == IRValueKind::vreg)
+                result.emplace_back(p.vreg);
+        }
+        
+        for(auto *b: blocks) {
+            for(auto *i: b->insts) {
+                if(i->has_dest() && i->dest_is_vreg()) {
+                    result.emplace_back(i->dest.vreg);
+                }
+            }
+        }
+
+        return result;
+    }
 };
 
 struct Module {
