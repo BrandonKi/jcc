@@ -40,34 +40,34 @@ static void run_passes(ModuleBuilder *builder) {
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
 
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
+        Mem2Reg::run_pass(f);
         CFGViz::run_pass(f);
 
-        DCE::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        // Liveness::run_pass(f);
-
-        // Mem2Reg::run_pass(f);
+        // SSCP::run_pass(f);
+        // CreateCFG::run_pass(f);
         // CFGViz::run_pass(f);
-        
+
+        // DCE::run_pass(f);
+        // CreateCFG::run_pass(f);
+        // CFGViz::run_pass(f);
+
         // PhiElim::run_pass(f);
         // CFGViz::run_pass(f);
+        
+        // Liveness::run_pass(f);
     }
 }
 
 // TODO move this into a Compiler class/file
 // there will be too much logic here in the future
 BinaryFile *Context::compile(ModuleBuilder *builder) {
-    pretty_print(builder->module);
+    builder->module->print();
     run_passes(builder);
     //	auto bin_file = new BinaryFile {builder->module->name};
     BinaryFile *bin_file;
     //	std::vector<byte> bin;
     if (options.target_arch == Arch::x64) {
-        pretty_print(builder->module);
+        builder->module->print();
 
         x86_64::MCIRGen mcir_gen(options, builder->module);
         mcir_gen.compile();
@@ -124,7 +124,7 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
 
     std::vector<byte> bin;
     if (options.target_arch == Arch::x64) {
-        pretty_print(builder->module);
+        builder->module->print();
 
         x86_64::MCIRGen mcir_gen(options, builder->module);
         mcir_gen.compile();
@@ -142,9 +142,9 @@ JITEnv *Context::new_jit_env(ModuleBuilder *builder, CompileOptions options) {
 }
 
 Interp *Context::new_baseline_interp(ModuleBuilder *builder, CompileOptions options) {
-    pretty_print(builder->module);
+    builder->module->print();
     run_passes(builder);
-    pretty_print(builder->module);
+    builder->module->print();
 
     Interp *interp = new Interp(options, builder->module);
     return interp;

@@ -1,17 +1,26 @@
+int main() {
+    int a = 0;
 
-int f(int a, int b) {
-    int c;
-    if (a < b) {
-        c = a;
-    } else {
-        c = b;
+    for(int i = 0; i < 10; ++i) {
+        a += i;
     }
 
-    if(a == 0) {
-        c = 999;
-    } 
-    return c;
+    return a;
 }
+
+// int f(int a, int b) {
+//     int c;
+//     if (a < b) {
+//         c = a;
+//     } else {
+//         c = b;
+//     }
+
+//     if(a == 0) {
+//         c = 999;
+//     } 
+//     return c;
+// }
 
 
 // int c1();

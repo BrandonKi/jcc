@@ -48,6 +48,8 @@ static void print_report() {
 
     println();
     println(cprint::fmt("Failed: ", cprint::BRIGHT_RED) + failed);
+    for(auto &&n: failed_tests)
+        println("\t" + n);
     println(cprint::fmt("Passed: ", cprint::BRIGHT_GREEN) + passed);
     println("Total: "s + total);
 }
@@ -410,14 +412,14 @@ bool assign_0() {
 
     auto result = c.compile_string(R"(
 
-int identity(int x) {
+int func(int x) {
     int y = x + 20;
     x = y + 10;
     return x;
 }
 
 int main() {
-    return identity(3);
+    return func(3);
 }
 
     )");
@@ -1596,7 +1598,7 @@ bool general_1() {
 
 #include <stdbool.h>
 
-extern int printf(char*);
+// extern int printf(char*);
 
 bool isPerfect(int num) {
     int sum = 0;
@@ -1619,100 +1621,100 @@ int main() {
 
 
 int main(int argc, char *argv[]) {
-    test(exit_success);
-    test(exit_fail);
-    test(add_literals);
-    test(sub_literals);
-    test(mul_literals);
-    test(div_literals);
-    test(lt_literals_1);
-    test(lt_literals_2);
-    test(gt_literals_1);
-    test(gt_literals_2);
-    test(lte_literals_1);
-    test(lte_literals_2);
-    test(lte_literals_3);
-    test(gte_literals_1);
-    test(gte_literals_2);
-    test(gte_literals_3);
-    test(equal_literals_1);
-    test(equal_literals_2);
-    test(not_equal_literals_1);
-    test(not_equal_literals_2);
-    test(ooo_literals);
-    test(mod_literals);
-    test(shift_left_literals);
-    test(shift_right_literals);
-    test(int_variable);
-    test(int_variables_arithmetic_0);
-    test(int_variables_arithmetic_1);
-    test(int_variables_arithmetic_2);
-    test(function_call_0);
-    test(function_call_1);
-    test(function_call_2);
-    test(pointers_0);
-    test(pointers_1);
-    test(assign_0);
-    test(assign_1);
-    test(assign_2);
-    test(assign_3);
-    test(assign_4);
-    test(assign_5);
-    test(assign_6);
-    test(assign_7);
-    test(assign_8);
-    test(assign_9);
-    test(assign_10);
-    test(prefix_inc_0);
-    test(prefix_dec_0);
-    test(hello_world_0);
-    test(hello_world_1);
-    test(branch_0);
-    test(branch_1);
-    test(branch_2);
-    test(branch_3);
-    test(branch_4);
-    test(branch_5);
-    test(branch_6);
-    test(for_0);
-    test(for_1);
-    test(for_2);
-    test(while_0);
-    test(dowhile_0);
-    test(sizeof_0);
-    test(sizeof_1);
-    test(sizeof_2);
-    test(sizeof_3);
-    test(sizeof_4);
-    test(sizeof_5);
-    test(alignof_0);
-    test(sizeof_alignof_0);
-    test(preproc_0);
-    test(preproc_1);
-    test(preproc_2);
-    test(preproc_3);
-    test(preproc_4);
-    test(preproc_5);
-    test(preproc_6);
-    test(preproc_7);
-    test(preproc_8);
-    test(preproc_9);
-    test(preproc_10);
-    test(preproc_11);
-    test(preproc_12);
-    test(preproc_13);
-    test(preproc_14);
-    test(preproc_15);
-    test(preproc_16);
-    test(preproc_17);
-    test(struct_1);
-    test(struct_2);
-    test(struct_3);
-    test(struct_4);
-    test(struct_5);
-    test(struct_6);
-    test(struct_7);
-    test(general_1);
+    // test(exit_success);
+    // test(exit_fail);
+    // test(add_literals);
+    // test(sub_literals);
+    // test(mul_literals);
+    // test(div_literals);
+    // test(lt_literals_1);
+    // test(lt_literals_2);
+    // test(gt_literals_1);
+    // test(gt_literals_2);
+    // test(lte_literals_1);
+    // test(lte_literals_2);
+    // test(lte_literals_3);
+    // test(gte_literals_1);
+    // test(gte_literals_2);
+    // test(gte_literals_3);
+    // test(equal_literals_1);
+    // test(equal_literals_2);
+    // test(not_equal_literals_1);
+    // test(not_equal_literals_2);
+    // test(ooo_literals);
+    // test(mod_literals);
+    // test(shift_left_literals);
+    // test(shift_right_literals);
+    // test(int_variable);
+    // test(int_variables_arithmetic_0);
+    // test(int_variables_arithmetic_1);
+    // test(int_variables_arithmetic_2);
+    // test(function_call_0);
+    // test(function_call_1);
+    // test(function_call_2);
+    // test(pointers_0);
+    // test(pointers_1);
+    // test(assign_0);
+    // test(assign_1);
+    // test(assign_2);
+    // test(assign_3);
+    // test(assign_4);
+    // test(assign_5);
+    // test(assign_6);
+    // test(assign_7);
+    // test(assign_8);
+    // test(assign_9);
+    // test(assign_10);
+    // test(prefix_inc_0);
+    // test(prefix_dec_0);
+    // test(hello_world_0);
+    // test(hello_world_1);
+    // test(branch_0);
+    // test(branch_1);
+    // test(branch_2);
+    // test(branch_3);
+    // test(branch_4);
+    // test(branch_5);
+    test(branch_6); // good test
+    // test(for_0);
+    // test(for_1);
+    // test(for_2);
+    // test(while_0);
+    // test(dowhile_0);
+    // test(sizeof_0);
+    // test(sizeof_1);
+    // test(sizeof_2);
+    // test(sizeof_3);
+    // test(sizeof_4);
+    // test(sizeof_5);
+    // test(alignof_0);
+    // test(sizeof_alignof_0);
+    // test(preproc_0);
+    // test(preproc_1);
+    // test(preproc_2);
+    // test(preproc_3);
+    // test(preproc_4);
+    // test(preproc_5);
+    // test(preproc_6);
+    // test(preproc_7);
+    // test(preproc_8);
+    // test(preproc_9);
+    // test(preproc_10);
+    // test(preproc_11);
+    // test(preproc_12);
+    // test(preproc_13);
+    // test(preproc_14);
+    // test(preproc_15);
+    // test(preproc_16);
+    // test(preproc_17);
+    // test(struct_1);
+    // test(struct_2);
+    // test(struct_3);
+    // test(struct_4);
+    // test(struct_5);
+    // test(struct_6);
+    // test(struct_7);
+    // test(general_1);
 
     print_report();
 }

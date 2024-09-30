@@ -110,6 +110,7 @@ struct MCModule {
     std::vector<MCFunction *> functions;
 
     MCModule(std::string id) : name{id} {}
+    void print();
 };
 
 extern Reg get_gpr_param(CallConv, Reg);

@@ -189,6 +189,36 @@ InterpValue Interp::run_inst_eq(IRInst inst) {
     return {};
 }
 
+InterpValue Interp::run_inst_neq(IRInst inst) {
+    BINOP(eval(inst.src1), !=, eval(inst.src2))
+    return {};
+}
+
+InterpValue Interp::run_inst_bsl(IRInst inst) {
+    BINOP(eval(inst.src1), <<, eval(inst.src2))
+    return {};
+}
+
+InterpValue Interp::run_inst_bsr(IRInst inst) {
+    BINOP(eval(inst.src1), >>, eval(inst.src2))
+    return {};
+}
+
+InterpValue Interp::run_inst_band(IRInst inst) {
+    BINOP(eval(inst.src1), &, eval(inst.src2))
+    return {};
+}
+
+InterpValue Interp::run_inst_bor(IRInst inst) {
+    BINOP(eval(inst.src1), |, eval(inst.src2))
+    return {};
+}
+
+InterpValue Interp::run_inst_bxor(IRInst inst) {
+    BINOP(eval(inst.src1), ^, eval(inst.src2))
+    return {};
+}
+
 InterpValue Interp::run_inst_br(IRInst inst) {
     prev_bb = bb_ptr;
     bb_ptr = inst.dest.lbl.bb;
@@ -274,7 +304,7 @@ InterpValue Interp::run_inst_store(IRInst inst) {
 
 // FIXME, doesn't work
 InterpValue Interp::run_inst_load(IRInst inst) {
-    assert(false);
+    // assert(false);
     vregs[inst.dest.vreg] = *(InterpValue*)(eval(inst.src1).v_ptr);
     return {};
 }

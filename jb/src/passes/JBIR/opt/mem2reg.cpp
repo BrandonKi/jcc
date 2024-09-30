@@ -97,6 +97,10 @@ static void insert_phis(Function *function) {
         use->op = IROp::id;
         use->src1 = def->src2;
         def->op = IROp::noop;
+        // keep it valid, since it's used in a later bb
+        def->dest = use->dest;
+        // if(loads.contains(use)) {
+        // }
 
         ++it;
     }
@@ -132,8 +136,14 @@ static void insert_phis(Function *function) {
     }
 }
 
+
+static void insert_phis_new(Function *function) {
+
+}
+
 void Mem2Reg::run_pass(Function *function) {
     insert_phis(function);
+    // insert_phis_new(function);
 }
 
 void Mem2Reg::run_pass(Module *module) {

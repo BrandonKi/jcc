@@ -8,11 +8,17 @@
 
 #include "jb.h"
 
+#include "pretty_print.h"
+
 using namespace jb;
 
 // start of Module impl
 
 Module::Module(std::string id) : name{id} {}
+
+void Module::print() {
+    pretty_print(this);
+}
 
 // start of Function impl
 
@@ -87,9 +93,9 @@ IRValue::IRValue(IRValueKind kind, Type type, int num) : kind{kind}, type{type} 
     }
 }
 
-IRConstantInt::IRConstantInt() : val{0}, size{0}, has_sign{false} {}
+IRConstantInt::IRConstantInt() : val{0}, size{0} {}
 
-IRConstantInt::IRConstantInt(i64 val, i8 size, bool has_sign) : val{val}, size{size}, has_sign{has_sign} {}
+IRConstantInt::IRConstantInt(i64 val, i8 size) : val{val}, size{size} {}
 
 IRConstantFloat::IRConstantFloat() : val{0.0}, size{0} {}
 

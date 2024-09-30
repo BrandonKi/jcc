@@ -57,6 +57,13 @@ public:
     IRValue gt(IRValue, IRValue);
     IRValue gte(IRValue, IRValue);
     IRValue eq(IRValue, IRValue);
+    IRValue neq(IRValue, IRValue);
+
+    IRValue bsl(IRValue, IRValue);
+    IRValue bsr(IRValue, IRValue);
+    IRValue band(IRValue, IRValue);
+    IRValue bor(IRValue, IRValue);
+    IRValue bxor(IRValue, IRValue);
 
     IRValue br(BasicBlock *bb);
     IRValue brz(IRValue cond, BasicBlock *bb1, BasicBlock *bb2);
@@ -76,9 +83,9 @@ public:
 
     Module *module;
     Function *function;
+    BasicBlock *insert_point;
 
 private:
-    BasicBlock *insert_point;
     i32 ssa;
 
     i32 next_ssa();

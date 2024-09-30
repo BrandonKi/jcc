@@ -23,11 +23,18 @@ X(fsub)
 X(fmul)
 X(fdiv)
 
+X(bsl)
+X(bsr)
+X(band)
+X(bor)
+X(bxor)
+
 X(lt)
 X(lte)
 X(gt)
 X(gte)
 X(eq)
+X(neq)
 
 X(br)
 X(brz)

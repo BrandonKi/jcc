@@ -1,7 +1,13 @@
 #include "arch/x86_64/mcir.h"
 
+#include "arch/x86_64/pretty_print.h"
+
 using namespace jb;
 using namespace jb::x86_64;
+
+void MCModule::print() {
+    x86_64::pretty_print(this);
+}
 
 MCValue::MCValue() : kind{-1}, state{State::use}, type{Type::none}, hint{-1} {}
 MCValue::MCValue(i8 kind, Type type) : kind{kind}, state{State::use}, type{type}, hint{-1} {}

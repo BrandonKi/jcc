@@ -330,7 +330,7 @@ bool slot_i32() {
 
     auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
     auto ret_ptr = builder->slot(Type::i32);
-    builder->stack_store(ret_ptr, IRConstantInt(100, 32, true));
+    builder->stack_store(ret_ptr, IRConstantInt(100, 32));
     auto ret = builder->stack_load(ret_ptr, Type::i32);
     builder->ret(ret);
 
@@ -344,7 +344,7 @@ bool slot_i64_1() {
 
     auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
     auto ret_ptr = builder->slot(Type::i64);
-    builder->stack_store(ret_ptr, IRConstantInt(0xf0000000001, 64, true));
+    builder->stack_store(ret_ptr, IRConstantInt(0xf0000000001, 64));
     auto ret = builder->stack_load(ret_ptr, Type::i64);
     // TODO trunc instruction, basically noop here
     builder->ret(ret);
@@ -360,8 +360,8 @@ bool slot_i64_2() {
     auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64);
     auto lhs_ptr = builder->slot(Type::i64);
     auto rhs_ptr = builder->slot(Type::i64);
-    builder->stack_store(lhs_ptr, IRConstantInt(40, 64, true));
-    builder->stack_store(rhs_ptr, IRConstantInt(2, 64, true));
+    builder->stack_store(lhs_ptr, IRConstantInt(40, 64));
+    builder->stack_store(rhs_ptr, IRConstantInt(2, 64));
     auto lhs = builder->stack_load(lhs_ptr, Type::i64);
     auto rhs = builder->stack_load(rhs_ptr, Type::i64);
     auto ret = builder->iadd(lhs, rhs);

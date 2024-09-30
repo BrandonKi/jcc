@@ -273,7 +273,7 @@ void SSCP::run_pass(Function *function) {
 }
 
 // TODO
-// some function calls do results in constants given constant/semi-constant params
+// some function calls do result in constants given constant/semi-constant params
 // so their values can be propagated
 void SSCP::run_pass(Module *module) {
     for(auto *fn: module->functions) {

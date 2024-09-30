@@ -117,6 +117,12 @@ inline std::string str(IRInst *irinst) {
     case IROp::gt:
     case IROp::gte:
     case IROp::eq:
+    case IROp::neq:
+    case IROp::bsl:
+    case IROp::bsr:
+    case IROp::band:
+    case IROp::bor:
+    case IROp::bxor:
         return std::format("{} = {} {}, {}", str(irinst->dest), op, str(irinst->src1), str(irinst->src2));
     case IROp::br:
         return std::format("{} {}", op, str(irinst->dest));

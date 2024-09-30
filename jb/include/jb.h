@@ -220,16 +220,51 @@ enum class IROp : i8 {
 #undef X
 };
 
+inline bool is_mov(IROp op) {
+    return op == IROp::mov || op == IROp::id;
+}
+
+inline bool is_bin(IROp op) {
+    return (i64)op >= (i64)IROp::iadd && (i64)op <= (i64)IROp::eq;
+}
+
+inline bool is_branch(IROp op) {
+    return (i64)op >= (i64)IROp::br && (i64)op <= (i64)IROp::brnz;
+}
+
+inline bool is_call(IROp op) {
+    return op == IROp::call;
+}
+
+inline bool is_ret(IROp op) {
+    return op == IROp::ret;
+}
+
+inline bool is_phi(IROp op) {
+    return op == IROp::phi;
+}
+
+inline bool is_mem_op(IROp op) {
+    return op >= IROp::slot && op <= IROp::load;
+}
+
+inline bool is_terminator(IROp op) {
+    return op == IROp::br || op == IROp::brnz || op == IROp::brz || op == IROp::ret;
+}
+
+inline bool has_dest(IROp op) {
+    return !(is_ret(op) || is_branch(op));
+}
+
 // TODO mem
 enum class IRValueKind : i8 { none, vreg, imm, lbl };
 
 struct IRConstantInt {
     i64 val;
-    i8 size : 7;
-    bool has_sign : 1;
+    i8 size;
 
     IRConstantInt();
-    IRConstantInt(i64, i8, bool);
+    IRConstantInt(i64, i8);
 };
 
 struct IRConstantFloat {
@@ -381,6 +416,12 @@ struct BasicBlock {
         }
         return (IRInst*)nullptr;
     }
+
+    IRInst *terminator() {
+        if(!insts.empty() && is_terminator(insts.back()->op))
+            return insts.back();
+        return nullptr;
+    }
 };
 
 // TODO add a linkage field
@@ -420,6 +461,7 @@ struct Module {
     std::vector<Function *> functions;
 
     Module(std::string);
+    void print();
 };
 
 enum class OptLevel : i8 { O0, O1, O2, Os };
@@ -435,38 +477,6 @@ struct CompileOptions {
     std::string output_dir = "./";
     std::string output_name = "a"; // same default as gcc *shrug*
 };
-
-inline bool is_mov(IROp op) {
-    return op == IROp::mov || op == IROp::id;
-}
-
-inline bool is_bin(IROp op) {
-    return (i64)op >= (i64)IROp::iadd && (i64)op <= (i64)IROp::eq;
-}
-
-inline bool is_branch(IROp op) {
-    return (i64)op >= (i64)IROp::br && (i64)op <= (i64)IROp::brnz;
-}
-
-inline bool is_call(IROp op) {
-    return op == IROp::call;
-}
-
-inline bool is_ret(IROp op) {
-    return op == IROp::ret;
-}
-
-inline bool is_phi(IROp op) {
-    return op == IROp::phi;
-}
-
-inline bool is_mem_op(IROp op) {
-    return op >= IROp::slot && op <= IROp::load;
-}
-
-inline bool has_dest(IROp op) {
-    return !(is_ret(op) || is_branch(op));
-}
 
 template <typename T>
     requires requires(T a) {

@@ -36,6 +36,17 @@ Function *ModuleBuilder::newFn(std::string name, std::vector<Type> parameters, T
 }
 
 BasicBlock *ModuleBuilder::newBB(std::string name) {
+    bool done = false;
+    while(!done) { // FIXME
+        done = true;
+        for(auto *bb: function->blocks) {
+            if(name == bb->id) {
+                name += '_';
+                done = false;
+                break;
+            }
+        }
+    }
     auto *bb = new BasicBlock(name);
     function->blocks.push_back(bb);
     insert_point = bb;
@@ -126,19 +137,19 @@ IRValue ModuleBuilder::none() {
 }
 
 IRConstantInt ModuleBuilder::iconst8(i8 val) {
-    return IRConstantInt(val, 8, true);
+    return IRConstantInt(val, 8);
 }
 
 IRConstantInt ModuleBuilder::iconst16(i16 val) {
-    return IRConstantInt(val, 16, true);
+    return IRConstantInt(val, 16);
 }
 
 IRConstantInt ModuleBuilder::iconst32(i32 val) {
-    return IRConstantInt(val, 32, true);
+    return IRConstantInt(val, 32);
 }
 
 IRConstantInt ModuleBuilder::iconst64(i64 val) {
-    return IRConstantInt(val, 64, true);
+    return IRConstantInt(val, 64);
 }
 
 IRConstantFloat ModuleBuilder::fconst32(float val) {
@@ -223,6 +234,30 @@ IRValue ModuleBuilder::gte(IRValue src1, IRValue src2) {
 
 IRValue ModuleBuilder::eq(IRValue src1, IRValue src2) {
     return addInst(IROp::eq, src1, src2);
+}
+
+IRValue ModuleBuilder::neq(IRValue src1, IRValue src2) {
+    return addInst(IROp::neq, src1, src2);
+}
+
+IRValue ModuleBuilder::bsl(IRValue src1, IRValue src2) {
+    return addInst(IROp::bsl, src1, src2);
+}
+
+IRValue ModuleBuilder::bsr(IRValue src1, IRValue src2) {
+    return addInst(IROp::bsr, src1, src2);
+}
+
+IRValue ModuleBuilder::band(IRValue src1, IRValue src2) {
+    return addInst(IROp::band, src1, src2);
+}
+
+IRValue ModuleBuilder::bor(IRValue src1, IRValue src2) {
+    return addInst(IROp::bor, src1, src2);
+}
+
+IRValue ModuleBuilder::bxor(IRValue src1, IRValue src2) {
+    return addInst(IROp::bxor, src1, src2);
 }
 
 IRValue ModuleBuilder::br(BasicBlock *bb) {
