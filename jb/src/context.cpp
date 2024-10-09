@@ -26,11 +26,13 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 // FIXME temporary, need pass manager
 #include "passes/JBIR/analysis/liveness.h"
 #include "passes/JBIR/analysis/create_cfg.h"
+#include "passes/JBIR/analysis/create_dom_tree.h"
 #include "passes/JBIR/analysis/cfg_viz.h"
 #include "passes/JBIR/opt/mem2reg.h"
 #include "passes/JBIR/opt/phi_elim.h"
 #include "passes/JBIR/opt/dce.h"
 #include "passes/JBIR/opt/sscp.h"
+#include "passes/JBIR/opt/gvn.h"
 
 static void run_passes(ModuleBuilder *builder) {
     for(auto *f: builder->module->functions) {
@@ -38,9 +40,13 @@ static void run_passes(ModuleBuilder *builder) {
         // * printing
 
         CreateCFG::run_pass(f);
+        CreateDomTree::run_pass(f);
         CFGViz::run_pass(f);
 
-        Mem2Reg::run_pass(f);
+        // Mem2Reg::run_pass(f);
+        // CFGViz::run_pass(f);
+
+        GVN::run_pass(f);
         CFGViz::run_pass(f);
 
         // SSCP::run_pass(f);

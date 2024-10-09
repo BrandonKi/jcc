@@ -852,6 +852,41 @@ bool cprop_1() {
     return result == 10;
 }
 
+bool gvn_1() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+
+    builder->setInsertPoint(b1);
+    auto x1 = builder->id(builder->iconst32(6));
+    auto x2 = builder->id(builder->iconst8(4));
+    auto ret1 = builder->iadd(x1, x2);
+    auto ret2 = builder->iadd(x1, x2);
+    builder->br(b2);
+
+    builder->setInsertPoint(b2);
+    auto x3 = builder->id(builder->iconst8(4));
+    auto ret3 = builder->iadd(x1, x3);
+    auto ret4 = builder->iadd(x1, x2);
+    auto t = builder->isub(x1, x2);
+    builder->br(b3);
+    
+    builder->setInsertPoint(b3);
+    auto phitemp = builder->phi({{b2, ret4}});
+    auto ret5 = builder->iadd(ret1, ret2);
+    auto ret6 = builder->iadd(ret3, ret4);
+    auto ret7 = builder->iadd(ret5, ret6);
+    builder->ret(ret7);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 40;
+}
+
 int main(int argc, char *argv[]) {
     // TODO take from args
     baseline_interp = true;
@@ -896,10 +931,11 @@ int main(int argc, char *argv[]) {
     // test(phi_5);
     // test(phi_6);
 
-    // test(dce_1);
-    test(dce_2);
+    test(dce_1);
+    // test(dce_2);
 
     // test(cprop_1);
+    // test(gvn_1);
 
 
     print_report();

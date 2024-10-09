@@ -1675,10 +1675,10 @@ int main(int argc, char *argv[]) {
     // test(branch_3);
     // test(branch_4);
     // test(branch_5);
-    test(branch_6); // good test
+    // test(branch_6); // good test
     // test(for_0);
     // test(for_1);
-    // test(for_2);
+    test(for_2);
     // test(while_0);
     // test(dowhile_0);
     // test(sizeof_0);

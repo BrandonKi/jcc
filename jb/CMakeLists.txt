@@ -21,6 +21,7 @@ add_library(jb_lib OBJECT
 
 # JBIR Analysis stuff
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/create_cfg.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/create_dom_tree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/liveness.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/analysis/cfg_viz.cpp
 
@@ -29,6 +30,7 @@ add_library(jb_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/phi_elim.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/dce.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/sscp.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/gvn.cpp
 
 # MCIR Analysis stuff
 	${CMAKE_CURRENT_SOURCE_DIR}/src/passes/MCIR/analysis/live_range.cpp

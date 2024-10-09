@@ -368,6 +368,8 @@ struct BasicBlock {
     std::string id;
     std::vector<BasicBlock *> preds;
     std::vector<BasicBlock*> succ = {};
+    // dom tree stuff
+    std::vector<BasicBlock*> dom = {};
     // FIXME: unused, leftover from bb params
     std::vector<IRValue> params;
 
