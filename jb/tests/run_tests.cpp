@@ -887,6 +887,49 @@ bool gvn_1() {
     return result == 40;
 }
 
+bool peephole_1() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *fn = builder->newFn("fn", {Type::i32}, Type::i32, CallConv::win64, false);
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+
+    builder->setInsertPoint(b1);
+    auto x1 = fn->param(0);
+    auto zero = builder->id(builder->iconst8(0));
+    auto one = builder->id(builder->iconst8(1));
+    auto two = builder->id(builder->iconst8(2));
+    auto r1 = builder->iadd(x1, zero);
+    auto r2 = builder->isub(r1, zero);
+    auto r3 = builder->imul(r2, zero);
+    auto r4 = builder->idiv(x1, one);
+    builder->brz(r4, b2, b3);
+
+    builder->setInsertPoint(b2);
+    auto r5 = builder->bsl(x1, zero);
+    auto r6 = builder->bsr(x1, zero);
+    auto r7 = builder->band(x1, x1);
+    auto r8 = builder->bor(x1, x1);
+    builder->br(b3);
+    
+    builder->setInsertPoint(b3);
+    auto phi = builder->phi({{b1, x1}, {b2, one}});
+    auto mul = builder->imul(phi, two);
+    builder->ret(mul);
+
+    auto *main = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry");
+    auto res = builder->call(fn, {builder->iconst32(42)});
+    builder->ret(res);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 84;
+}
+
+
 int main(int argc, char *argv[]) {
     // TODO take from args
     baseline_interp = true;
@@ -931,11 +974,12 @@ int main(int argc, char *argv[]) {
     // test(phi_5);
     // test(phi_6);
 
-    test(dce_1);
+    // test(dce_1);
     // test(dce_2);
 
     // test(cprop_1);
     // test(gvn_1);
+    test(peephole_1);
 
 
     print_report();

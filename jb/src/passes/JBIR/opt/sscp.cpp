@@ -127,6 +127,17 @@ static void maybe_fold_inst(IRInst *inst) {
     case IROp::fmul:
     case IROp::fdiv:
         break; // TODO
+    case IROp::bsl:
+        TRY_FOLD_INT_BINOP(<<)
+    case IROp::bsr:
+        TRY_FOLD_INT_BINOP(>>)
+    case IROp::band:
+        TRY_FOLD_INT_BINOP(&)
+    case IROp::bor:
+        TRY_FOLD_INT_BINOP(|)
+    case IROp::bxor:
+        TRY_FOLD_INT_BINOP(^)
+
     case IROp::lt:
         TRY_FOLD_INT_BINOP(<)
     case IROp::lte:

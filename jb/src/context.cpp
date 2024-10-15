@@ -33,6 +33,7 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 #include "passes/JBIR/opt/dce.h"
 #include "passes/JBIR/opt/sscp.h"
 #include "passes/JBIR/opt/gvn.h"
+#include "passes/JBIR/opt/peephole.h"
 
 static void run_passes(ModuleBuilder *builder) {
     for(auto *f: builder->module->functions) {
@@ -40,14 +41,21 @@ static void run_passes(ModuleBuilder *builder) {
         // * printing
 
         CreateCFG::run_pass(f);
-        CreateDomTree::run_pass(f);
+        // CreateDomTree::run_pass(f);
+        CFGViz::run_pass(f);
+
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        Peephole::run_pass(f);
         CFGViz::run_pass(f);
 
         // Mem2Reg::run_pass(f);
         // CFGViz::run_pass(f);
 
-        GVN::run_pass(f);
-        CFGViz::run_pass(f);
+        // GVN::run_pass(f);
+        // CFGViz::run_pass(f);
 
         // SSCP::run_pass(f);
         // CreateCFG::run_pass(f);
