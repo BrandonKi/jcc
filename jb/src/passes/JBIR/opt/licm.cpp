@@ -8,7 +8,7 @@
 using namespace jb;
 
 // TODO use command line flag
-constexpr auto LICM_DEBUG = true;
+constexpr auto LICM_DEBUG = false;
 
 struct Loop {
     i32 id;
@@ -19,7 +19,6 @@ struct Loop {
     BasicBlock *exit;
 };
 
-// FIXME, being lazy, could be more than 10
 static std::unordered_map<i32, Loop> loops;
 
 static void collect_loops(Function *function) {
@@ -139,10 +138,11 @@ static std::unordered_map<Reg, IRInst*> get_invariants(Function *fn, Loop loop) 
         std::cout << "\n";
     }
 
+    // set intersection
     std::erase_if(intersection, [&ind](auto p) {
         return !ind.contains(p.first);
     });
-    // std::set_intersection(defs.begin(), defs.end(), ind.begin(), ind.end(), std::back_inserter(intersection));
+
     return intersection;
 }
 
@@ -172,27 +172,30 @@ void LICM::run_pass(Function *function) {
         //      move the invariant defs up into the entry block
         //      also need to make sure wherever this def is moved, it's operands are available
         // issue: could move stuff that was never going to get executed though...
+        // new logic:
+
+        // create invariant block
+        BasicBlock *invariant = new BasicBlock(std::string("loop_") + std::to_string(l.id) + "_invariant");
         for(auto &[r, i]: inv) {
-            // create invariant block
-            BasicBlock *invariant = new BasicBlock(std::string("loop_") + std::to_string(l.id) + "_invariant");
+            // add instruction to invariant block
             invariant->insts.push_back(i);
-            invariant->insts.push_back(new IRInst(IROp::br, l.body));
-            // add after cond block in blocks list
-            auto it1 = std::find(function->blocks.begin(), function->blocks.end(), l.cond);
-            function->blocks.insert(it1, invariant);
-            // make cond jump to invariant block or exit block
-            l.cond->insts.back() = new IRInst(IROp::brnz, l.cond->insts.back()->dest, invariant, l.exit);
-            // add dup of cond block cond_dup after inc, and jump to body
-            auto it2 = std::find(function->blocks.begin(), function->blocks.end(), l.inc);
-            BasicBlock *cond_dup = new BasicBlock(*l.cond);
-            cond_dup->id = l.cond->id + "_dup_" + std::to_string(l.id);
-            cond_dup->insts.back() = new IRInst(IROp::brnz, cond_dup->insts.back()->dest, l.body, l.exit);
-            function->blocks.insert(it2, cond_dup);
-            // make inc jump to the new cond_dup block
-            l.inc->insts.back() = new IRInst(IROp::br, cond_dup);
-            // erase instruction from old location            
+            // erase instruction from old location
             std::erase_if(l.body->insts, [i](IRInst *other){ return i == other; });
         }
+        invariant->insts.push_back(new IRInst(IROp::br, l.body));
+        // add after cond block in blocks list
+        auto it1 = std::find(function->blocks.begin(), function->blocks.end(), l.cond);
+        function->blocks.insert(it1, invariant);
+        // make cond jump to invariant block or exit block
+        l.cond->insts.back() = new IRInst(IROp::brnz, l.cond->insts.back()->dest, invariant, l.exit);
+        // add dup of cond block cond_dup after inc, and jump to body
+        auto it2 = std::find(function->blocks.begin(), function->blocks.end(), l.inc);
+        BasicBlock *cond_dup = new BasicBlock(*l.cond);
+        cond_dup->id = l.cond->id + "_dup_" + std::to_string(l.id);
+        cond_dup->insts.back() = new IRInst(IROp::brnz, cond_dup->insts.back()->dest, l.body, l.exit);
+        function->blocks.insert(it2, cond_dup);
+        // make inc jump to the new cond_dup block
+        l.inc->insts.back() = new IRInst(IROp::br, cond_dup);
     }
 }
 
