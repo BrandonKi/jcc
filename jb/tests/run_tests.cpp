@@ -929,6 +929,51 @@ bool peephole_1() {
     return result == 84;
 }
 
+bool licm_1() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *fn = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry", LoopInfo::entry, 1);
+    auto *cond = builder->newBB("cond", LoopInfo::cond, 1);
+    auto *body = builder->newBB("body", LoopInfo::body, 1);
+    auto *inc = builder->newBB("inc", LoopInfo::inc, 1);
+    auto *cont = builder->newBB("cont", LoopInfo::exit, 1);
+
+    builder->setInsertPoint(entry);
+    auto init = builder->id(builder->iconst8(0));
+    auto inv1 = builder->id(builder->iconst8(15));
+    auto inv2 = builder->id(builder->iconst8(5));
+    builder->br(cond);
+
+    builder->setInsertPoint(cond);
+    auto ind = builder->phi({{entry, init}});
+    auto phi_1 = builder->insts().end()[-1];
+    auto sum = builder->phi({{entry, builder->iconst8(0)}});
+    auto phi_2 = builder->insts().end()[-1];
+    auto sent = builder->lt(ind, builder->iconst8(10));
+    builder->brnz(sent, body, cont);
+    
+    builder->setInsertPoint(body);
+    auto new_sum = builder->iadd(sum, ind);
+    auto inv = builder->iadd(inv1, inv2);
+    builder->br(inc);
+
+    builder->setInsertPoint(inc);
+    auto new_ind = builder->iadd(ind, builder->iconst8(1));
+    builder->br(cond);
+
+    phi_1->values.push_back({inc, new_ind});
+    phi_2->values.push_back({inc, new_sum});
+
+    builder->setInsertPoint(cont);
+    auto res = builder->iadd(new_sum, inv);
+    builder->ret(res);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 65;
+}
 
 int main(int argc, char *argv[]) {
     // TODO take from args
@@ -979,7 +1024,8 @@ int main(int argc, char *argv[]) {
 
     // test(cprop_1);
     // test(gvn_1);
-    test(peephole_1);
+    // test(peephole_1);
+    test(licm_1);
 
 
     print_report();

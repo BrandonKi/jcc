@@ -887,6 +887,28 @@ int main() {
     return result == 15;
 }
 
+bool for_3() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int a = 0;
+    int b = 0;
+
+    for(int i = 0; i < 10; ++i) {
+        a += i;
+        b = 10;
+    }
+
+    return a + b;
+}
+
+    )");
+
+    return result == 55;    
+}
+
 bool while_0() {
     jcc::Compiler c(co);
 
@@ -1678,7 +1700,8 @@ int main(int argc, char *argv[]) {
     // test(branch_6); // good test
     // test(for_0);
     // test(for_1);
-    test(for_2);
+    // test(for_2);
+    test(for_3);
     // test(while_0);
     // test(dowhile_0);
     // test(sizeof_0);

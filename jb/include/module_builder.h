@@ -12,6 +12,7 @@ public:
 
     Function *newFn(std::string, std::vector<Type>, Type, CallConv, bool make_entry = true);
     BasicBlock *newBB(std::string);
+    BasicBlock *newBB(std::string, LoopInfo, i32);
     void setInsertPoint(BasicBlock *);
 
     std::vector<IRInst*>& insts();

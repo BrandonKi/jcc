@@ -53,6 +53,14 @@ BasicBlock *ModuleBuilder::newBB(std::string name) {
     return bb;
 }
 
+BasicBlock *ModuleBuilder::newBB(std::string name, LoopInfo loop_info, i32 loop_id) {
+    BasicBlock *bb = newBB(name);
+    bb->loop_info = loop_info;
+    bb->loop_id = loop_id;
+
+    return bb;
+}
+
 void ModuleBuilder::setInsertPoint(BasicBlock *bb) {
     insert_point = bb;
 }

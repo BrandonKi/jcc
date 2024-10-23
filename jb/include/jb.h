@@ -364,6 +364,15 @@ struct IRInst {
     }
 };
 
+enum class LoopInfo: i8 {
+    none,
+    entry,
+    cond,
+    body,
+    inc,
+    exit,
+};
+
 struct BasicBlock {
     std::string id;
     std::vector<BasicBlock *> preds;
@@ -379,6 +388,10 @@ struct BasicBlock {
     // FIXME: these are just for convenience, they don't need to be kept around
     std::unordered_set<Reg> livein = {};
     std::unordered_set<Reg> defs = {};
+
+    // Loop stuff
+    LoopInfo loop_info = LoopInfo::none;
+    i32 loop_id = -1;
 
     BasicBlock(std::string);
 
