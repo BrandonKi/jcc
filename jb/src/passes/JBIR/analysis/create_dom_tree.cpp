@@ -13,10 +13,10 @@ static BasicBlock *intersect(std::vector<BasicBlock*> &doms, BasicBlock *b1, Bas
     BasicBlock *finger1 = b1;
     BasicBlock *finger2 = b2;
     while(finger1 != finger2) {
-        while(finger1 < finger2) {
+        while(bb2index[finger1] > bb2index[finger2]) {
             finger1 = doms[bb2index[finger1]];
         }
-        while(finger2 < finger1) {
+        while(bb2index[finger2] < bb2index[finger1]) {
             finger2 = doms[bb2index[finger2]];
         }
     }
@@ -44,6 +44,8 @@ void CreateDomTree::run_pass(Function* function) {
         for(int i = function->blocks.size()-1; i > 0; --i) {
             BasicBlock *b = function->blocks[i];
             // new idom ← first (processed) predecessor of b
+            if(b->preds.empty())
+                continue;
             BasicBlock *new_idom = b->preds[0];
             // for all other predecessors, p, of b
             for(int j = 1; j < b->preds.size(); ++j) {

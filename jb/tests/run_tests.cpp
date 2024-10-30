@@ -929,50 +929,67 @@ bool peephole_1() {
     return result == 84;
 }
 
-bool licm_1() {
+bool inline_1() {
     Context ctx = create_context();
     auto *builder = ctx.new_module_builder(NAME);
 
-    auto *fn = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
-    auto *entry = builder->newBB("entry", LoopInfo::entry, 1);
-    auto *cond = builder->newBB("cond", LoopInfo::cond, 1);
-    auto *body = builder->newBB("body", LoopInfo::body, 1);
-    auto *inc = builder->newBB("inc", LoopInfo::inc, 1);
-    auto *cont = builder->newBB("cont", LoopInfo::exit, 1);
-
-    builder->setInsertPoint(entry);
-    auto init = builder->id(builder->iconst8(0));
-    auto inv1 = builder->id(builder->iconst8(15));
-    auto inv2 = builder->id(builder->iconst8(5));
-    builder->br(cond);
-
-    builder->setInsertPoint(cond);
-    auto ind = builder->phi({{entry, init}});
-    auto phi_1 = builder->insts().end()[-1];
-    auto sum = builder->phi({{entry, builder->iconst8(0)}});
-    auto phi_2 = builder->insts().end()[-1];
-    auto sent = builder->lt(ind, builder->iconst8(10));
-    builder->brnz(sent, body, cont);
-    
-    builder->setInsertPoint(body);
-    auto new_sum = builder->iadd(sum, ind);
-    auto inv = builder->iadd(inv1, inv2);
-    builder->br(inc);
-
-    builder->setInsertPoint(inc);
-    auto new_ind = builder->iadd(ind, builder->iconst8(1));
-    builder->br(cond);
-
-    phi_1->values.push_back({inc, new_ind});
-    phi_2->values.push_back({inc, new_sum});
-
-    builder->setInsertPoint(cont);
-    auto res = builder->iadd(new_sum, inv);
+    auto *add = builder->newFn("add", {Type::i32, Type::i32}, Type::i32, CallConv::win64, true);
+    add->always_inline = true;
+    auto res = builder->iadd(add->param(0), add->param(1));
     builder->ret(res);
+    
+    auto *fn = builder->newFn("main", {}, Type::i32, CallConv::win64, true);
+    auto main_res = builder->call(add, {builder->iconst32(3), builder->iconst32(39)});
+    builder->ret(main_res);
 
     auto result = run(ctx, builder);
     std::cout << result << "\n";
-    return result == 65;
+    return result == 42;
+}
+
+bool inline_2() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *pred = builder->newFn("pred", {Type::i32}, Type::i32, CallConv::win64, false);
+    pred->always_inline = true;
+    auto *b1 = builder->newBB("b1");
+    auto *b2 = builder->newBB("b2");
+    auto *b3 = builder->newBB("b3");
+    auto *b4 = builder->newBB("b4");
+    builder->setInsertPoint(b1);
+    auto cond = builder->eq(pred->param(0), builder->iconst8(0));
+    builder->brz(cond, b2, b3);
+    builder->setInsertPoint(b2);
+    auto t1 = builder->id(builder->iconst8(0));
+    builder->br(b4);
+    builder->setInsertPoint(b3);
+    auto t2 = builder->isub(pred->param(0), builder->iconst8(1));
+    builder->br(b4);
+    builder->setInsertPoint(b4);
+    auto pred_res = builder->phi({{b2, t1}, {b3, t2}});
+    builder->ret(pred_res);
+
+    auto *func = builder->newFn("func", {Type::i32}, Type::i32, CallConv::win64, false);
+    func->always_inline = true;
+    auto *func_entry = builder->newBB("func_entry");
+    auto p1 = builder->isub(func->param(0), builder->iconst8(2));
+    auto c1 = builder->call(pred, {p1});
+    auto p2 = builder->iadd(func->param(0), builder->iconst8(1));
+    auto c2 = builder->call(pred, {p2});
+    auto c3 = builder->call(pred, {builder->iconst32(0)});
+    auto func_res1 = builder->iadd(c1, c2);
+    auto func_res2 = builder->iadd(func_res1, c3);
+    builder->ret(func_res2);
+    
+    auto *fn = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *fn_entry = builder->newBB("main_entry");
+    auto main_res = builder->call(func, {builder->iconst32(3)});
+    builder->ret(main_res);
+
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 2;
 }
 
 int main(int argc, char *argv[]) {
@@ -1025,7 +1042,9 @@ int main(int argc, char *argv[]) {
     // test(cprop_1);
     // test(gvn_1);
     // test(peephole_1);
-    test(licm_1);
+    // test(licm_1);
+    // test(inline_1);
+    test(inline_2);
 
 
     print_report();

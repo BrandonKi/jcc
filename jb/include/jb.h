@@ -315,6 +315,7 @@ struct IRValue {
     IRValue(IRValueKind, Type, int);
 };
 
+// TODO, being able to iterate instruction operands would be nice
 struct IRInst {
     IROp op;
     Type type;
@@ -375,7 +376,7 @@ enum class LoopInfo: i8 {
 
 struct BasicBlock {
     std::string id;
-    std::vector<BasicBlock *> preds;
+    std::vector<BasicBlock *> preds = {};
     std::vector<BasicBlock*> succ = {};
     // dom tree stuff
     std::vector<BasicBlock*> dom = {};
@@ -437,7 +438,23 @@ struct BasicBlock {
             return insts.back();
         return nullptr;
     }
+
+    // FIXME, maybe just overload copy constructor
+    BasicBlock *clone() {
+        static int clone_count = 0;
+        BasicBlock *other = new BasicBlock(*this);
+         // FIXME can collide
+        other->id += "_cloned" + std::to_string(clone_count++);
+
+        for(auto &inst: other->insts) {
+            inst = new IRInst(*inst);
+        }
+
+        return other;
+    }
 };
+
+struct Module;
 
 // TODO add a linkage field
 struct Function {
@@ -446,6 +463,8 @@ struct Function {
     IRValue ret;
     CallConv callconv;
     std::vector<BasicBlock *> blocks;
+    // Module *module; // FIXME
+    bool always_inline = false;
 
     Function(std::string, std::vector<Type>, Type, CallConv);
 
@@ -468,6 +487,55 @@ struct Function {
         }
 
         return result;
+    }
+
+    // FIXME, maybe just overload copy constructor
+    Function *clone() {
+        Function *other = new Function(*this);
+        // std::unordered_map<std::string, std::string> id_map;
+        std::unordered_map<BasicBlock*, BasicBlock*> ptr_map;
+
+        // std::string old_id;
+        BasicBlock *old_ptr;
+        for(auto *&bb: other->blocks) {
+            // old_id = bb->id;
+            old_ptr = bb;
+            bb = bb->clone();
+            // id_map[old_id] = bb->id;
+            ptr_map[old_ptr] = bb;
+        }
+
+        // (oops, ptr_map)
+        // TODO use id_map to replace ids with new ones
+        for(auto *bb: other->blocks) {
+            // replace preds, succ, dom
+            for(auto *&p: bb->preds) {
+                p = ptr_map[p];
+            }
+            for(auto *&s: bb->succ) {
+                s = ptr_map[s];
+            }
+            for(auto *&d: bb->dom) {
+                d = ptr_map[d];
+            }
+
+            // replace references in insts (br, brz, brnz)
+            auto *inst = bb->terminator();
+            if(inst->dest.kind == IRValueKind::lbl
+                    && inst->dest.lbl.kind == IRLabelKind::basic_block) {
+                inst->dest.lbl.bb = ptr_map[inst->dest.lbl.bb];
+            }
+            if(inst->src1.kind == IRValueKind::lbl
+                    && inst->src1.lbl.kind == IRLabelKind::basic_block) {
+                inst->src1.lbl.bb = ptr_map[inst->src1.lbl.bb];
+            }
+            if(inst->src2.kind == IRValueKind::lbl
+                    && inst->src2.lbl.kind == IRLabelKind::basic_block) {
+                inst->src2.lbl.bb = ptr_map[inst->src2.lbl.bb];
+            }
+        }
+
+        return other;
     }
 };
 
