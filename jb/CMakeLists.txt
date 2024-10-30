@@ -32,6 +32,7 @@ add_library(jb_lib OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/sscp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/gvn.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/peephole.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/cleanup.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/passes/JBIR/opt/licm.cpp
 
 # MCIR Analysis stuff

@@ -79,8 +79,10 @@ static void visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited,
     //
     // FIXED:
     // FIXME, only works on extended basic blocks
-    // if(b->succ.size() > 1)
-    //     return;
+    if(b->succ.size() > 1) {
+        reg2val = {};
+        val2reg = {};
+    }
 
     for(auto *s: b->succ) {
         if(!visited.contains(s)) {

@@ -16,6 +16,8 @@ static void visit_block(std::fstream &out, BasicBlock *b, std::unordered_set<Bas
     visited.insert(b);
     out << "\t" << name(b) << " [shape=record,label=\"{" << b->id << ":\\l| ";
     for(auto *i: b->insts) {
+        if(i->op == IROp::noop)
+            continue;
         std::string stri = str(i);
         out << str(i) << "\\l";
     }

@@ -63,7 +63,7 @@ inline std::string str(IRValue irval) {
     case IRValueKind::vreg:
         return std::string("%") + std::to_string(irval.vreg);
     case IRValueKind::imm:
-        if (irval.type == Type::i64) // TODO not i64
+        if (irval.type >= Type::i8 && irval.type <= Type::i64) // TODO not i64
             return str(irval.imm_int);
         return str(irval.imm_float);
     case IRValueKind::lbl:
