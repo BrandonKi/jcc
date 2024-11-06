@@ -36,7 +36,7 @@ static void cleanup_phis(BasicBlock* bb, std::unordered_map<BasicBlock*, BasicBl
     });
 }
 
-void Cleanup::run_pass(Function *function) {
+bool Cleanup::run_pass(Function *function) {
     std::unordered_map<BasicBlock*, BasicBlock*> replaced;
     std::vector<BasicBlock*> worklist = function->blocks;
     std::reverse(worklist.begin(), worklist.end());
@@ -67,13 +67,18 @@ void Cleanup::run_pass(Function *function) {
             std::erase_if(function->blocks, [merge](auto *block){ return block == merge; });
             replaced.emplace(merge, bb);
             worklist.push_back(bb);
-            // worklist.insert(worklist.begin(), bb);
         }
     }
+
+    return false;
 }
 
-void Cleanup::run_pass(Module *module) {
+bool Cleanup::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        Cleanup::run_pass(fn);
+        changed |= Cleanup::run_pass(fn);
     }
+
+    return changed;
 }

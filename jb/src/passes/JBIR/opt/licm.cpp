@@ -146,7 +146,7 @@ static std::unordered_map<Reg, IRInst*> get_invariants(Function *fn, Loop loop) 
     return intersection;
 }
 
-void LICM::run_pass(Function *function) {
+bool LICM::run_pass(Function *function) {
     collect_loops(function);
 
     if(LICM_DEBUG) {
@@ -197,10 +197,16 @@ void LICM::run_pass(Function *function) {
         // make inc jump to the new cond_dup block
         l.inc->insts.back() = new IRInst(IROp::br, cond_dup);
     }
+
+    return false;
 }
 
-void LICM::run_pass(Module *module) {
+bool LICM::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        LICM::run_pass(fn);
+        changed |= LICM::run_pass(fn);
     }
+
+    return changed;
 }

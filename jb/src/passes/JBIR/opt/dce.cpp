@@ -29,19 +29,25 @@ static void cleanup_phis(std::vector<BasicBlock*> bbs, std::unordered_set<BasicB
     }
 }
 
-void DCE::run_pass(Function *function) {
+bool DCE::run_pass(Function *function) {
     std::unordered_set<BasicBlock*> visited;
     visit_block(function->blocks[0], visited);
     std::erase_if(function->blocks, [&](auto *b){ return !visited.contains(b); });
     cleanup_phis(function->blocks, visited);
     // NOTE must fixup cfg or rerun cfg creation
+
+    return false;
 }
 
 // TODO
 // depending on attributes, some dead functions can be removed
 // for example unused static functions in a C translation unit 
-void DCE::run_pass(Module *module) {
+bool DCE::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        DCE::run_pass(fn);
+        changed |= DCE::run_pass(fn);
     }
+
+    return changed;
 }

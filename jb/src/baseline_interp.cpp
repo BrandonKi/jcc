@@ -262,7 +262,6 @@ InterpValue Interp::run_inst_call(IRInst inst) {
     std::vector<InterpValue> params;
     for (auto &p : inst.params)
         params.push_back(eval(p));
-    // vregs[inst.dest.vreg] = run_fn(inst.src1.lbl.fn, params);
     auto temp = run_fn(inst.src1.lbl.fn, params);
 
     labels = old_labels;

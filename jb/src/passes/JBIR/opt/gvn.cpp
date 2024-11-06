@@ -91,7 +91,7 @@ static void visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited,
     }
 }
 
-void GVN::run_pass(Function *function) {
+bool GVN::run_pass(Function *function) {
     std::unordered_set<BasicBlock*> visited;
     std::unordered_map<GVNKey, i32> values;
     visit_block(function->blocks[0], visited, values);
@@ -107,10 +107,16 @@ void GVN::run_pass(Function *function) {
         // }
     }
 
+    return false;
+
 }
 
-void GVN::run_pass(Module *module) {
+bool GVN::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        GVN::run_pass(fn);
+        changed |= GVN::run_pass(fn);
     }
+
+    return changed;
 }

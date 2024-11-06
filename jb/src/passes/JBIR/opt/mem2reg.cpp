@@ -141,12 +141,18 @@ static void insert_phis_new(Function *function) {
 
 }
 
-void Mem2Reg::run_pass(Function *function) {
+bool Mem2Reg::run_pass(Function *function) {
     insert_phis(function);
     // insert_phis_new(function);
+
+    return false;
 }
 
-void Mem2Reg::run_pass(Module *module) {
+bool Mem2Reg::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *f: module->functions)
-        Mem2Reg::run_pass(f);
+        changed |= Mem2Reg::run_pass(f);
+
+    return changed;
 }

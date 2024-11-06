@@ -8,8 +8,8 @@ namespace jb {
 
 // NOTE these don't return anything, they transform existing IR
 struct Cleanup {
-    static void run_pass(Function *);
-    static void run_pass(Module *);
+    static bool run_pass(Function *);
+    static bool run_pass(Module *);
 };
 
 } // namespace jb

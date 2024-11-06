@@ -65,11 +65,17 @@ static void elim_phis(Function *fn) {
     visit_block(fn, fn->blocks[0], {});
 }
 
-void PhiElim::run_pass(Function *function) {
+bool PhiElim::run_pass(Function *function) {
     elim_phis(function);
+    
+    return false;
 }
 
-void PhiElim::run_pass(Module *module) {
+bool PhiElim::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *f: module->functions)
-        PhiElim::run_pass(f);
+        changed |= PhiElim::run_pass(f);
+
+    return changed;
 }

@@ -9,7 +9,7 @@ using namespace jb;
 // TODO use command line flag
 constexpr auto PEEPHOLE_DEBUG = false;
 
-void Peephole::run_pass(Function *function) {
+bool Peephole::run_pass(Function *function) {
     for(auto *b: function->blocks) {
         for(auto *i: b->insts) {
             switch(i->op) {
@@ -66,10 +66,16 @@ void Peephole::run_pass(Function *function) {
             }
         }
     }
+
+    return false;
 }
 
-void Peephole::run_pass(Module *module) {
+bool Peephole::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        Peephole::run_pass(fn);
+        changed |= Peephole::run_pass(fn);
     }
+
+    return changed;
 }

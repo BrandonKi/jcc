@@ -130,7 +130,7 @@ static void do_inline_sub(Function *caller, BasicBlock *call_parent, IRInst *cal
 
 }
 
-void Inline::run_pass(Function *function) {
+bool Inline::run_pass(Function *function) {
     std::vector<BasicBlock*> worklist = function->blocks;
     std::reverse(worklist.begin(), worklist.end());
 
@@ -150,10 +150,16 @@ void Inline::run_pass(Function *function) {
             }
         }
     }
+
+    return false;
 }
 
-void Inline::run_pass(Module *module) {
+bool Inline::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        Inline::run_pass(fn);
+        changed |= Inline::run_pass(fn);
     }
+
+    return changed;
 }

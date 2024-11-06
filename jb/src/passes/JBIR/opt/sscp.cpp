@@ -221,7 +221,7 @@ static std::vector<Reg> get_uses(IRInst *inst) {
     return result;
 }
 
-void SSCP::run_pass(Function *function) {
+bool SSCP::run_pass(Function *function) {
     std::vector<Reg> worklist;
 
     for(auto p: function->params) {
@@ -285,13 +285,19 @@ void SSCP::run_pass(Function *function) {
         if(replaced == uses[n].size())
             def[n]->op = IROp::noop;
     }
+
+    return false;
 }
 
 // TODO
 // some function calls do result in constants given constant/semi-constant params
 // so their values can be propagated
-void SSCP::run_pass(Module *module) {
+bool SSCP::run_pass(Module *module) {
+    bool changed = false;
+
     for(auto *fn: module->functions) {
-        SSCP::run_pass(fn);
+        changed |= SSCP::run_pass(fn);
     }
+
+    return changed;
 }
