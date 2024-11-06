@@ -533,6 +533,16 @@ struct Function {
                     && inst->src2.lbl.kind == IRLabelKind::basic_block) {
                 inst->src2.lbl.bb = ptr_map[inst->src2.lbl.bb];
             }
+
+            // replace references in phis
+            for(auto *i: bb->insts) {
+                if(is_phi(i->op)) {
+                    for(auto &[bb, v]: i->values) {
+                        if(ptr_map.contains(bb))
+                            bb = ptr_map[bb];
+                    }
+                }
+            }
         }
 
         return other;

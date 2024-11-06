@@ -250,6 +250,8 @@ InterpValue Interp::run_inst_brnz(IRInst inst) {
 
 // TODO push/pop_state functions
 InterpValue Interp::run_inst_call(IRInst inst) {
+    vregs[inst.dest.vreg] = InterpValue((i64)0);
+
     auto old_labels = labels;
     auto old_vregs = vregs;
     auto old_fn_ptr = fn_ptr;
@@ -260,7 +262,8 @@ InterpValue Interp::run_inst_call(IRInst inst) {
     std::vector<InterpValue> params;
     for (auto &p : inst.params)
         params.push_back(eval(p));
-    vregs[inst.dest.vreg] = run_fn(inst.src1.lbl.fn, params);
+    // vregs[inst.dest.vreg] = run_fn(inst.src1.lbl.fn, params);
+    auto temp = run_fn(inst.src1.lbl.fn, params);
 
     labels = old_labels;
     vregs = old_vregs;
@@ -268,6 +271,8 @@ InterpValue Interp::run_inst_call(IRInst inst) {
     bb_ptr = old_bb_ptr;
     prev_bb = old_prev_bb;
     i_ptr = old_i_ptr;
+
+    vregs[inst.dest.vreg] = temp;
 
     return {};
 }

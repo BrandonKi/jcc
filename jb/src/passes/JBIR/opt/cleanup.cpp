@@ -10,18 +10,28 @@ using namespace jb;
 // TODO use command line flag
 constexpr auto CLEANUP_DEBUG = false;
 
-static void cleanup_phis(BasicBlock* bb) {
+static void cleanup_phis(BasicBlock* bb, std::unordered_map<BasicBlock*, BasicBlock*>& replaced) {
     bb->for_each(IROp::phi, [&](IRInst *i) {
-        auto it = std::find_if(i->values.begin(), i->values.end(),
-            [&](auto pair){
-                return pair.first == bb;
-            });
-        // if a phi in bb has bb as a pred then, assuming the IR is well-formed,
-        // we can just replace it with it's value
-        if(it != i->values.end()) {
-            i->op = IROp::id;
-            i->src1 = it->second;
+        for(auto &[pred, v]: i->values) {
+            if(replaced.contains(pred))
+                pred = replaced[pred];
+            // if a phi in bb has bb as a pred then, assuming the IR is well-formed,
+            // we can just replace it with it's value
+            if(pred == bb) {
+                i->op = IROp::id;
+                i->src1 = v;
+            }
         }
+        // auto it = std::find_if(i->values.begin(), i->values.end(),
+        //     [&](auto pair){
+        //         return pair.first == bb;
+        //     });
+        // // if a phi in bb has bb as a pred then, assuming the IR is well-formed,
+        // // we can just replace it with it's value
+        // if(it != i->values.end()) {
+        //     i->op = IROp::id;
+        //     i->src1 = it->second;
+        // }
         return (IRInst*)nullptr; //FIXME
     });
 }
@@ -50,7 +60,10 @@ void Cleanup::run_pass(Function *function) {
             for(auto *i: merge->insts) {
                 bb->insts.push_back(i);
             }
-            cleanup_phis(bb);
+            cleanup_phis(bb, replaced);
+            for(auto *s: bb->succ) { // FIXME here, phis in successors
+                cleanup_phis(s, replaced);
+            }
             std::erase_if(function->blocks, [merge](auto *block){ return block == merge; });
             replaced.emplace(merge, bb);
             worklist.push_back(bb);

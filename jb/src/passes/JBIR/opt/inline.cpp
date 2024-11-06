@@ -61,6 +61,16 @@ static void do_inline_sub(Function *caller, BasicBlock *call_parent, IRInst *cal
                     inst->src2.vreg = ssa_inline_name++;
                 }
             }
+            if(is_phi(inst->op)) {
+                for(auto *i: bb->insts) {
+                    if(is_phi(i->op)) {
+                        for(auto &[bb, v]: i->values) {
+                            if(v.kind == IRValueKind::vreg && rename.contains(v.vreg))
+                                v.vreg = rename[v.vreg];
+                        }
+                    }
+                }
+            }
         }
     }
     // labels(idk, could add unique id to end of each?)

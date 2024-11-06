@@ -959,9 +959,9 @@ bool inline_2() {
     auto *b4 = builder->newBB("b4");
     builder->setInsertPoint(b1);
     auto cond = builder->eq(pred->param(0), builder->iconst8(0));
-    builder->brz(cond, b2, b3);
+    builder->brnz(cond, b2, b3);
     builder->setInsertPoint(b2);
-    auto t1 = builder->id(builder->iconst8(0));
+    auto t1 = builder->id(builder->iconst8(10));
     builder->br(b4);
     builder->setInsertPoint(b3);
     auto t2 = builder->isub(pred->param(0), builder->iconst8(1));
@@ -970,9 +970,8 @@ bool inline_2() {
     auto pred_res = builder->phi({{b2, t1}, {b3, t2}});
     builder->ret(pred_res);
 
-    auto *func = builder->newFn("func", {Type::i32}, Type::i32, CallConv::win64, false);
+    auto *func = builder->newFn("func", {Type::i32}, Type::i32, CallConv::win64, true);
     func->always_inline = true;
-    auto *func_entry = builder->newBB("func_entry");
     auto p1 = builder->isub(func->param(0), builder->iconst8(2));
     auto c1 = builder->call(pred, {p1});
     auto p2 = builder->iadd(func->param(0), builder->iconst8(1));
@@ -989,7 +988,7 @@ bool inline_2() {
 
     auto result = run(ctx, builder);
     std::cout << result << "\n";
-    return result == 2;
+    return result == 13;
 }
 
 int main(int argc, char *argv[]) {

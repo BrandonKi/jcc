@@ -63,13 +63,34 @@ static void run_passes(ModuleBuilder *builder) {
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
 
-        // DCE::run_pass(f);
-        // CreateCFG::run_pass(f);
-        // CFGViz::run_pass(f);
+        DCE::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
 
-        // SSCP::run_pass(f);
-        // CreateCFG::run_pass(f);
-        // CFGViz::run_pass(f);
+        Cleanup::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        DCE::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        Cleanup::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+
 
         // Peephole::run_pass(f);
         // CFGViz::run_pass(f);
@@ -83,13 +104,17 @@ static void run_passes(ModuleBuilder *builder) {
         // GVN::run_pass(f);
         // CFGViz::run_pass(f);
 
-        // SSCP::run_pass(f);
-        // CreateCFG::run_pass(f);
-        // CFGViz::run_pass(f);
+        SSCP::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
 
-        // DCE::run_pass(f);
-        // CreateCFG::run_pass(f);
-        // CFGViz::run_pass(f);
+        DCE::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
+        
+        Cleanup::run_pass(f);
+        CreateCFG::run_pass(f);
+        CFGViz::run_pass(f);
 
         // PhiElim::run_pass(f);
         // CFGViz::run_pass(f);

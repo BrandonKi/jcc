@@ -156,6 +156,8 @@ static void maybe_fold_inst(IRInst *inst) {
             inst->op = IROp::br;
             if(val != 0) {
                 inst->dest = inst->src2;
+            } else {
+                inst->dest = inst->src1;
             }
             inst->src1 = {};
             inst->src2 = {};
@@ -167,6 +169,8 @@ static void maybe_fold_inst(IRInst *inst) {
             inst->op = IROp::br;
             if(val == 0) {
                 inst->dest = inst->src2;
+            } else {
+                inst->dest = inst->src1;
             }
             inst->src1 = {};
             inst->src2 = {};

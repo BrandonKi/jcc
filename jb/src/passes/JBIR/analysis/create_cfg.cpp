@@ -8,8 +8,8 @@ using namespace jb;
 
 void CreateCFG::run_pass(Function* function) {
     for(auto *b: function->blocks) {
-        b->preds = {};
-        b->succ = {};
+        b->preds.clear();
+        b->succ.clear();
     }
     for(auto *b: function->blocks) {
         b->update_control_flow();
