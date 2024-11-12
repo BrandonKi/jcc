@@ -47,6 +47,9 @@ static void run_passes(ModuleBuilder *builder) {
         // CreateDomTree::run_pass(f);
         CFGViz::run_pass(f);
 
+        // Mem2Reg::run_pass(f);
+        // CFGViz::run_pass(f);
+        
         Inline::run_pass(f);
         CreateCFG::run_pass(f);
         CFGViz::run_pass(f);
@@ -59,37 +62,21 @@ static void run_passes(ModuleBuilder *builder) {
         // CreateCFG::run_pass(f);
         // CFGViz::run_pass(f);
         
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
+        bool changed;
+        do {
+            changed = false;
+            changed |= SSCP::run_pass(f);
+            CreateCFG::run_pass(f);
+            CFGViz::run_pass(f);
 
-        DCE::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
+            changed |= DCE::run_pass(f);
+            CreateCFG::run_pass(f);
+            CFGViz::run_pass(f);
 
-        Cleanup::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        DCE::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        Cleanup::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
+            changed |= Cleanup::run_pass(f);
+            CreateCFG::run_pass(f);
+            CFGViz::run_pass(f);
+        } while(changed);
 
 
         // Peephole::run_pass(f);
@@ -98,23 +85,9 @@ static void run_passes(ModuleBuilder *builder) {
         // Cleanup::run_pass(f);
         // CFGViz::run_pass(f);
 
-        // Mem2Reg::run_pass(f);
-        // CFGViz::run_pass(f);
 
         // GVN::run_pass(f);
         // CFGViz::run_pass(f);
-
-        SSCP::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-
-        DCE::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
-        
-        Cleanup::run_pass(f);
-        CreateCFG::run_pass(f);
-        CFGViz::run_pass(f);
 
         // PhiElim::run_pass(f);
         // CFGViz::run_pass(f);

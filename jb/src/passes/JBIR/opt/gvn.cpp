@@ -37,7 +37,8 @@ static std::unordered_map<i32, Reg> val2reg = {};
 
 static std::unordered_map<i64, i32> const2val = {};
 
-static void visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited, std::unordered_map<GVNKey, i32> &values) {
+static bool visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited, std::unordered_map<GVNKey, i32> &values) {
+    bool changed = false;
     static i32 val_cnt = 0;
     visited.insert(b);
 
@@ -66,12 +67,14 @@ static void visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited,
 
                 i->op = IROp::id;
                 i->src1 = IRValue(i->dest.type, val2reg[val]);
+                changed = true;
             }
         }
         else if(is_phi(i->op)) {
             reg2val[i->dest.vreg] = val_cnt;
             val2reg[val_cnt] = i->dest.vreg;
             val_cnt += 1;
+            changed = true;
         }
     }
 
@@ -89,12 +92,14 @@ static void visit_block(BasicBlock *b, std::unordered_set<BasicBlock*> &visited,
             visit_block(s, visited, values);
         }
     }
+
+    return changed;
 }
 
 bool GVN::run_pass(Function *function) {
     std::unordered_set<BasicBlock*> visited;
     std::unordered_map<GVNKey, i32> values;
-    visit_block(function->blocks[0], visited, values);
+    bool changed = visit_block(function->blocks[0], visited, values);
 
     if(GVN_DEBUG) {
         for(auto &[k, v]: values) {
@@ -107,7 +112,7 @@ bool GVN::run_pass(Function *function) {
         // }
     }
 
-    return false;
+    return changed;
 
 }
 

@@ -17,18 +17,10 @@ constexpr auto SSCP_DEBUG = false;
         auto rhs = inst->src2.imm_int.val; \
         inst->src1.imm_int.size = std::max(inst->src1.imm_int.size, inst->src2.imm_int.size); \
         inst->src1.imm_int.val = lhs m_op rhs; \
+        return true; \
     } \
     break; \
 }
-    // else if(inst->src1_is_vreg() && inst->src2_is_vreg() \
-    //         && const_value.contains(inst->src1.vreg) && const_value.contains(inst->src2.vreg)) { \
-    //     inst->op = IROp::id; \
-    //     auto lhs = const_value[inst->src1.vreg]; \
-    //     auto rhs = const_value[inst->src2.vreg]; \
-    //     inst->src1.kind = IRValueKind::imm; \
-    //     inst->src1.imm_int.size = 64; \
-    //     inst->src1.imm_int.val = lhs m_op rhs; \
-    // } \
 
 enum class SSCPLat: i8 {
     top = 3,
@@ -37,10 +29,10 @@ enum class SSCPLat: i8 {
     invalid = 0,
 };
 
-std::unordered_map<Reg, SSCPLat> lattice;
-std::unordered_map<Reg, i64> const_value;
-std::unordered_map<Reg, IRInst*> def;
-std::unordered_map<Reg, std::vector<IRInst*>> uses;
+static std::unordered_map<Reg, SSCPLat> lattice;
+static std::unordered_map<Reg, i64> const_value;
+static std::unordered_map<Reg, IRInst*> def;
+static std::unordered_map<Reg, std::vector<IRInst*>> uses;
 
 static bool is_const(IRInst *inst) {
     if(inst->op == IROp::id || inst->op == IROp::mov) {
@@ -99,7 +91,7 @@ static bool maybe_replace_use(IRInst *inst, Reg n) {
     return removed;
 }
 
-static void maybe_fold_inst(IRInst *inst) {
+static bool maybe_fold_inst(IRInst *inst) {
     switch(inst->op) {
     case IROp::none:
     case IROp::noop:
@@ -196,6 +188,8 @@ static void maybe_fold_inst(IRInst *inst) {
     default:
         assert(false);
     }
+    
+    return false;
 }
 
 static std::vector<Reg> get_uses(IRInst *inst) {
@@ -222,6 +216,7 @@ static std::vector<Reg> get_uses(IRInst *inst) {
 }
 
 bool SSCP::run_pass(Function *function) {
+    bool changed = false;
     std::vector<Reg> worklist;
 
     for(auto p: function->params) {
@@ -231,7 +226,7 @@ bool SSCP::run_pass(Function *function) {
     
     for(auto *b: function->blocks) {
         for(auto *i: b->insts) {
-            maybe_fold_inst(i);
+            changed |= maybe_fold_inst(i);
 
             if(i->op == IROp::brz || i->op == IROp::brnz) {
 
@@ -271,7 +266,7 @@ bool SSCP::run_pass(Function *function) {
                     IROp o = use->op;
                     if(maybe_replace_use(use, n))
                         replaced += 1;
-                    maybe_fold_inst(use);
+                    changed |= maybe_fold_inst(use);
                     if(o != use->op) {
                         const_value[m] = use->src1.imm_int.val;
                         worklist.push_back(m);
@@ -286,7 +281,7 @@ bool SSCP::run_pass(Function *function) {
             def[n]->op = IROp::noop;
     }
 
-    return false;
+    return changed;
 }
 
 // TODO

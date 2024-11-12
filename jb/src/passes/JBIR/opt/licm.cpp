@@ -147,6 +147,7 @@ static std::unordered_map<Reg, IRInst*> get_invariants(Function *fn, Loop loop) 
 }
 
 bool LICM::run_pass(Function *function) {
+    bool changed = false;
     collect_loops(function);
 
     if(LICM_DEBUG) {
@@ -196,9 +197,10 @@ bool LICM::run_pass(Function *function) {
         function->blocks.insert(it2, cond_dup);
         // make inc jump to the new cond_dup block
         l.inc->insts.back() = new IRInst(IROp::br, cond_dup);
+        changed = true;
     }
 
-    return false;
+    return changed;
 }
 
 bool LICM::run_pass(Module *module) {

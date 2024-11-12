@@ -70,7 +70,7 @@ bool Cleanup::run_pass(Function *function) {
         }
     }
 
-    return false;
+    return replaced.size() > 0;
 }
 
 bool Cleanup::run_pass(Module *module) {

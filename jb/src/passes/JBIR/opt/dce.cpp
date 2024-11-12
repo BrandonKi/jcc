@@ -36,7 +36,7 @@ bool DCE::run_pass(Function *function) {
     cleanup_phis(function->blocks, visited);
     // NOTE must fixup cfg or rerun cfg creation
 
-    return false;
+    return visited.size() > function->blocks.size();
 }
 
 // TODO
