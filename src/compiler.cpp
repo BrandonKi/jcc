@@ -108,13 +108,13 @@ int Compiler::compile_file(InputFile infile) {
             ir_gen.m_builder->module->print();
         }
         
-        auto interp = ir_gen.m_context.new_baseline_interp(ir_gen.m_builder);
-        int res = interp->run();
-        std::cout << res << "\n\n";
-        return res;
-        // auto bin = ir_gen.m_context.compile(ir_gen.m_builder);
-        // ir_gen.m_context.write_object_file(bin);
-        // ir_gen.m_context.link_objects();
+        // auto interp = ir_gen.m_context.new_baseline_interp(ir_gen.m_builder);
+        // int res = interp->run();
+        // std::cout << res << "\n\n";
+        // return res;
+        auto bin = ir_gen.m_context.compile(ir_gen.m_builder);
+        ir_gen.m_context.write_object_file(bin);
+        ir_gen.m_context.link_objects();
     }
 
     if (m_options.link) {

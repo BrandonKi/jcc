@@ -323,12 +323,27 @@ static i8 convert_bin_op(IROp op) {
     case IROp::fdiv:
         assert(false);
 
+    case IROp::bsl:
+        return (i8)bsl;
+    case IROp::bsr:
+        return (i8)bsr;
+    case IROp::band:
+        return (i8)band;
+    case IROp::bor:
+        return (i8)bor;
+    case IROp::bxor:
+        return (i8)bxor;
+
     case IROp::lt:
-        return (i8)sub;
+        return (i8)slt;
     case IROp::lte:
+        return (i8)slte;
     case IROp::gt:
+        return (i8)sgt;
     case IROp::gte:
+        return (i8)sgte;
     case IROp::eq:
+        return (i8)se;
     default:
         assert(false);
     }
@@ -355,11 +370,18 @@ void MCIRGen::gen_bin(MCFunction *mc_fn, IRInst ir_inst) {
     case IROp::fmul:
     case IROp::fdiv:
 
+    case IROp::bsl:
+    case IROp::bsr:
+    case IROp::band:
+    case IROp::bor:
+    case IROp::bxor:
+
     case IROp::lt:
     case IROp::lte:
     case IROp::gt:
     case IROp::gte:
-    case IROp::eq: {
+    case IROp::eq:
+    case IROp::neq: {
         i8 bin_op = convert_bin_op(op);
         if (src1.kind == Kind::vreg && src2.kind == Kind::vreg) {
             // TODO could encode as an lea

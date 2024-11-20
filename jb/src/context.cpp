@@ -39,6 +39,7 @@ ModuleBuilder *Context::new_module_builder(std::string name) {
 #include "passes/JBIR/opt/inline.h"
 
 static void run_passes(ModuleBuilder *builder) {
+    if(true) return;
     for(auto *f: builder->module->functions) {
         // FIXME make passes for 
         // * printing

@@ -1641,6 +1641,25 @@ int main() {
     return result == 1;
 }
 
+bool general_2() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int popcount_recursive(unsigned int n) {
+    if (n == 0) return 0;
+    return (n & 1) + popcount_recursive(n >> 1);
+}
+
+int main() {
+    unsigned int num = 29; // Binary: 11101
+    return popcount_recursive(num);
+}
+
+    )");
+
+    return result == 4;
+}
 
 int main(int argc, char *argv[]) {
     // test(exit_success);
@@ -1701,7 +1720,7 @@ int main(int argc, char *argv[]) {
     // test(for_0);
     // test(for_1);
     // test(for_2);
-    test(for_3);
+    // test(for_3);
     // test(while_0);
     // test(dowhile_0);
     // test(sizeof_0);
@@ -1738,6 +1757,7 @@ int main(int argc, char *argv[]) {
     // test(struct_6);
     // test(struct_7);
     // test(general_1);
+    test(general_2);
 
     print_report();
 }

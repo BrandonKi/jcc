@@ -130,8 +130,17 @@ private:
     void imul_reg_imm(MCValue, i64);
     void idiv(MCValue, MCValue);
     void idiv_reg_imm(MCValue, i64);
+
     void cmp(MCValue, MCValue);
     void cmp_reg_imm(MCValue, i64);
+    void set(MCValue, Condition);
+
+    void bsl(MCValue, MCValue);
+    void bsr(MCValue, MCValue);
+    void band(MCValue, MCValue);
+    void bor(MCValue, MCValue);
+    void bxor(MCValue, MCValue);
+
 
     void call(MCValue);
     void jz(MCValue);

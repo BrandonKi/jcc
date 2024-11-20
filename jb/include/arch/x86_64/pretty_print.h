@@ -366,6 +366,11 @@ inline std::string str(MCInst i) {
     case imul:
     case idiv:
     case cmp:
+    case slt:
+    case slte:
+    case sgt:
+    case sgte:
+    case se:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
     // case add_reg_imm:
     //     return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);

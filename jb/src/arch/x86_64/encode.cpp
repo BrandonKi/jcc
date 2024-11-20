@@ -62,10 +62,51 @@ void Encoder::encode_inst(MCInst inst) {
     case OpCode::idiv:
         idiv(inst.DEST, inst.SRC1);
         return;
+
+    case OpCode::bsl:
+        bsl(inst.DEST, inst.SRC1);
+        return;
+    case OpCode::bsr:
+        bsr(inst.DEST, inst.SRC1);
+        return;
+    case OpCode::band:
+        band(inst.DEST, inst.SRC1);
+        return;
+    case OpCode::bor:
+        bor(inst.DEST, inst.SRC1);
+        return;
+    case OpCode::bxor:
+        bxor(inst.DEST, inst.SRC1);
+        return;
+
     case OpCode::cmp:
         cmp(inst.DEST, inst.SRC1);
         return;
-
+    case OpCode::slt:
+        cmp(inst.DEST, inst.SRC1);
+        set(inst.DEST, Condition::lesser);
+        return;
+    case OpCode::slte:
+        cmp(inst.DEST, inst.SRC1);
+        set(inst.DEST, Condition::lesser_equal);
+        return;
+    case OpCode::sgt:
+        cmp(inst.DEST, inst.SRC1);
+        set(inst.DEST, Condition::greater);
+        return;
+    case OpCode::sgte:
+        cmp(inst.DEST, inst.SRC1);
+        set(inst.DEST, Condition::greater_equal);
+        return;
+    case OpCode::se:
+        cmp(inst.DEST, inst.SRC1);
+        set(inst.DEST, Condition::equal);
+        return;
+    case OpCode::sne:
+        assert(false);
+        set(inst.DEST, Condition::not_equal);
+        return;
+    
     case OpCode::call:
         call(inst.DEST);
         return;
@@ -753,6 +794,66 @@ void Encoder::idiv_reg_imm(MCValue dest_value, i64 imm) {
     }
 }
 
+void Encoder::bsl(MCValue dest_value, MCValue src_value) {
+
+}
+
+void Encoder::bsr(MCValue dest_value, MCValue src_value) {
+
+}
+
+void Encoder::band(MCValue dest_value, MCValue src_value) {
+    assert(dest_value.is_mcreg());
+
+    if(src_value.is_imm()) {
+        assert(false);
+        // band_reg_imm(dest_value, src_value.imm);
+        return;
+    }
+
+    MCReg dest = (MCReg)dest_value.reg;
+    MCReg src = (MCReg)src_value.reg;
+    auto rex_prefix = get_rex_prefix(dest_value, src_value);
+
+    switch (size(dest)) {
+    case 8:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x00);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 16:
+        emit<byte>(0x66);
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x01);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 32:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(0x01);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 64:
+        emit<byte>(rex_w | rex_prefix);
+        emit<byte>(0x01);
+        emit<byte>(modrm_direct(id(src), id(dest)));
+        return;
+    case 128:
+    case 256:
+    default:
+        assert(false);
+    }
+}
+
+void Encoder::bor(MCValue dest_value, MCValue src_value) {
+
+}
+
+void Encoder::bxor(MCValue dest_value, MCValue src_value) {
+
+}
+
+
+
 void Encoder::cmp(MCValue lhs, MCValue rhs) {
     assert(lhs.is_mcreg());
 
@@ -769,23 +870,23 @@ void Encoder::cmp(MCValue lhs, MCValue rhs) {
     case 8:
         emit_if_nz<byte>(rex_prefix);
         emit<byte>(0x3a);
-        emit<byte>(modrm_direct(id(src), id(dest)));
+        emit<byte>(modrm_direct(id(dest), id(src)));
         return;
     case 16:
         emit<byte>(0x66);
         emit_if_nz<byte>(rex_prefix);
         emit<byte>(0x3b);
-        emit<byte>(modrm_direct(id(src), id(dest)));
+        emit<byte>(modrm_direct(id(dest), id(src)));
         return;
     case 32:
         emit_if_nz<byte>(rex_prefix);
         emit<byte>(0x3b);
-        emit<byte>(modrm_direct(id(src), id(dest)));
+        emit<byte>(modrm_direct(id(dest), id(src)));
         return;
     case 64:
         emit<byte>(rex_w | rex_prefix);
         emit<byte>(0x3b);
-        emit<byte>(modrm_direct(id(src), id(dest)));
+        emit<byte>(modrm_direct(id(dest), id(src)));
         return;
     case 128:
     case 256:
@@ -825,6 +926,78 @@ void Encoder::cmp_reg_imm(MCValue lhs, i64 imm) {
         emit<byte>(0x81);
         emit<byte>(modrm_direct(7, dest));
         emit<i32>(imm);
+        return;
+    case 128:
+    case 256:
+    default:
+        assert(false);
+    }
+}
+
+static i16 get_set_opcode(Condition cond) {
+    using enum Condition;
+
+    switch (cond) {
+    case above:
+        return 0x97;
+    case above_equal:
+        return 0x93;
+    case below:
+        return 0x92;
+    case below_equal:
+        return 0x96;
+    case carry:
+        return 0x92;
+    case equal:
+        return 0x94;
+    case greater:
+        return 0x9f;
+    case greater_equal:
+        return 0x9d;
+    case lesser:
+        return 0x9c;
+    case lesser_equal:
+        return 0x9e;
+    default:
+        assert(false);
+        return -1;
+    }
+}
+
+void Encoder::set(MCValue lhs, Condition cond) {
+    assert(lhs.is_mcreg());
+
+    byte op1 = 0x0F;
+    byte op2 = get_set_opcode(cond);
+
+    MCReg dest = (MCReg)lhs.reg;
+    auto rex_prefix = get_rex_prefix_dest(dest);
+
+    switch (size(dest)) {
+    case 8:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(op1);
+        emit<byte>(op2 - 1);
+        emit<byte>(modrm_direct(0b11, id(dest)));
+        return;
+    case 16:
+        emit<byte>(0x66);
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(op1);
+        emit<byte>(op2);
+        emit<byte>(modrm_direct(0b11, id(dest)));
+        return;
+    case 32:
+        emit_if_nz<byte>(rex_prefix);
+        emit<byte>(op1);
+        emit<byte>(op2);
+        emit<byte>(modrm_direct(0b11, id(dest)));
+        return;
+    case 64:
+        emit<byte>(rex_w | rex_prefix);
+        emit<byte>(op1);
+        emit<byte>(op2);
+        emit<byte>(modrm_direct(0b11, id(dest)));
         return;
     case 128:
     case 256:

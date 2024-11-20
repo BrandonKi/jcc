@@ -261,6 +261,181 @@ bool fdiv_imm() {
     return result == 2;
 }
 
+bool lt() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(7);
+    auto imm2_ = builder->iconst32(5);
+    auto imm1 = builder->id(imm1_);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->lt(imm2, imm1); // 5 < 7
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
+bool lt_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(7);
+    auto imm2 = builder->iconst32(5);
+    auto ret_1 = builder->lt(imm2, imm1); // 5 < 7
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
+bool lte() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(7);
+    auto imm2_ = builder->iconst32(5);
+    auto imm1 = builder->id(imm1_);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->lte(imm2, imm1); // 5 <= 7
+    auto ret_2 = builder->lte(imm1, imm1); // 7 <= 7
+    auto ret_3 = builder->iadd(ret_1, ret_2);
+    builder->ret(ret_3);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 2;
+}
+
+bool lte_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(7);
+    auto imm2 = builder->iconst32(5);
+    auto ret_1 = builder->lte(imm2, imm1); // 5 <= 7
+    auto ret_2 = builder->lte(imm1, imm1); // 7 <= 7
+    auto ret_3 = builder->iadd(ret_1, ret_2);
+    builder->ret(ret_3);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 2;
+}
+
+bool gt() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(7);
+    auto imm2_ = builder->iconst32(5);
+    auto imm1 = builder->id(imm1_);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->gt(imm1, imm2); // 7 > 5
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
+bool gt_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(7);
+    auto imm2 = builder->iconst32(5);
+    auto ret_1 = builder->gt(imm1, imm2); // 7 > 5
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
+bool gte() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(7);
+    auto imm2_ = builder->iconst32(5);
+    auto imm1 = builder->id(imm1_);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->gte(imm1, imm2); // 5 >= 7
+    auto ret_2 = builder->gte(imm1, imm1); // 7 >= 7
+    auto ret_3 = builder->iadd(ret_1, ret_2);
+    builder->ret(ret_3);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 2;
+}
+
+bool gte_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(7);
+    auto imm2 = builder->iconst32(5);
+    auto ret_1 = builder->gte(imm1, imm2); // 5 >= 7
+    auto ret_2 = builder->gte(imm1, imm1); // 7 >= 7
+    auto ret_3 = builder->iadd(ret_1, ret_2);
+    builder->ret(ret_3);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 2;
+}
+
+bool eq() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(7);
+    auto imm1 = builder->id(imm1_);
+    auto ret_1 = builder->eq(imm1, imm1);
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
+bool eq_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(7);
+    auto ret_1 = builder->eq(imm1, imm1);
+    builder->ret(ret_1);
+
+    // auto *jit = ctx.new_jit_env(builder);
+    // auto result = jit->run_function<i64 (*)()>("add_imm");
+    auto result = run(ctx, builder);
+    return result == 1;
+}
+
 bool call() {
     Context ctx = create_context();
     auto *builder = ctx.new_module_builder(NAME);
@@ -929,6 +1104,45 @@ bool peephole_1() {
     return result == 84;
 }
 
+bool licm_1() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+    auto *fn = builder->newFn("main", {}, Type::i32, CallConv::win64, false);
+    auto *entry = builder->newBB("entry", LoopInfo::entry, 1);
+    auto *cond = builder->newBB("cond", LoopInfo::cond, 1);
+    auto *body = builder->newBB("body", LoopInfo::body, 1);
+    auto *inc = builder->newBB("inc", LoopInfo::inc, 1);
+    auto *cont = builder->newBB("cont", LoopInfo::exit, 1);
+    builder->setInsertPoint(entry);
+    auto init = builder->id(builder->iconst8(0));
+    auto inv1 = builder->id(builder->iconst8(15));
+    auto inv2 = builder->id(builder->iconst8(5));
+    builder->br(cond);
+    builder->setInsertPoint(cond);
+    auto ind = builder->phi({{entry, init}});
+    auto phi_1 = builder->insts().end()[-1];
+    auto sum = builder->phi({{entry, builder->iconst8(0)}});
+    auto phi_2 = builder->insts().end()[-1];
+    auto sent = builder->lt(ind, builder->iconst8(10));
+    builder->brnz(sent, body, cont);
+    
+    builder->setInsertPoint(body);
+    auto new_sum = builder->iadd(sum, ind);
+    auto inv = builder->iadd(inv1, inv2);
+    builder->br(inc);
+    builder->setInsertPoint(inc);
+    auto new_ind = builder->iadd(ind, builder->iconst8(1));
+    builder->br(cond);
+    phi_1->values.push_back({inc, new_ind});
+    phi_2->values.push_back({inc, new_sum});
+    builder->setInsertPoint(cont);
+    auto res = builder->iadd(new_sum, inv);
+    builder->ret(res);
+    auto result = run(ctx, builder);
+    std::cout << result << "\n";
+    return result == 65;
+}
+
 bool inline_1() {
     Context ctx = create_context();
     auto *builder = ctx.new_module_builder(NAME);
@@ -993,9 +1207,9 @@ bool inline_2() {
 
 int main(int argc, char *argv[]) {
     // TODO take from args
-    baseline_interp = true;
+    // baseline_interp = true;
     // jit_compile = true;
-    // aot_compile = true;
+    aot_compile = true;
 
     // test(exit_success);
     // test(exit_fail);
@@ -1010,6 +1224,17 @@ int main(int argc, char *argv[]) {
     // test(fsub_imm);
     // test(fmul_imm);
     // test(fdiv_imm);
+
+    test(lt);
+    test(lt_imm);
+    test(lte);
+    test(lte_imm);
+    test(gt);
+    test(gt_imm);
+    test(gte);
+    test(gte_imm);
+    test(eq);
+    test(eq_imm);
     
     // test(call);
     // test(add);
@@ -1043,7 +1268,7 @@ int main(int argc, char *argv[]) {
     // test(peephole_1);
     // test(licm_1);
     // test(inline_1);
-    test(inline_2);
+    // test(inline_2);
 
 
     print_report();

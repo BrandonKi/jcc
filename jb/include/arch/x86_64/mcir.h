@@ -87,6 +87,7 @@ enum class Condition : i8 {
     below_equal,
     carry,
     equal,
+    not_equal,
     greater,
     greater_equal,
     lesser,
