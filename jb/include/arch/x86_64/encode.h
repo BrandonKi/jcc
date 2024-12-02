@@ -136,10 +136,15 @@ private:
     void set(MCValue, Condition);
 
     void bsl(MCValue, MCValue);
+    void bsl_reg_imm(MCValue, i64);
     void bsr(MCValue, MCValue);
+    void bsr_reg_imm(MCValue, i64);
     void band(MCValue, MCValue);
+    void band_reg_imm(MCValue, i64);
     void bor(MCValue, MCValue);
+    void bor_reg_imm(MCValue, i64);
     void bxor(MCValue, MCValue);
+    void bxor_reg_imm(MCValue, i64);
 
 
     void call(MCValue);

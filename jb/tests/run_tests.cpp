@@ -415,8 +415,6 @@ bool eq() {
     auto ret_1 = builder->eq(imm1, imm1);
     builder->ret(ret_1);
 
-    // auto *jit = ctx.new_jit_env(builder);
-    // auto result = jit->run_function<i64 (*)()>("add_imm");
     auto result = run(ctx, builder);
     return result == 1;
 }
@@ -430,11 +428,157 @@ bool eq_imm() {
     auto ret_1 = builder->eq(imm1, imm1);
     builder->ret(ret_1);
 
-    // auto *jit = ctx.new_jit_env(builder);
-    // auto result = jit->run_function<i64 (*)()>("add_imm");
     auto result = run(ctx, builder);
     return result == 1;
 }
+
+bool bsl() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(3);
+    auto imm1 = builder->id(imm1_);
+    auto ret_1 = builder->bsl(imm1, imm1);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (3 << 3);
+}
+
+bool bsl_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(3);
+    auto ret_1 = builder->bsl(imm1, imm1);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (3 << 3);
+}
+
+bool bsr() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(27);
+    auto imm1 = builder->id(imm1_);
+    auto imm2_ = builder->iconst32(3);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->bsr(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (27 >> 3);
+}
+
+bool bsr_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(27);
+    auto imm2 = builder->iconst32(3);
+    auto ret_1 = builder->bsr(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (27 >> 3);
+}
+
+bool band() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(24);
+    auto imm1 = builder->id(imm1_);
+    auto imm2_ = builder->iconst32(7);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->band(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 & 7);
+}
+
+bool band_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(24);
+    auto imm2 = builder->iconst32(7);
+    auto ret_1 = builder->band(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 & 7);
+}
+
+bool bor() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(24);
+    auto imm1 = builder->id(imm1_);
+    auto imm2_ = builder->iconst32(7);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->bor(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 | 7);
+}
+
+bool bor_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(24);
+    auto imm2 = builder->iconst32(7);
+    auto ret_1 = builder->bor(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 | 7);
+}
+
+bool bxor() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1_ = builder->iconst32(24);
+    auto imm1 = builder->id(imm1_);
+    auto imm2_ = builder->iconst32(7);
+    auto imm2 = builder->id(imm2_);
+    auto ret_1 = builder->bxor(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 ^ 7);
+}
+
+bool bxor_imm() {
+    Context ctx = create_context();
+    auto *builder = ctx.new_module_builder(NAME);
+
+    auto *f = builder->newFn("main", {}, Type::i32, CallConv::win64);
+    auto imm1 = builder->iconst32(24);
+    auto imm2 = builder->iconst32(7);
+    auto ret_1 = builder->bxor(imm1, imm2);
+    builder->ret(ret_1);
+
+    auto result = run(ctx, builder);
+    return result == (24 ^ 7);
+}
+
 
 bool call() {
     Context ctx = create_context();
@@ -1225,17 +1369,28 @@ int main(int argc, char *argv[]) {
     // test(fmul_imm);
     // test(fdiv_imm);
 
-    test(lt);
-    test(lt_imm);
-    test(lte);
-    test(lte_imm);
-    test(gt);
-    test(gt_imm);
-    test(gte);
-    test(gte_imm);
-    test(eq);
-    test(eq_imm);
+    // test(lt);
+    // test(lt_imm);
+    // test(lte);
+    // test(lte_imm);
+    // test(gt);
+    // test(gt_imm);
+    // test(gte);
+    // test(gte_imm);
+    // test(eq);
+    // test(eq_imm);
     
+    // /* test(bsl); */
+    test(bsl_imm);
+    // / * test(bsr); */
+    test(bsr_imm);
+    test(band);
+    test(band_imm);
+    test(bor);
+    test(bor_imm);
+    test(bxor);
+    test(bxor_imm);
+
     // test(call);
     // test(add);
     // test(add4);

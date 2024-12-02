@@ -371,6 +371,11 @@ inline std::string str(MCInst i) {
     case sgt:
     case sgte:
     case se:
+    case bsl:
+    case bsr:
+    case band:
+    case bor:
+    case bxor:
         return ret_str + str(i.DEST) + ", " + str(i.SRC1);
     // case add_reg_imm:
     //     return ret_str + str(i.DEST) + ", " + std::to_string(i.SRC1.imm);
