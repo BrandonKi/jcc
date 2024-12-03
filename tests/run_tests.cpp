@@ -1720,7 +1720,7 @@ int main(int argc, char *argv[]) {
     // test(for_0);
     // test(for_1);
     // test(for_2);
-    // test(for_3);
+    test(for_3);
     // test(while_0);
     // test(dowhile_0);
     // test(sizeof_0);

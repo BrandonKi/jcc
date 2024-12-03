@@ -39,7 +39,8 @@ int Compiler::compile_file(InputFile infile) {
     Sema sema;
     sema.run_on(file);
 
-    if(false) {
+    // if(false) {
+    if(true) {
         LLVMIRGen ir_gen;
         ir_gen.gen_file(file);
 

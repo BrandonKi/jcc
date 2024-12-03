@@ -294,7 +294,14 @@ ExprNode *Parser::parse_postfix_expr() {
     while (true) {
         switch (op) {
         case TokenKind::_open_bracket:
-            ice(false);
+            m_lex->next();
+            extra = parse_expr();
+            m_lex->next();
+            return BinExprNode::create(BinOp::_array_access, base, extra);
+            // extra = BinExprNode::create(BinOp::_mul, extra, NumLitExprNode::create(extra->type->size));
+            // base = BinExprNode::create(BinOp::_add, base, extra);
+            // base = UnaryExprNode::create(UnaryOp::_deref, base);
+            // return base;
         case TokenKind::_open_paren:
             extra = CallExprNode::create(base, parse_function_call_args());
             return extra;
@@ -796,6 +803,15 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
 
     decl->id = m_lex->curr().id.val;
     m_lex->next();
+
+    // HACK
+    while(m_lex->curr().kind == TokenKind::_open_bracket) {
+        m_lex->next();
+        ExprNode *extra = parse_expr();
+        (void) extra; // TODO
+        m_lex->eat(TokenKind::_close_bracket);
+        decl->type = CType::pointer_to(decl->type);
+    }
 
     if (m_lex->curr().kind == terminator)
         m_lex->eat(terminator);

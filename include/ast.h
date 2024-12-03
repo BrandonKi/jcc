@@ -244,6 +244,7 @@ enum class BinOp : char {
     _log_or,
 
     _field,
+    _array_access,
 
     _assign,
 

@@ -121,18 +121,33 @@ llvm::Value *LLVMIRGen::gen_lvalue_expr(ExprNode *base_expr) {
         return gen_expr(expr->base);
     }
     case BinExpr: { // union/struct/array access
+        llvm::Value *result;
         auto expr = static_cast<BinExprNode *>(base_expr);
-        ice(expr->op == BinOp::_field);
-        auto lvalue = gen_lvalue_expr(expr->lhs);
-        auto expr_rhs = static_cast<IdExprNode *>(expr->rhs);
-        int index = -1;
-        for(auto *field: expr->lhs->type->fields) {
-            ++index;
-            if(field->id == expr_rhs->val)
-                break;
+        switch(expr->op) {
+        case BinOp::_field: {
+            auto lvalue = gen_lvalue_expr(expr->lhs);
+            auto expr_rhs = static_cast<IdExprNode *>(expr->rhs);
+            int index = -1;
+            for(auto *field: expr->lhs->type->fields) {
+                ++index;
+                if(field->id == expr_rhs->val)
+                    break;
+            }
+            ice(index != -1);
+            result = m_builder->CreateStructGEP(to_llvm_type(expr->lhs->type), lvalue, index);
+            break;
         }
-        ice(index != -1);
-        return m_builder->CreateStructGEP(to_llvm_type(expr->lhs->type), lvalue, index);
+        case BinOp::_array_access: {
+            auto lvalue = gen_lvalue_expr(expr->lhs);
+            auto index = gen_expr(expr->rhs);
+            result = m_builder->CreateGEP(to_llvm_type(expr->lhs->type), lvalue, index);
+            break;
+        }
+        default:
+            ice(false);
+        }
+
+        return result;
     }
     default:
         ice(false);
@@ -252,6 +267,12 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
         // TODO need to short circuit
         break;
     case BinOp::_field: {
+        auto addr = gen_lvalue_expr(bin_expr);
+        addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), addr,
+                                        llvm::Align(bin_expr->type->align));
+        return addr;
+    }
+    case BinOp::_array_access: {
         auto addr = gen_lvalue_expr(bin_expr);
         addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), addr,
                                         llvm::Align(bin_expr->type->align));
