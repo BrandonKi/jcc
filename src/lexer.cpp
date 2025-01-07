@@ -43,6 +43,12 @@ void Lexer::report_lex_error(Token tkn) {
     std::exit(-1);
 }
 
+static std::unordered_map<char, char> escape_lookup = {
+    {'n', '\n'},
+    {'"', '"'},
+    {'\\', '\\'},
+};
+
 // I'm being lazy for right now
 // this is a very simple and inefficient lexer
 // TODO:
@@ -106,6 +112,9 @@ Token Lexer::internal_next_no_update(bool keep_newline) {
     if (m_text[i] == '"') {
         ++i;
         while (m_text[i] != '"') {
+            if(m_text[i] == '\\')
+                id += escape_lookup[m_text[++i]];
+            else
             id += m_text[i];
             ++i;
         }
