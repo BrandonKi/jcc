@@ -808,9 +808,9 @@ DeclNode *Parser::parse_decl(TokenKind terminator) {
     while(m_lex->curr().kind == TokenKind::_open_bracket) {
         m_lex->next();
         ExprNode *extra = parse_expr();
-        (void) extra; // TODO
         m_lex->eat(TokenKind::_close_bracket);
-        decl->type = CType::pointer_to(decl->type);
+        decl->type = CType::array_of(decl->type);
+        decl->type->size = ((NumLitExprNode*)extra)->val;
     }
 
     if (m_lex->curr().kind == terminator)
@@ -938,7 +938,12 @@ ReturnStmntNode *Parser::parse_return_stmnt() {
 
     ReturnStmntNode *stmnt = ReturnStmntNode::create();
     m_lex->next();
-    stmnt->expr = parse_expr();
+    if(m_lex->curr().kind == TokenKind::_semicolon) {
+        stmnt->expr = nullptr;
+    }
+    else {
+        stmnt->expr = parse_expr();
+    }
 
     return stmnt;
 }

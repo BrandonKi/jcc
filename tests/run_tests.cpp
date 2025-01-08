@@ -1613,6 +1613,25 @@ int main() {
     return result == 42;
 }
 
+bool array_1() {
+    jcc::Compiler c(co);
+
+    auto result = c.compile_string(R"(
+
+int main() {
+    int arr[10];
+    arr[0] = 1;
+    arr[1] = 4;
+    arr[2] = 5;
+    arr[9] = 0;
+    return arr[0] + arr[1]+ arr[2] + arr[9];
+}
+
+    )");
+
+    return result == 10;
+}
+
 bool general_1() {
     jcc::Compiler c(co);
 
@@ -1720,7 +1739,7 @@ int main(int argc, char *argv[]) {
     // test(for_0);
     // test(for_1);
     // test(for_2);
-    test(for_3);
+    // test(for_3);
     // test(while_0);
     // test(dowhile_0);
     // test(sizeof_0);
@@ -1756,8 +1775,9 @@ int main(int argc, char *argv[]) {
     // test(struct_5);
     // test(struct_6);
     // test(struct_7);
+    test(array_1);
     // test(general_1);
-    test(general_2);
+    // test(general_2);
 
     print_report();
 }

@@ -6,7 +6,7 @@
 
 using namespace jcc;
 
-std::array<std::array<CType, 2>, 11> Platform::builtinTypes;
+std::array<std::array<CType, 2>, 16> Platform::builtinTypes;
 
 int Platform::init() {
     JCC_PROFILE();
@@ -36,6 +36,19 @@ int Platform::init() {
                  CType(Pointer, 8, 8, false)}, // Pointer
 
                 {CType(Bool, 1, 1, false), CType(Bool, 1, 1, false)}, // Bool
+
+                {CType(Function, 8, 8, false),
+                 CType(Function, 8, 8, false)}, // Function
+
+                {CType(Enum, 4, 4, false),
+                 CType(Enum, 4, 4, false)}, // Enum
+
+                {CType(Struct, 1, 1, false),
+                 CType(Struct, 1, 1, false)}, // Struct
+                {CType(Union, 1, 1, false),
+                 CType(Union, 1, 1, false)}, // Union
+                {CType(Array, 1, 1, false),
+                 CType(Array, 1, 1, false)}, // Array
             }};
         } else if (os == OS::linux) {
 

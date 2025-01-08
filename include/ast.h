@@ -90,6 +90,13 @@ public:
         return temp;
     }
 
+    static CType *array_of(CType *base) {
+        CType *plt_arr = CType::getBuiltinType(CTypeKind::Array);
+        auto *temp = CType::create(CTypeKind::Array, base, plt_arr->align,
+                                   plt_arr->size, plt_arr->is_signed);
+        return temp;
+    }
+
     ARENA_CREATE(CType);
 };
 

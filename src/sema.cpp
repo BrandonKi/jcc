@@ -343,6 +343,8 @@ void Sema::sema_cast_expr(UnaryExprNode *cast_expr) {
 
 void Sema::sema_expr(ExprNode *expr) {
     JCC_PROFILE();
+    if(!expr)
+        return;
 
     fold_expr(expr);
 
@@ -458,10 +460,10 @@ void Sema::sema_goto_stmnt(GotoStmntNode *goto_stmnt) {
 void Sema::sema_return_stmnt(ReturnStmntNode *ret_stmnt) {
     JCC_PROFILE();
 
-    sema_expr(ret_stmnt->expr);
-
-    ret_stmnt->expr =
-        maybe_insert_cast(ret_stmnt->expr, current_fn->proto->ret_type);
+    if(ret_stmnt->expr) {
+        sema_expr(ret_stmnt->expr);
+        ret_stmnt->expr = maybe_insert_cast(ret_stmnt->expr, current_fn->proto->ret_type);
+    }
 }
 
 void Sema::sema_label_stmnt(LabelStmntNode *label_stmnt) {

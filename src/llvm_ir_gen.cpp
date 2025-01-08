@@ -67,6 +67,7 @@ llvm::Type *LLVMIRGen::to_llvm_type(CType *type) {
         // return llvm::UnionType::create(*m_context, types, type->id.value());
     }
     case Array:
+        return llvm::ArrayType::get(to_llvm_type(type->base), type->size);
     case Function:
         ice(false);
     case Bool:
@@ -113,7 +114,7 @@ llvm::Value *LLVMIRGen::gen_lvalue_expr(ExprNode *base_expr) {
     switch (base_expr->kind) {
     case IdExpr: {
         auto expr = static_cast<IdExprNode *>(base_expr);
-        auto &[decl, addr] = m_named_values[expr->val];
+        auto [decl, addr] = m_named_values[expr->val];
         return addr;
     }
     case UnaryExpr: {
@@ -138,9 +139,10 @@ llvm::Value *LLVMIRGen::gen_lvalue_expr(ExprNode *base_expr) {
             break;
         }
         case BinOp::_array_access: {
+            auto llvm_type = to_llvm_type(expr->lhs->type);
             auto lvalue = gen_lvalue_expr(expr->lhs);
             auto index = gen_expr(expr->rhs);
-            result = m_builder->CreateGEP(to_llvm_type(expr->lhs->type), lvalue, index);
+            result = m_builder->CreateGEP(llvm_type, lvalue, index);
             break;
         }
         default:
@@ -274,7 +276,7 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
     }
     case BinOp::_array_access: {
         auto addr = gen_lvalue_expr(bin_expr);
-        addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type), addr,
+        addr = m_builder->CreateAlignedLoad(to_llvm_type(bin_expr->type->base), addr,
                                         llvm::Align(bin_expr->type->align));
         return addr;
     }
@@ -324,6 +326,7 @@ llvm::Value *LLVMIRGen::gen_bin_expr(BinExprNode *bin_expr) {
         // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
     case BinOp::_equal:
+        rhs = m_builder->CreateSExtOrTrunc(rhs, lhs->getType());
         lhs = m_builder->CreateICmpEQ(lhs, rhs);
         // lhs = m_builder->CreateZExt(lhs, llvm::Type::getInt32Ty(*m_context));
         return lhs;
@@ -427,7 +430,13 @@ llvm::Value *LLVMIRGen::gen_decl(DeclNode *decl) {
     auto saved_ip = m_builder->saveIP();
     m_builder->SetInsertPointPastAllocas(m_builder->GetInsertBlock()->getParent());
     
-    auto alloc = m_builder->CreateAlloca(to_llvm_type(decl->type));
+    llvm::AllocaInst *alloc = nullptr;
+    if(decl->type->type == CTypeKind::Array) {
+        llvm::Value *arr_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*m_context), decl->type->size);
+        alloc = m_builder->CreateAlloca(to_llvm_type(decl->type), arr_size);
+    } else {
+        alloc = m_builder->CreateAlloca(to_llvm_type(decl->type));
+    }
 
     m_builder->restoreIP(saved_ip);
     if (decl->init)
@@ -632,10 +641,17 @@ void LLVMIRGen::gen_stmnt(StmntNode *stmnt) {
     case ContinueStmnt:
     case BreakStmnt:
         ice(false);
-    case ReturnStmnt:
-        m_builder->CreateRet(
-            gen_expr(static_cast<ReturnStmntNode *>(stmnt)->expr));
+    case ReturnStmnt: {
+        auto *ret_expr = static_cast<ReturnStmntNode *>(stmnt)->expr;
+        if(ret_expr) {
+            auto *val = gen_expr(ret_expr);
+            val = m_builder->CreateSExtOrTrunc(val, insert_block->getParent()->getReturnType());
+            m_builder->CreateRet(val);
+        } else {
+            m_builder->CreateRetVoid();
+        }
         break;
+    }
     case CompoundStmnt:
         gen_compound_stmnt(static_cast<CompoundStmntNode *>(stmnt));
         break;
